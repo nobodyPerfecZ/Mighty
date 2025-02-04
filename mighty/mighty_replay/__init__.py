@@ -6,7 +6,6 @@ from mighty.mighty_replay.mighty_replay_buffer import (
 )
 from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer, RolloutBatch
 
-
 __all__ = [
     "MightyReplay",
     "PrioritizedReplay",

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import numpy as np
-from mighty.mighty_exploration import EpsilonGreedy
-
 from typing import TYPE_CHECKING, Tuple
+
+import numpy as np
+
+from mighty.mighty_exploration import EpsilonGreedy
 
 if TYPE_CHECKING:
     import torch

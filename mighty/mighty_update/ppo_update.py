@@ -1,6 +1,8 @@
+from typing import Dict
+
 import torch
 import torch.optim as optim
-from typing import Dict
+
 from mighty.mighty_models.ppo import PPOModel
 from mighty.mighty_replay.mighty_rollout_buffer import RolloutBatch
 
@@ -77,7 +79,7 @@ class PPOUpdate:
         self.policy_optimizer.step()
 
         return {
-            "policy_loss": policy_loss.item(),
-            "value_loss": value_loss.item(),
-            "entropy": entropy.mean().item(),
+            "Update/policy_loss": policy_loss.item(),
+            "Update/value_loss": value_loss.item(),
+            "Update/entropy": entropy.mean().item(),
         }

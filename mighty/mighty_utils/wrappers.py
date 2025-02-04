@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from functools import partial
 import itertools
+from functools import partial
+
 import gymnasium as gym
 import numpy as np
 

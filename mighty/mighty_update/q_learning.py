@@ -23,7 +23,7 @@ class QLearning:
         loss = F.mse_loss(preds, targets)
         loss.backward()
         self.optimizer.step()
-        return {"Q-Update/loss": loss.detach().numpy().item()}
+        return {"Update/loss": loss.detach().numpy().item()}
 
     def get_targets(self, batch, q_net, target_net=None):
         """Get targets for the Q-learning update."""
@@ -167,7 +167,7 @@ class SPRQLearning(QLearning):
         loss.backward()
         optimizer.step()
         return {
-            "Q-Update/total_loss": loss.detach(),
-            "Q-Update/dqn_loss": dqn_loss.detach(),
-            "Q-Update/SPR_loss": spr_loss.detach(),
+            "Update/total_loss": loss.detach(),
+            "Update/dqn_loss": dqn_loss.detach(),
+            "Update/SPR_loss": spr_loss.detach(),
         }

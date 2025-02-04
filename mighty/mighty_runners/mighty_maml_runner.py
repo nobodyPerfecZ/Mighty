@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from typing import TYPE_CHECKING, Callable, List
+
 import torch
 from torch.autograd import grad
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, List
+
 from mighty.mighty_runners.mighty_runner import MightyRunner
 
 if TYPE_CHECKING:

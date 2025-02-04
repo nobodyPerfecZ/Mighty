@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import importlib
 from functools import partial
-from typing import TYPE_CHECKING, Tuple, Callable, Any
+from typing import TYPE_CHECKING, Any, Callable, Tuple
 
 import gymnasium as gym
 from omegaconf import OmegaConf
+
 from mighty.mighty_utils.wrappers import (
-    PufferlibToGymAdapter,
-    ContextualVecEnv,
     CARLVectorEnvSimulator,
+    ContextualVecEnv,
     ProcgenVecEnv,
+    PufferlibToGymAdapter,
 )
 
 try:
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 
 def make_dacbench_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]:
     """Make dacbench environment."""
-    from dacbench import benchmarks  # type: ignore
     import ConfigSpace as CS
+    from dacbench import benchmarks  # type: ignore
 
     bench = getattr(benchmarks, cfg.env)()
 
@@ -187,10 +188,18 @@ def make_pufferlib_env(cfg: DictConfig) -> Tuple[PufferlibToGymAdapter, Callable
     name = cfg.env.split(".")[-1]
     get_env_func = importlib.import_module(domain).env_creator
     make_env = partial(get_env_func(name), **cfg.env_kwargs)
-    env = PufferlibToGymAdapter(pufferlib.vector.make(make_env, num_envs=cfg.num_envs))
+    if "backend" in cfg.env_kwargs:
+        backend = getattr(pufferlib.vector, cfg.env_kwargs["backend"])
+    else:
+        backend = pufferlib.vector.Serial
+    env = PufferlibToGymAdapter(
+        pufferlib.vector.make(make_env, num_envs=cfg.num_envs, backend=backend)
+    )
 
     def get_eval() -> PufferlibToGymAdapter:
-        env = pufferlib.vector.make(make_env, num_envs=cfg.n_episodes_eval)
+        env = pufferlib.vector.make(
+            make_env, num_envs=cfg.n_episodes_eval, backend=backend
+        )
         return PufferlibToGymAdapter(env)
 
     eval_default = cfg.n_episodes_eval

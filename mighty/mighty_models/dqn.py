@@ -6,8 +6,9 @@ from copy import deepcopy
 
 import numpy as np
 import torch
-from mighty.mighty_models.networks import MLP, make_feature_extractor
 from torch import jit, nn
+
+from mighty.mighty_models.networks import MLP, make_feature_extractor
 
 
 class DQN(nn.Module):

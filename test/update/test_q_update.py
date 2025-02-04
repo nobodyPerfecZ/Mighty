@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 import torch.nn.functional as F
+
 from mighty.mighty_replay import TransitionBatch
 from mighty.mighty_update import (
     ClippedDoubleQLearning,
@@ -58,12 +59,12 @@ class TestQLearning:
         """Test Q-learning update."""
         update, model = self.get_update(initial_weights=weight, initial_biases=bias)
         checked_model = deepcopy(model)
-        assert torch.allclose(
-            model.layer.weight, checked_model.layer.weight
-        ), "Wrong initial weights."
-        assert torch.allclose(
-            model.layer.bias, checked_model.layer.bias
-        ), "Wrong initial biases."
+        assert torch.allclose(model.layer.weight, checked_model.layer.weight), (
+            "Wrong initial weights."
+        )
+        assert torch.allclose(model.layer.bias, checked_model.layer.bias), (
+            "Wrong initial biases."
+        )
 
         preds, targets = update.get_targets(batch, model)
         loss_stats = update.apply_update(preds, targets)
@@ -76,14 +77,14 @@ class TestQLearning:
         optimizer.step()
 
         assert np.isclose(
-            loss_stats["Q-Update/loss"], loss.detach().numpy().item(), atol=1e-6
+            loss_stats["Update/loss"], loss.detach().numpy().item(), atol=1e-6
         ), "Wrong loss after update."
         assert torch.allclose(
             model.layer.weight, checked_model.layer.weight, atol=1e-3
         ), "Wrong weights after update"
-        assert torch.allclose(
-            model.layer.bias, checked_model.layer.bias, atol=1e-3
-        ), "Wrong biases after update."
+        assert torch.allclose(model.layer.bias, checked_model.layer.bias, atol=1e-3), (
+            "Wrong biases after update."
+        )
 
     def test_get_targets(self):
         """Test get_targets method."""
@@ -149,9 +150,9 @@ class TestDoubleQLearning:
         correct_targets = batch.rewards.unsqueeze(-1) + (
             ~batch.dones.unsqueeze(-1)
         ) * 0.99 * batch.next_obs.sum(axis=1).unsqueeze(-1)
-        assert torch.allclose(
-            targets.detach(), correct_targets.type(torch.float32)
-        ), "Wrong targets (weight 0)."
+        assert torch.allclose(targets.detach(), correct_targets.type(torch.float32)), (
+            "Wrong targets (weight 0)."
+        )
 
         update, model, target = self.get_update(initial_weights=3)
         preds, targets = update.get_targets(batch, model, target)
@@ -193,9 +194,9 @@ class TestClippedDoubleQLearning:
         ) * 0.99 * torch.minimum(
             batch.next_obs.sum(axis=1), torch.zeros(batch.next_obs.shape).sum(axis=1)
         ).unsqueeze(-1)
-        assert torch.allclose(
-            targets.detach(), correct_targets.type(torch.float32)
-        ), "Wrong targets (weight 0)."
+        assert torch.allclose(targets.detach(), correct_targets.type(torch.float32)), (
+            "Wrong targets (weight 0)."
+        )
 
         update, model, target = self.get_update(initial_weights=3)
         preds, targets = update.get_targets(batch, model, target)

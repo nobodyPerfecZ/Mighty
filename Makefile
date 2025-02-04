@@ -22,13 +22,14 @@ help:
 
 PYTHON ?= python
 CYTHON ?= cython
-PYTEST ?= python -m pytest
+PYTEST ?= uv run pytest
 CTAGS ?= ctags
-PIP ?= python -m pip
+PIP ?= uv pip
 MAKE ?= make
-PRECOMMIT ?= pre-commit
-RUFF ?= ruff
-MYPY ?= mypy
+PRECOMMIT ?= uv run pre-commit
+RUFF ?= uv run ruff
+MYPY ?= uv run mypy
+ISORT ?= uv run isort
 
 DIR := ${CURDIR}
 DIST := ${CURDIR}/dist
@@ -36,7 +37,7 @@ DOCDIR := ${CURDIR}/docs
 INDEX_HTML := file://${DOCDIR}/html/build/index.html
 
 install-dev:
-	$(PIP) install pufferlib==1.0.0
+	$(PIP) install pufferlib
 	$(PIP) install dacbench==0.3.0 torchvision ioh
 	$(PIP) install -e ".[dev,carl]"
 
@@ -53,6 +54,7 @@ pre-commit:
 	$(PRECOMMIT) run --all-files
 
 format: 
+	$(ISORT) isort mighty test
 	$(RUFF) format --silent mighty test
 	$(RUFF) check --fix --silent mighty test --exit-zero
 	$(RUFF) check --fix mighty test --exit-zero

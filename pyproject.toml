@@ -35,7 +35,7 @@ dependencies = [
     "hydra-colorlog~=1.2",
     "hydra-submitit-launcher~=1.2",
     "pandas",
-    "scipy==1.12",
+    "scipy",
     "rich~=12.4",
     "wandb~=0.12",
     "torch",
@@ -50,7 +50,7 @@ dependencies = [
 dev = ["ruff", "mypy", "automl-sphinx-theme==0.2.0", "build", "pytest", "pytest-cov"]
 carl = ["carl_bench==1.1.0", "brax==0.9.3", "protobuf>=3.17.3", "mujoco==3.0.1"]
 dacbench = ["dacbench>=0.3.0", "torchvision", "ioh"]
-pufferlib = ["pufferlib==1.0.0"]
+pufferlib = ["pufferlib"]
 
 [tool.ruff]
 extend-exclude = []

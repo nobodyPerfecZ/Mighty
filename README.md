@@ -41,23 +41,25 @@ Mighty features:
 - Implementations of some important baselines: MAML, PLR, Cosine LR Schedule and more!
 
 ## Installation
-We recommend to use the package manager like [anaconda or minconda](https://docs.anaconda.com/anaconda/install/)
-
-If you have conda installed you can follow these steps to setup a clean python environment in which you can install the
-needed packages. If you need to install conda [follow these steps](https://docs.anaconda.com/anaconda/install/).
+We recommend to using uv to install and run Mighty in a virtual environment.
 The code has been tested with python 3.10.
 
 First create a clean python environment:
 
 ```bash
-conda create --name mighty python=3.10
-conda activate mighty
+uv venv --python=3.10
+source .venv/bin/activate
 ```
 
 Then  install Mighty:
 
 ```bash
 make install
+```
+
+Optionally you can install the dev requirements directly:
+```bash
+make install-dev
 ```
 
 ## Run a Mighty Agent

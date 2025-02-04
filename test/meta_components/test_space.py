@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from mighty.mighty_meta import SPaCE
-from utils import DummyEnv, clean, DummyModel
-from mighty.mighty_utils.logger import Logger
+from pathlib import Path
+
 from mighty.mighty_agents.dqn import MightyDQNAgent
+from mighty.mighty_meta import SPaCE
+from mighty.mighty_utils.test_helpers import DummyEnv, DummyModel, clean
 from mighty.mighty_utils.wrappers import ContextualVecEnv
 
 
@@ -24,12 +25,12 @@ class TestSPaCE:
             "rollout_values": [[0.0, 0.6, 0.7]],
         }
         space.get_instances(metrics)
-        assert (
-            len(space.all_instances) == 1
-        ), f"Expected 1, got {len(space.all_instances)}"
-        assert (
-            len(space.instance_set) == 1
-        ), f"Expected 1, got {len(space.instance_set)}"
+        assert len(space.all_instances) == 1, (
+            f"Expected 1, got {len(space.all_instances)}"
+        )
+        assert len(space.instance_set) == 1, (
+            f"Expected 1, got {len(space.instance_set)}"
+        )
         assert space.last_evals is not None, "Evals should not be None."
 
     def test_get_evals(self) -> None:
@@ -42,19 +43,20 @@ class TestSPaCE:
 
     def test_in_loop(self) -> None:
         env = ContextualVecEnv([DummyEnv for _ in range(2)])
-        logger = Logger("test_plr", "test_plr")
+        output_dir = Path("test_space")
+        output_dir.mkdir(parents=True, exist_ok=True)
         dqn = MightyDQNAgent(
+            output_dir,
             env,
-            logger,
             use_target=False,
             meta_methods=["mighty.mighty_meta.SPaCE"],
         )
         assert dqn.meta_modules["SPaCE"] is not None, "SPaCE should be initialized."
         dqn.run(100, 0)
-        assert (
-            dqn.meta_modules["SPaCE"].all_instances is not None
-        ), "All instances should be initialized."
-        assert (
-            env.inst_ids[0] in dqn.meta_modules["SPaCE"].all_instances
-        ), "Instance should be in all instances."
-        clean(logger)
+        assert dqn.meta_modules["SPaCE"].all_instances is not None, (
+            "All instances should be initialized."
+        )
+        assert env.inst_ids[0] in dqn.meta_modules["SPaCE"].all_instances, (
+            "Instance should be in all instances."
+        )
+        clean(output_dir)

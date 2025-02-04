@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from mighty.mighty_runners import VALID_RUNNER_TYPES, RUNNER_CLASSES
+
+from mighty.mighty_runners import RUNNER_CLASSES, VALID_RUNNER_TYPES
 
 if TYPE_CHECKING:
     from mighty.mighty_runners.mighty_runner import MightyRunner

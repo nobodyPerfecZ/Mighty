@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pytest
+
+from mighty.mighty_agents import AGENT_CLASSES, VALID_AGENT_TYPES
 from mighty.mighty_agents.factory import get_agent_class
-from mighty.mighty_agents import VALID_AGENT_TYPES, AGENT_CLASSES
 
 
 class TestFactory:

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-
 import dill as pickle
 import numpy as np
 import torch
+
 from mighty.mighty_replay.buffer import MightyBuffer
 
 

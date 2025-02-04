@@ -1,9 +1,10 @@
-import torch
-import torch.optim as optim
-import torch.nn.functional as F
-from mighty.mighty_models.sac import SACModel
-
 from typing import Dict, Tuple
+
+import torch
+import torch.nn.functional as F
+import torch.optim as optim
+
+from mighty.mighty_models.sac import SACModel
 from mighty.mighty_replay.mighty_replay_buffer import TransitionBatch
 
 

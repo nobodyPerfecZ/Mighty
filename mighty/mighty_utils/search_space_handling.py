@@ -22,9 +22,9 @@ class JSONCfgEncoder(json.JSONEncoder):
         elif isinstance(obj, ListConfig):
             parsed_list = []
             for o in obj:
-                if type(o) == DictConfig:
+                if type(o) is DictConfig:
                     o = dict(o)
-                elif type(o) == ListConfig:
+                elif type(o) is ListConfig:
                     o = list(o)
                 parsed_list.append(o)
 
@@ -125,7 +125,7 @@ def search_space_to_config_space(
         search_space = OmegaConf.to_container(search_space)
         jason_string = json.dumps(search_space, cls=JSONCfgEncoder)
         cs = csjson.read(jason_string)
-    elif type(search_space) == ConfigurationSpace:
+    elif type(search_space) is ConfigurationSpace:
         cs = search_space
     else:
         raise ValueError(

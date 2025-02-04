@@ -1,7 +1,8 @@
-import gymnasium as gym
-import torch
-import numpy as np
 import shutil
+
+import gymnasium as gym
+import numpy as np
+import torch
 
 
 class DummyEnv(gym.Env):
@@ -41,6 +42,5 @@ class DummyModel:
         return torch.tensor(fake_qs)
 
 
-def clean(logger):
-    logger.close()
-    shutil.rmtree(logger.log_dir.parents[0], ignore_errors=False, onerror=None)
+def clean(path):
+    shutil.rmtree(path, ignore_errors=False, onerror=None)

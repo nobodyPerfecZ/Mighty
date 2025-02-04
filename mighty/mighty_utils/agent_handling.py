@@ -1,5 +1,5 @@
-from omegaconf import DictConfig
 import hydra
+from omegaconf import DictConfig
 
 
 def retrieve_class(cls: str | DictConfig | type, default_cls: type) -> type:

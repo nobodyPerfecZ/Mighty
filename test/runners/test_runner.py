@@ -1,10 +1,12 @@
 from __future__ import annotations
-import pytest
+
 import shutil
+
+import pytest
 from omegaconf import OmegaConf
-from mighty.mighty_runners import MightyRunner, MightyOnlineRunner
+
 from mighty.mighty_agents import MightyAgent
-from mighty.mighty_utils.logger import Logger
+from mighty.mighty_runners import MightyOnlineRunner, MightyRunner
 from mighty.mighty_utils.wrappers import PufferlibToGymAdapter
 
 
@@ -23,7 +25,7 @@ class TestMightyRunner:
             "checkpoint": None,
             "save_model_every_n_steps": 5e5,
             "num_steps": 100,
-            "env": "pufferlib.environments.ocean.bandit",
+            "env": "pufferlib.ocean.bandit",
             "env_kwargs": {},
             "env_wrappers": [],
             "num_envs": 1,
@@ -53,25 +55,22 @@ class TestMightyRunner:
 
     def test_init(self):
         runner = MightyOnlineRunner(self.runner_config)
-        assert isinstance(
-            runner, MightyRunner
-        ), "MightyOnlineRunner should be an instance of MightyRunner"
-        assert isinstance(
-            runner.agent, MightyAgent
-        ), "MightyOnlineRunner should have a MightyAgent"
-        assert isinstance(
-            runner.logger, Logger
-        ), "MightyOnlineRunner should have a Logger"
-        assert isinstance(
-            runner.agent.eval_env, PufferlibToGymAdapter
-        ), "Eval env should be a PufferlibToGymAdapter"
+        assert isinstance(runner, MightyRunner), (
+            "MightyOnlineRunner should be an instance of MightyRunner"
+        )
+        assert isinstance(runner.agent, MightyAgent), (
+            "MightyOnlineRunner should have a MightyAgent"
+        )
+        assert isinstance(runner.agent.eval_env, PufferlibToGymAdapter), (
+            "Eval env should be a PufferlibToGymAdapter"
+        )
         assert runner.agent.env is not None, "Env should not be None"
-        assert (
-            runner.eval_every_n_steps == self.runner_config.eval_every_n_steps
-        ), "Eval every n steps should be set"
-        assert (
-            runner.num_steps == self.runner_config.num_steps
-        ), "Num steps should be set"
+        assert runner.eval_every_n_steps == self.runner_config.eval_every_n_steps, (
+            "Eval every n steps should be set"
+        )
+        assert runner.num_steps == self.runner_config.num_steps, (
+            "Num steps should be set"
+        )
 
     def test_train(self):
         runner = MightyOnlineRunner(self.runner_config)
@@ -90,22 +89,12 @@ class TestMightyRunner:
         with pytest.raises(AttributeError):
             runner.evaluate(alternate_env)
 
-    def test_close(self):
-        runner = MightyOnlineRunner(self.runner_config)
-        assert (
-            not runner.logger.reward_log_file.closed
-        ), "Reward log file should be open"
-        assert not runner.logger.eval_log_file.closed, "Eval log file should be open"
-        runner.close()
-        assert runner.logger.reward_log_file.closed, "Reward log file should be closed"
-        assert runner.logger.eval_log_file.closed, "Eval log file should be closed"
-
     def test_run(self):
         runner = MightyOnlineRunner(self.runner_config)
         train_results, eval_results = runner.run()
         assert isinstance(train_results, dict), "Train results should be a dictionary"
         assert isinstance(eval_results, dict), "Eval results should be a dictionary"
-        assert (
-            "mean_eval_reward" in eval_results
-        ), "Eval results should have mean_eval_reward"
+        assert "mean_eval_reward" in eval_results, (
+            "Eval results should have mean_eval_reward"
+        )
         shutil.rmtree("test_runner")

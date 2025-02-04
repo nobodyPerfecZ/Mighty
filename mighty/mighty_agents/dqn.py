@@ -3,25 +3,25 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Any, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import dill  # type: ignore
 import numpy as np
 import torch
-from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
+from omegaconf import OmegaConf
+
+from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class, update_buffer
 from mighty.mighty_exploration import EpsilonGreedy, MightyExplorationPolicy
 from mighty.mighty_models import DQN
-from mighty.mighty_update import DoubleQLearning, QLearning
-from omegaconf import OmegaConf
 from mighty.mighty_replay import TransitionBatch
+from mighty.mighty_update import DoubleQLearning, QLearning
 
 if TYPE_CHECKING:
-    from mighty.mighty_replay import MightyReplay
-    from mighty.mighty_utils.logger import Logger
-    from mighty.mighty_utils.types import TypeKwargs
     from omegaconf import DictConfig
 
+    from mighty.mighty_replay import MightyReplay
     from mighty.mighty_utils.env_handling import MIGHTYENV
+    from mighty.mighty_utils.types import TypeKwargs
 
 
 class MightyDQNAgent(MightyAgent):
@@ -37,9 +37,9 @@ class MightyDQNAgent(MightyAgent):
 
     def __init__(
         self,
+        output_dir: str,
         # MightyAgent Args
         env: MIGHTYENV,  # type: ignore
-        logger: Logger,
         seed: int | None = None,
         eval_env: MIGHTYENV = None,  # type: ignore
         learning_rate: float = 0.01,
@@ -48,7 +48,6 @@ class MightyDQNAgent(MightyAgent):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_tensorboard: bool = False,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
         replay_buffer_class: str | DictConfig | type[MightyReplay] | None = None,
@@ -73,7 +72,6 @@ class MightyDQNAgent(MightyAgent):
         Creates all relevant class variables and calls agent-specific init function
 
         :param env: Train environment
-        :param logger: Mighty logger
         :param eval_env: Evaluation environment
         :param learning_rate: Learning rate for training
         :param epsilon: Exploration factor for training
@@ -133,7 +131,7 @@ class MightyDQNAgent(MightyAgent):
 
         super().__init__(
             env=env,
-            logger=logger,
+            output_dir=output_dir,
             seed=seed,
             eval_env=eval_env,
             learning_rate=learning_rate,
@@ -141,7 +139,6 @@ class MightyDQNAgent(MightyAgent):
             batch_size=batch_size,
             learning_starts=learning_starts,
             render_progress=render_progress,
-            log_tensorboard=log_tensorboard,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
             replay_buffer_class=replay_buffer_class,
@@ -149,6 +146,12 @@ class MightyDQNAgent(MightyAgent):
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
         )
+
+        self.loss_buffer = {
+            "Update/loss": [],
+            "Update/td_errors": [],
+            "step": [],
+        }
 
     @property
     def value_function(self) -> DQN:
@@ -211,13 +214,15 @@ class MightyDQNAgent(MightyAgent):
         )
 
         metrics_q = self.qlearning.apply_update(preds, targets)  # type: ignore
-        metrics_q["Q-Update/td_targets"] = targets.detach().numpy()
-        metrics_q["Q-Update/td_errors"] = (targets - preds).detach().numpy()
-        self.logger.log(
-            "batch_predictions", preds.mean(axis=1).detach().numpy().tolist()
-        )
-        self.logger.log("td_error", metrics_q["Q-Update/td_errors"].mean().item())
-        self.logger.log("loss", metrics_q["Q-Update/loss"])
+        metrics_q["Update/td_targets"] = targets.detach().numpy()
+        metrics_q["Update/td_errors"] = (targets - preds).detach().numpy()
+        loss_stats = {
+            "step": self.steps,
+            "Update/loss": metrics_q["Update/loss"],
+            "Update/td_errors": metrics_q["Update/td_errors"].mean().item(),
+            "batch_predictions": preds.mean(axis=1).detach().numpy().tolist(),
+        }
+        self.loss_buffer = update_buffer(self.loss_buffer, loss_stats)
 
         # sync target model
         if self.q_target is not None:

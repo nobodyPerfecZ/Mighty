@@ -1,9 +1,9 @@
+from typing import Tuple
+
 import torch
 import torch.nn as nn
+
 from mighty.mighty_models.networks import make_feature_extractor
-
-
-from typing import Tuple
 
 
 class PPOModel(nn.Module):

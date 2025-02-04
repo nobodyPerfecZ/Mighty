@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import torch
-import numpy as np
-from typing import TYPE_CHECKING, Tuple, Dict
-from mighty.mighty_runners.mighty_runner import MightyRunner
-from mighty.mighty_agents.base_agent import retrieve_class
-
 import importlib.util as iutil
+from typing import TYPE_CHECKING, Dict, Tuple
+
+import numpy as np
+import torch
+
+from mighty.mighty_agents.base_agent import retrieve_class
+from mighty.mighty_runners.mighty_runner import MightyRunner
 
 spec = iutil.find_spec("evosax")
 found = spec is not None
 if found:
-    from evosax import FitnessShaper, xNES  # type: ignore
     import jax
+    from evosax import FitnessShaper, xNES  # type: ignore
     from jax import numpy as jnp
 else:
     import warnings
@@ -89,6 +90,5 @@ class MightyESRunner(MightyRunner):
                 eval_rewards.append(eval_results["mean_eval_reward"])
             fitness = self.fit_shaper.apply(x, jnp.array(eval_rewards))
             es_state = self.es.tell(x, fitness, es_state)
-        self.close()
         eval_results = self.evaluate()
         return {"step": self.iterations}, eval_results

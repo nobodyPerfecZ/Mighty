@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import shutil
-from omegaconf import OmegaConf
 from copy import deepcopy
-from mighty.mighty_runners import MightyRunner, MightyESRunner
+
+from omegaconf import OmegaConf
+
 from mighty.mighty_agents import MightyAgent
-from mighty.mighty_utils.logger import Logger
+from mighty.mighty_runners import MightyESRunner, MightyRunner
 from mighty.mighty_utils.wrappers import PufferlibToGymAdapter
 
 
@@ -29,7 +31,7 @@ class TestMightyNESRunner:
             "checkpoint": None,
             "save_model_every_n_steps": 5e5,
             "num_steps": 100,
-            "env": "pufferlib.environments.ocean.bandit",
+            "env": "pufferlib.ocean.bandit",
             "env_kwargs": {},
             "env_wrappers": [],
             "num_envs": 1,
@@ -59,16 +61,15 @@ class TestMightyNESRunner:
 
     def test_init(self):
         runner = MightyESRunner(self.runner_config)
-        assert isinstance(
-            runner, MightyRunner
-        ), "MightyNESRunner should be an instance of MightyRunner"
-        assert isinstance(
-            runner.agent, MightyAgent
-        ), "MightyNESRunner should have a MightyAgent"
-        assert isinstance(runner.logger, Logger), "MightyNESRunner should have a Logger"
-        assert isinstance(
-            runner.agent.eval_env, PufferlibToGymAdapter
-        ), "Eval env should be a PufferlibToGymAdapter"
+        assert isinstance(runner, MightyRunner), (
+            "MightyNESRunner should be an instance of MightyRunner"
+        )
+        assert isinstance(runner.agent, MightyAgent), (
+            "MightyNESRunner should have a MightyAgent"
+        )
+        assert isinstance(runner.agent.eval_env, PufferlibToGymAdapter), (
+            "Eval env should be a PufferlibToGymAdapter"
+        )
         assert runner.agent.env is not None, "Env should be set"
         assert runner.iterations is not None, "Iterations should be set"
         assert runner.es is not None, "ES should be set"
@@ -84,18 +85,18 @@ class TestMightyNESRunner:
         new_params = runner.agent.parameters
         assert isinstance(train_results, dict), "Train results should be a dictionary"
         assert isinstance(eval_results, dict), "Eval results should be a dictionary"
-        assert (
-            "mean_eval_reward" in eval_results
-        ), "Mean eval reward should be in eval results"
+        assert "mean_eval_reward" in eval_results, (
+            "Mean eval reward should be in eval results"
+        )
         param_equals = [o == p for o, p in zip(old_params, new_params)]
         for params in param_equals:
-            assert not all(
-                params.flatten()
-            ), "Parameters should have changed in training"
-        assert (
-            not old_lr == runner.agent.learning_rate
-        ), "Learning rate should have changed in training"
-        assert (
-            not old_batch_size == runner.agent._batch_size
-        ), "Batch size should have changed in training"
+            assert not all(params.flatten()), (
+                "Parameters should have changed in training"
+            )
+        assert not old_lr == runner.agent.learning_rate, (
+            "Learning rate should have changed in training"
+        )
+        assert not old_batch_size == runner.agent._batch_size, (
+            "Batch size should have changed in training"
+        )
         shutil.rmtree("test_nes_runner")

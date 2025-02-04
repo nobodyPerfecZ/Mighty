@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mighty.mighty_agents import VALID_AGENT_TYPES, AGENT_CLASSES
-
+from mighty.mighty_agents import AGENT_CLASSES, VALID_AGENT_TYPES
 
 if TYPE_CHECKING:
     from mighty.mighty_agents.base_agent import MightyAgent

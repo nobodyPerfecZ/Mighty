@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import gymnasium as gym
 import numpy as np
+
 from mighty.mighty_meta.mighty_component import MightyMetaComponent
 
 

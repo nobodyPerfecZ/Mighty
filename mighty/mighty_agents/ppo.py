@@ -1,25 +1,25 @@
 from pathlib import Path
-from typing import Optional, Dict, List, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
-from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
-from mighty.mighty_exploration import StochasticPolicy, MightyExplorationPolicy
-from mighty.mighty_models.ppo import PPOModel
-from mighty.mighty_update.ppo_update import PPOUpdate
-from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer
-from mighty.mighty_utils.logger import Logger
-from mighty.mighty_replay import RolloutBatch
-from mighty.mighty_utils.env_handling import MIGHTYENV
 from omegaconf import DictConfig
+
+from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
+from mighty.mighty_exploration import MightyExplorationPolicy, StochasticPolicy
+from mighty.mighty_models.ppo import PPOModel
+from mighty.mighty_replay import RolloutBatch
+from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer
+from mighty.mighty_update.ppo_update import PPOUpdate
+from mighty.mighty_utils.env_handling import MIGHTYENV
 from mighty.mighty_utils.types import TypeKwargs
 
 
 class MightyPPOAgent(MightyAgent):
     def __init__(
         self,
+        output_dir,
         env: MIGHTYENV,  # type: ignore
-        logger: Logger,
         eval_env: Optional[MIGHTYENV] = None,  # type: ignore
         seed: Optional[int] = None,
         learning_rate: float = 0.001,
@@ -27,7 +27,6 @@ class MightyPPOAgent(MightyAgent):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_tensorboard: bool = False,
         log_wandb: bool = False,
         wandb_kwargs: Optional[Dict] = None,
         rollout_buffer_class: Optional[
@@ -54,7 +53,6 @@ class MightyPPOAgent(MightyAgent):
         Creates all relevant class variables and calls the agent-specific init function.
 
         :param env: Train environment
-        :param logger: Mighty logger
         :param eval_env: Evaluation environment
         :param seed: Seed for random number generators
         :param learning_rate: Learning rate for training
@@ -104,14 +102,13 @@ class MightyPPOAgent(MightyAgent):
 
         super().__init__(
             env=env,
-            logger=logger,
+            output_dir=output_dir,
             seed=seed,
             eval_env=eval_env,
             learning_rate=learning_rate,
             batch_size=batch_size,
             learning_starts=learning_starts,
             render_progress=render_progress,
-            log_tensorboard=log_tensorboard,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
             replay_buffer_class=rollout_buffer_class,
@@ -119,6 +116,13 @@ class MightyPPOAgent(MightyAgent):
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
         )
+
+        self.loss_buffer = {
+            "Update/policy_loss": [],
+            "Update/value_loss": [],
+            "Update/entropy": [],
+            "step": [],
+        }
 
     def _initialize_agent(self) -> None:
         """Initialize PPO specific components."""
@@ -184,6 +188,10 @@ class MightyPPOAgent(MightyAgent):
         for _ in range(self.n_gradient_steps):
             for batch in self.buffer.sample(self._batch_size):  # type: ignore
                 metrics.update(self.update_fn.update(batch))  # type: ignore
+
+        for key, value in metrics.items():
+            self.loss_buffer[key].append(value)
+        self.loss_buffer["step"].append(self.steps)
 
         self.buffer.reset()  # type: ignore
 

@@ -2,24 +2,57 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict
-from abc import ABC
+
 import numpy as np
+import pandas as pd
 import torch
 import wandb
-
-from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
-from mighty.mighty_utils.env_handling import CARLENV, DACENV, MIGHTYENV
-from mighty.mighty_exploration import MightyExplorationPolicy
-from mighty.mighty_utils.agent_handling import retrieve_class
 from omegaconf import DictConfig
 from rich import print
 from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingColumn
 
+from mighty.mighty_exploration import MightyExplorationPolicy
+from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
+from mighty.mighty_utils.agent_handling import retrieve_class
+from mighty.mighty_utils.env_handling import CARLENV, DACENV, MIGHTYENV
+
 if TYPE_CHECKING:
-    from mighty.mighty_utils.logger import Logger
     from mighty.mighty_utils.types import TypeKwargs
+
+
+def update_buffer(buffer, new_data):
+    for k in buffer.keys():
+        buffer[k].append(new_data[k])
+    return buffer
+
+
+def log_to_file(output_dir, result_buffer, hp_buffer, eval_buffer, loss_buffer):
+    if loss_buffer is not None:
+        loss_df = pd.DataFrame(loss_buffer)
+        if (Path(output_dir) / "losses.csv").exists():
+            (Path(output_dir) / "losses.csv").unlink()
+        loss_df.to_csv(Path(output_dir) / "losses.csv")
+
+    if (Path(output_dir) / "results.npz").exists():
+        (Path(output_dir) / "results.npz").unlink()
+    np.savez(Path(output_dir) / "results.npz", result_buffer)
+    result_df = pd.DataFrame(result_buffer)
+    if (Path(output_dir) / "results.csv").exists():
+        (Path(output_dir) / "results.csv").unlink()
+    result_df.to_csv(Path(output_dir) / "results.csv")
+
+    hp_df = pd.DataFrame(hp_buffer)
+    if (Path(output_dir) / "hyperparameters.csv").exists():
+        (Path(output_dir) / "hyperparameters.csv").unlink()
+    hp_df.to_csv(Path(output_dir) / "hyperparameters.csv")
+
+    eval_df = pd.DataFrame(eval_buffer)
+    if (Path(output_dir) / "eval_results.csv").exists():
+        (Path(output_dir) / "eval_results.csv").unlink()
+    eval_df.to_csv(Path(output_dir) / "eval_results.csv")
 
 
 class MightyAgent(ABC):
@@ -27,8 +60,8 @@ class MightyAgent(ABC):
 
     def __init__(  # noqa: PLR0915, PLR0912
         self,
+        output_dir,
         env: MIGHTYENV,  # type: ignore
-        logger: Logger,
         seed: int | None = None,
         eval_env: MIGHTYENV | None = None,  # type: ignore
         learning_rate: float = 0.01,
@@ -36,7 +69,6 @@ class MightyAgent(ABC):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_tensorboard: bool = False,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
         replay_buffer_class: str
@@ -54,7 +86,6 @@ class MightyAgent(ABC):
         Creates all relevant class variables and calls agent-specific init function
 
         :param env: Train environment
-        :param logger: Mighty logger
         :param eval_env: Evaluation environment
         :param learning_rate: Learning rate for training
         :param epsilon: Exploration factor for training
@@ -104,7 +135,7 @@ class MightyAgent(ABC):
         self.buffer_class = replay_buffer_class
         self.buffer_kwargs = replay_buffer_kwargs
 
-        output_dir = logger.log_dir if logger is not None else None
+        self.output_dir = output_dir
         self.verbose = verbose
 
         self.env = env
@@ -113,7 +144,6 @@ class MightyAgent(ABC):
         else:
             self.eval_env = eval_env
 
-        self.logger = logger
         self.render_progress = render_progress
         self.output_dir = output_dir
         if self.output_dir is not None:
@@ -123,31 +153,61 @@ class MightyAgent(ABC):
         self.meta_modules = {}
         for i, m in enumerate(meta_methods):
             meta_class = retrieve_class(cls=m, default_cls=None)  # type: ignore
-            assert (
-                meta_class is not None
-            ), f"Class {m} not found, did you specify the correct loading path?"
+            assert meta_class is not None, (
+                f"Class {m} not found, did you specify the correct loading path?"
+            )
             kwargs: Dict = {}
             if len(meta_kwargs) > i:
                 kwargs = meta_kwargs[i]
             self.meta_modules[meta_class.__name__] = meta_class(**kwargs)
 
-        self.logger.log("Meta modules", list(self.meta_modules.keys()))
-
         self.last_state = None
         self.total_steps = 0
 
-        self.writer = None
-        if log_tensorboard and output_dir is not None:
-            from torch.utils.tensorboard import SummaryWriter
+        self.result_buffer = {
+            "seed": [],
+            "step": [],
+            "reward": [],
+            "action": [],
+            "state": [],
+            "next_state": [],
+            "terminated": [],
+            "truncated": [],
+            "mean_episode_reward": [],
+        }
 
-            self.writer = SummaryWriter(output_dir)
-            self.writer.add_scalar("hyperparameter/learning_rate", self.learning_rate)
-            self.writer.add_scalar("hyperparameter/batch_size", self._batch_size)
-            self.writer.add_scalar("hyperparameter/policy_epsilon", self._epsilon)
+        self.eval_buffer = {
+            "step": [],
+            "seed": [],
+            "eval_episodes": [],
+            "mean_eval_step_reward": [],
+            "mean_eval_reward": [],
+            "instance": [],
+        }
+
+        self.hp_buffer = {
+            "step": [],
+            "hp/lr": [],
+            "hp/pi_epsilon": [],
+            "hp/batch_size": [],
+            "hp/learning_starts": [],
+            "meta_modules": [],
+        }
+        self.loss_buffer = None
+        starting_hps = {
+            "step": 0,
+            "hp/lr": self.learning_rate,
+            "hp/pi_epsilon": self._epsilon,
+            "hp/batch_size": self._batch_size,
+            "hp/learning_starts": self._learning_starts,
+            "meta_modules": list(self.meta_modules.keys()),
+        }
+        self.hp_buffer = update_buffer(self.hp_buffer, starting_hps)
 
         self.log_wandb = log_wandb
         if log_wandb:
             wandb.init(**wandb_kwargs)
+            wandb.log(starting_hps)
 
         self.initialize_agent()
         self.steps = 0
@@ -177,10 +237,30 @@ class MightyAgent(ABC):
 
     def adapt_hps(self, metrics: Dict) -> None:
         """Set hyperparameters."""
+        old_hps = {
+            "step": self.steps,
+            "hp/lr": self.learning_rate,
+            "hp/pi_epsilon": self._epsilon,
+            "hp/batch_size": self._batch_size,
+            "hp/learning_starts": self._learning_starts,
+            "meta_modules": list(self.meta_modules.keys()),
+        }
         self.learning_rate = metrics["hp/lr"]
         self._epsilon = metrics["hp/pi_epsilon"]
         self._batch_size = metrics["hp/batch_size"]
         self._learning_starts = metrics["hp/learning_starts"]
+
+        updated_hps = {
+            "step": self.steps,
+            "hp/lr": self.learning_rate,
+            "hp/pi_epsilon": self._epsilon,
+            "hp/batch_size": self._batch_size,
+            "hp/learning_starts": self._learning_starts,
+            "meta_modules": list(self.meta_modules.keys()),
+        }
+        # TODO: this probably always fails
+        if old_hps != updated_hps:
+            self.hp_buffer = update_buffer(self.hp_buffer, updated_hps)
 
     def make_checkpoint_dir(self, t: int) -> None:
         """Checkpoint model.
@@ -188,8 +268,7 @@ class MightyAgent(ABC):
         :param T: Current timestep
         :return:
         """
-        logdir = self.logger.log_dir
-        self.upper_checkpoint_dir = Path(logdir) / Path("checkpoints")
+        self.upper_checkpoint_dir = Path(self.output_dir) / Path("checkpoints")
         if not self.upper_checkpoint_dir.exists():
             Path(self.upper_checkpoint_dir).mkdir()
         self.checkpoint_dir = self.upper_checkpoint_dir / f"{t}"
@@ -218,9 +297,6 @@ class MightyAgent(ABC):
         metrics.update(agent_update_metrics)
         metrics = {k: np.array(v) for k, v in metrics.items()}
         metrics["step"] = self.steps
-
-        if self.writer is not None:
-            self.writer.add_scalars("training_metrics", metrics, global_step=self.steps)
 
         if self.log_wandb:
             wandb.log(metrics)
@@ -284,6 +360,8 @@ class MightyAgent(ABC):
                 episode_reward = np.zeros(curr_s.squeeze().shape[0])  # type: ignore
 
             last_episode_reward = episode_reward
+            if not torch.is_tensor(last_episode_reward):
+                last_episode_reward = torch.tensor(last_episode_reward).float()
             progress.update(steps_task, visible=True)
 
             # Main loop: rollouts, training and evaluation
@@ -310,18 +388,16 @@ class MightyAgent(ABC):
                 t = {
                     "seed": self.seed,
                     "step": self.steps,
-                    "reward": reward.tolist(),
-                    "action": action.tolist(),
-                    "state": curr_s.tolist(),
-                    "next_state": next_s.tolist(),
-                    "terminated": terminated.tolist(),
-                    "truncated": truncated.tolist(),
-                    "episode_reward": last_episode_reward,
+                    "reward": reward,
+                    "action": action,
+                    "state": curr_s,
+                    "next_state": next_s,
+                    "terminated": terminated.astype(int),
+                    "truncated": truncated.astype(int),
+                    "mean_episode_reward": last_episode_reward.mean(),
                 }
                 metrics["episode_reward"] = episode_reward
-                self.logger.log_dict(t)
-                if self.writer is not None:
-                    self.writer.add_scalars("transition", t, global_step=self.steps)
+                self.result_buffer = update_buffer(self.result_buffer, t)
 
                 if self.log_wandb:
                     wandb.log(t)
@@ -347,7 +423,6 @@ class MightyAgent(ABC):
                 # End step
                 self.last_state = curr_s
                 curr_s = next_s
-                self.logger.next_step()
 
                 # Evaluate
                 if eval_every_n_steps and steps_since_eval >= eval_every_n_steps:
@@ -373,6 +448,13 @@ class MightyAgent(ABC):
                     and self.steps % save_model_every_n_steps == 0
                 ):
                     self.save(self.steps)
+                    log_to_file(
+                        self.output_dir,
+                        self.result_buffer,
+                        self.hp_buffer,
+                        self.eval_buffer,
+                        self.loss_buffer,
+                    )
 
                 if np.any(dones):
                     last_episode_reward = np.where(  # type: ignore
@@ -384,7 +466,7 @@ class MightyAgent(ABC):
                         instance = self.env.instance  # type: ignore
                     else:
                         instance = None
-                    self.logger.next_episode(instance)
+                    metrics["instance"] = instance
                     episodes += 1
                     for k in self.meta_modules:
                         self.meta_modules[k].post_episode(metrics)
@@ -401,6 +483,13 @@ class MightyAgent(ABC):
                     # Meta Module hooks
                     for k in self.meta_modules:
                         self.meta_modules[k].pre_episode(metrics)
+        log_to_file(
+            self.output_dir,
+            self.result_buffer,
+            self.hp_buffer,
+            self.eval_buffer,
+            self.loss_buffer,
+        )
         return metrics
 
     def apply_config(self, config: Dict) -> None:
@@ -425,7 +514,6 @@ class MightyAgent(ABC):
         :return:
         """
 
-        self.logger.set_eval(True)
         terminated, truncated = False, False
         options: Dict = {}
         if eval_env is None:
@@ -442,25 +530,23 @@ class MightyAgent(ABC):
             steps += 1 * (1 - mask)
             dones = np.logical_or(terminated, truncated)
             mask = np.where(dones, 1, mask)
-            self.logger.next_step()
 
         eval_env.close()  # type: ignore
 
         if isinstance(self.eval_env, DACENV) or isinstance(self.env, CARLENV):
             instance = eval_env.instance  # type: ignore
         else:
-            instance = None
-        self.logger.next_episode(instance)
-        self.logger.write()
+            instance = "None"
 
         eval_metrics = {
             "step": self.steps,
+            "seed": self.seed,
             "eval_episodes": np.array(rewards) / steps,
             "mean_eval_step_reward": np.mean(rewards) / steps,
             "mean_eval_reward": np.mean(rewards),
+            "instance": instance,
         }
-        if instance is not None:
-            eval_metrics["instance"] = instance
+        self.eval_buffer = update_buffer(self.eval_buffer, eval_metrics)
 
         # FIXME: this is the ugly I'm talking about
         if self.verbose:
@@ -474,22 +560,16 @@ class MightyAgent(ABC):
             )
             print(
                 f"""Evaluation performance per step after {self.steps} steps:
-                {np.round(np.mean(rewards/ steps), decimals=2)}"""
+                {np.round(np.mean(rewards / steps), decimals=2)}"""
             )
             print(
                 "------------------------------------------------------------------------------"
             )
             print("")
 
-        self.logger.log_dict(eval_metrics)
-
-        if self.writer is not None:
-            self.writer.add_scalars("eval", eval_metrics)
-
         if self.log_wandb:
             wandb.log(eval_metrics)
 
-        self.logger.set_eval(False)
         return eval_metrics
 
     def save(self, t: int) -> None:

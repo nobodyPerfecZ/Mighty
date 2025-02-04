@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import pytest
 import torch
+
 from mighty.mighty_exploration import MightyExplorationPolicy
-from utils import DummyModel
+from mighty.mighty_utils.test_helpers import DummyModel
 
 
 class TestPolicy:
@@ -28,16 +29,16 @@ class TestPolicy:
             policy(state)
 
         greedy_actions, qvals = policy(state, evaluate=True, return_logp=True)
-        assert all(
-            greedy_actions == 1
-        ), f"Greedy actions should be 1: {greedy_actions}///{qvals}"
+        assert all(greedy_actions == 1), (
+            f"Greedy actions should be 1: {greedy_actions}///{qvals}"
+        )
         assert qvals.shape[-1] == 5, "Q-value shape should not be changed."
         assert len(qvals) == len(state), "Q-value length should not be changed."
 
         policy = self.get_policy(action=3)
         greedy_actions, qvals = policy(state, evaluate=True, return_logp=True)
-        assert all(
-            greedy_actions == 3
-        ), f"Greedy actions should be 3: {greedy_actions}///{qvals}"
+        assert all(greedy_actions == 3), (
+            f"Greedy actions should be 3: {greedy_actions}///{qvals}"
+        )
         assert qvals.shape[-1] == 5, "Q-value shape should not be changed."
         assert len(qvals) == len(state), "Q-value length should not be changed."

@@ -1,9 +1,8 @@
 from typing import Dict
 
-from .mighty_runner import MightyRunner
-from .mighty_online_runner import MightyOnlineRunner
 from .mighty_maml_runner import MightyMAMLRunner, MightyTRPOMAMLRunner
-
+from .mighty_online_runner import MightyOnlineRunner
+from .mighty_runner import MightyRunner
 
 VALID_RUNNER_TYPES = ["standard", "default", "online"]
 RUNNER_CLASSES: Dict[str, type[MightyRunner]] = {
@@ -12,10 +11,14 @@ RUNNER_CLASSES: Dict[str, type[MightyRunner]] = {
     "online": MightyOnlineRunner,
 }
 
-import importlib.util as iutil  # noqa: E402
+try:
+    import evosax  # noqa: F401
 
-spec = iutil.find_spec("evosax")
-found = spec is not None
+    found = True
+except ImportError:
+    print("evosax not found, to use ES runners please install mighty[es].")
+    found = False
+
 if found:
     from .mighty_es_runner import MightyESRunner
 

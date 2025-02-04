@@ -1,4 +1,5 @@
 from torch import nn
+
 from mighty.mighty_models.networks import make_feature_extractor
 
 

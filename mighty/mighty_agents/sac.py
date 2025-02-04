@@ -1,26 +1,24 @@
 from pathlib import Path
-from typing import Optional, Dict, List, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
-from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
-from mighty.mighty_exploration import StochasticPolicy, MightyExplorationPolicy
-from mighty.mighty_update import SACUpdate
-from mighty.mighty_models.sac import SACModel
-from mighty.mighty_replay import MightyReplay
-from mighty.mighty_utils.logger import Logger
-
-from mighty.mighty_replay import TransitionBatch
 from omegaconf import DictConfig
-from mighty.mighty_utils.types import TypeKwargs
+
+from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class, update_buffer
+from mighty.mighty_exploration import MightyExplorationPolicy, StochasticPolicy
+from mighty.mighty_models.sac import SACModel
+from mighty.mighty_replay import MightyReplay, TransitionBatch
+from mighty.mighty_update import SACUpdate
 from mighty.mighty_utils.env_handling import MIGHTYENV
+from mighty.mighty_utils.types import TypeKwargs
 
 
 class MightySACAgent(MightyAgent):
     def __init__(
         self,
+        output_dir: Path,
         env: MIGHTYENV,  # type: ignore
-        logger: Logger,
         eval_env: MIGHTYENV | None = None,  # type: ignore
         seed: Optional[int] = None,
         learning_rate: float = 0.001,
@@ -28,7 +26,6 @@ class MightySACAgent(MightyAgent):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_tensorboard: bool = False,
         log_wandb: bool = False,
         wandb_kwargs: Optional[Dict] = None,
         replay_buffer_class: Optional[Type[MightyReplay]] = MightyReplay,
@@ -51,7 +48,6 @@ class MightySACAgent(MightyAgent):
         Creates all relevant class variables and calls the agent-specific init function.
 
         :param env: Train environment
-        :param logger: Mighty logger
         :param eval_env: Evaluation environment
         :param seed: Seed for random number generators
         :param learning_rate: Learning rate for training
@@ -59,7 +55,6 @@ class MightySACAgent(MightyAgent):
         :param batch_size: Batch size for training
         :param learning_starts: Number of steps before learning starts
         :param render_progress: Whether to render progress
-        :param log_tensorboard: Log to TensorBoard as well as to file
         :param log_wandb: Log to Weights and Biases
         :param wandb_kwargs: Arguments for Weights and Biases logging
         :param replay_buffer_class: Replay buffer class
@@ -96,14 +91,13 @@ class MightySACAgent(MightyAgent):
 
         super().__init__(
             env=env,
-            logger=logger,
+            output_dir=output_dir,
             seed=seed,
             eval_env=eval_env,
             learning_rate=learning_rate,
             batch_size=batch_size,
             learning_starts=learning_starts,
             render_progress=render_progress,
-            log_tensorboard=log_tensorboard,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
             replay_buffer_class=replay_buffer_class,
@@ -111,6 +105,13 @@ class MightySACAgent(MightyAgent):
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
         )
+
+        self.loss_buffer = {
+            "Update/q_loss1": [],
+            "Update/q_loss2": [],
+            "Update/policy_loss": [],
+            "step": [],
+        }
 
     def _initialize_agent(self) -> None:
         """Initialize SAC specific components."""
@@ -152,10 +153,13 @@ class MightySACAgent(MightyAgent):
             metrics_sac.update(self.update_fn.update(transition_batch))  # type: ignore
 
         # Log metrics
-        self.logger.log("Update/q_loss1", metrics_sac["q_loss1"])
-        self.logger.log("Update/q_loss2", metrics_sac["q_loss2"])
-        self.logger.log("Update/policy_loss", metrics_sac["policy_loss"])
-
+        loss_stats = {
+            "Update/q_loss1": metrics_sac["q_loss1"],
+            "Update/q_loss2": metrics_sac["q_loss2"],
+            "Update/policy_loss": metrics_sac["policy_loss"],
+            "step": self.steps,
+        }
+        self.loss_buffer = update_buffer(self.loss_buffer, loss_stats)
         return metrics_sac
 
     def process_transition(  # type: ignore
