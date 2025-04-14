@@ -10,7 +10,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB)
 ![License](https://img.shields.io/badge/License-BSD3-orange)
 [![Test](https://github.com/automl/Mighty/actions/workflows/test.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/test.yaml)
-[![Doc Status](https://github.com/automl/Mighty/actions/workflows/docs.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/docs_test.yaml)
+[![Doc Status](https://github.com/automl/Mighty/actions/workflows/docs_test.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/docs_test.yaml)
     
 </div>
 
