@@ -85,7 +85,7 @@ docs-build-only:
 	mkdocs build --clean --strict
 
 docs-deploy:
-	mkdocs gh-deploy
+	mkdocs gh-deploy --force
 
 # Publish to testpypi
 # Will echo the commands to actually publish to be run to publish to actual PyPi
