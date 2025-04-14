@@ -86,6 +86,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#running-meta-methods" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -529,6 +534,19 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Mighty Basics
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -540,6 +558,50 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-meta-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Meta-Methods
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementing-new-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementing New Components
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-different-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combining Different Ideas
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1952,7 +2014,26 @@
 
   <h1>Mighty Basics</h1>
 
-
+<p>There are a few different ways you can use Mighty:</p>
+<h3 id="running-meta-methods">Running Meta-Methods<a class="headerlink" href="#running-meta-methods" title="Permanent link">#</a></h3>
+<p>This is the easiest part. We have several algorithms and meta-methods implemented in Mighty and you should be able to run them directly on any environment of your choosing. The most difficult part will likely be the configuration of each method since they might require specific keywords or are only compatible with a given base algorithm. So you will likely want to read up on whatever method you choose. Then you also need to know if your method is of the runner or meta module type. Each have their own configuration keyword. An example for using a specific runner is:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>mighty/run_mighty<span class="w"> </span><span class="nv">runner</span><span class="o">=</span>es<span class="w"> </span><span class="nv">popsize</span><span class="o">=</span><span class="m">5</span><span class="w"> </span><span class="nv">iterations</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">es</span><span class="o">=</span>evosax.CMA_ES<span class="w"> </span><span class="nv">search_targets</span><span class="o">=[</span><span class="s2">&quot;learning_rate&quot;</span>,<span class="w"> </span><span class="s2">&quot;_batch_size&quot;</span><span class="o">]</span><span class="w"> </span><span class="nv">rl_train_agent</span><span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+This will use the evosax CMA-ES implementation with population size 5 to optimize the learning rate and batch size in 100 iterations. Meta modules, on the other hand, use a different keyword:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>mighty/run_mighty.py<span class="w"> </span>+algorithm_kwargs.meta_methods<span class="o">=[</span>mighty.mighty_meta.PrioritizedLevelReplay<span class="o">]</span>
+</code></pre></div>
+This meta methods list collects all meta modules in the order they should be used. So while you can't use multiple runners, you can use layers of meta modules. </p>
+<h3 id="implementing-new-components">Implementing New Components<a class="headerlink" href="#implementing-new-components" title="Permanent link">#</a></h3>
+<p>Of course Mighty currently only supports a limited amount of methods. This is where you come in! It should be fairly easy for you to add your own. We recommend following these steps:
+1. What are you adding? A runner, meta module, exploration policy, buffer, update variation or model? Make sure you choose the best level to implement your idea in.
+2. Implement your method using the abstract class and existing methods as templates.
+3. Plug your class into your Mighty config file. This works by replacing the default value with the import path of your custom class.
+4. Run the algorithm.</p>
+<p>Since you are passing the place from which to import your new class, you do not need to work within the Mighty codebase directly, but keep your changes separate. This way you can add several new methods to Mighty without copying the code. </p>
+<h3 id="combining-different-ideas">Combining Different Ideas<a class="headerlink" href="#combining-different-ideas" title="Permanent link">#</a></h3>
+<p>You can combine different approaches with Mighty by varying the runner, exploration, buffer, update class and network architecture and combining them with an arbitrary number of meta modules.
+At this point, configuration might become very difficult. We recommend that you take a close look at how to use different hydra configuration files to separately configure each of your methods so that you can keep track of everything.
+Depending on what exactly you want to do, it can make sense to keep separate configuration files for each variation you make. This can be confusing, especially if you haven't worked with hydra before, so we recommed you take the time to focus on configurations when attempting combinations of several methods.</p>
 
 
 

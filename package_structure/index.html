@@ -86,6 +86,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#for-multiple-inner-runs-mighty-runners" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -507,6 +512,19 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Mighty Overview
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -518,6 +536,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#for-multiple-inner-runs-mighty-runners" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Multiple Inner Runs: Mighty Runners
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-in-the-loop-methods-mighty-meta-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      For In-The-Loop Methods: Mighty Meta Modules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#algorithm-components-mighty-exploration-buffers-and-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Algorithm Components: Mighty Exploration, Buffers and Updates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inside-the-agent-mighty-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inside the Agent: Mighty Models
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1952,7 +2023,80 @@
 
   <h1>Mighty Overview</h1>
 
-
+<p>Mighty is desined to be highly modular, enabling access to the RL loop on different levels. This means it's not designed to be the absolute fastest way to run RL, but the most convenient one to apply different sorts of RL, MetaRL and AutoRL methods. As such, there are a few things you should know about the structure of Mighty.</p>
+<h3 id="for-multiple-inner-runs-mighty-runners">For Multiple Inner Runs: Mighty Runners<a class="headerlink" href="#for-multiple-inner-runs-mighty-runners" title="Permanent link">#</a></h3>
+<p>Mighty uses runner classes to control the outer training loop. In the simplest case, a runner will just directly call the agent's train and evaluation functions without any changes:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        <span class="n">train_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">eval_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="k">return</span> <span class="n">train_results</span><span class="p">,</span> <span class="n">eval_results</span>
+</code></pre></div>
+This will result in a standard RL agent training run. Of course, we can at this point also run agents multiple times, make changes to their setup (hyperparameters, weights, environments) and integrate learning on this meta-level.
+A still fairly simple example is our ESRunner for outer loops with Evolutionary Strategies:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>        <span class="n">es_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">es</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterations</span><span class="p">):</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>            <span class="n">rng_ask</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>            <span class="n">x</span><span class="p">,</span> <span class="n">es_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">es</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">rng_ask</span><span class="p">,</span> <span class="n">es_state</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="n">eval_rewards</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>            <span class="k">for</span> <span class="n">individual</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_params</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">apply_parameters</span><span class="p">(</span><span class="n">individual</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_n_params</span><span class="p">])</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                    <span class="n">individual</span> <span class="o">=</span> <span class="n">individual</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">total_n_params</span> <span class="p">:]</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">search_targets</span><span class="p">):</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>                    <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>                        <span class="k">continue</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>                    <span class="n">new_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">individual</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>                    <span class="k">if</span> <span class="n">target</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;_batch_size&quot;</span><span class="p">,</span> <span class="s2">&quot;n_units&quot;</span><span class="p">]:</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>                        <span class="n">new_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">new_value</span><span class="p">))</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">new_value</span><span class="p">)</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_agent</span><span class="p">:</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_steps_per_iteration</span><span class="p">)</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>                <span class="n">eval_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>                <span class="n">eval_rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eval_results</span><span class="p">[</span><span class="s2">&quot;mean_eval_reward&quot;</span><span class="p">])</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>            <span class="n">fitness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_shaper</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eval_rewards</span><span class="p">))</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>            <span class="n">es_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">es</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fitness</span><span class="p">,</span> <span class="n">es_state</span><span class="p">)</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="n">eval_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterations</span><span class="p">},</span> <span class="n">eval_results</span>
+</code></pre></div>
+Here we can change all sorts of things about the agent, train in between or only evaluate and use the ES to get fresh inputs. Runner classes are defined with these multiple evaluations of RL tasks in mind, i.e. these classes will usually train multiple agents, reset their policies completely or otherwise start over at some point. </p>
+<h3 id="for-in-the-loop-methods-mighty-meta-modules">For In-The-Loop Methods: Mighty Meta Modules<a class="headerlink" href="#for-in-the-loop-methods-mighty-meta-modules" title="Permanent link">#</a></h3>
+<p>Not all Meta- or AutoRL methods operate in an outer loop, however. For the ones that configure training while it is still ongoing, we use the Mighty Meta Modules. 
+These are classes that maintain lists of function calls to make at different points in training:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Meta module init.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="sd">        :return:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_step_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_step_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_update_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_update_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_episode_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_episode_methods</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div>
+This gives meta modules a lot of flexibility of when to act upon training. Additionally, each of these function calls is given a "metrics" dictionary. This dictionary contains most, if not all, relevant information about training progress, e.g.:
+- the last transitions
+- the last losses, errors and predictions
+- policy, Q- and value-networks
+- hyperparameters</p>
+<p>This means meta modules can use everything from the current timestep to agent predictions. </p>
+<h3 id="algorithm-components-mighty-exploration-buffers-and-updates">Algorithm Components: Mighty Exploration, Buffers and Updates<a class="headerlink" href="#algorithm-components-mighty-exploration-buffers-and-updates" title="Permanent link">#</a></h3>
+<p>The Mighty algorithms themselves also have modules which can be easily switched. These are exploration policies, buffers and update classes. 
+Exploration policies and buffers furthermore have access to the same metrics dictionary as meta modules, meaning you can get creative as to what they do with this information.
+The way they are used in the RL loop is fixed, however, such that these are a bit more streamlined than the completely free meta-modules.</p>
+<h3 id="inside-the-agent-mighty-models">Inside the Agent: Mighty Models<a class="headerlink" href="#inside-the-agent-mighty-models" title="Permanent link">#</a></h3>
+<p>Agent loops outside of exploration, buffers and updates are harder to alter in Mighty, since Mighty is primarily focused on meta-methods.
+You can control the network architecture of your agent fairly easily, however. 
+There are two principal avenues for this: 
+1. You can use one of the pre-defined Mighty Models and configure it to use a different network architecture in the config. We use torch internally, that means you can allocate torch.nn layers and activations in different parts of these networks to form a custom architecture.
+2. If you also want to customize what exactly the network predicts or add things like frozen weights, you probably want to implement your own Mighty Model. These always contain a 'feature_extractor' as a base and can vary beyond that.</p>
 
 
 
