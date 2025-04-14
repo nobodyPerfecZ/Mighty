@@ -10,8 +10,7 @@ from mighty.mighty_exploration import MightyExplorationPolicy, StochasticPolicy
 from mighty.mighty_models.sac import SACModel
 from mighty.mighty_replay import MightyReplay, TransitionBatch
 from mighty.mighty_update import SACUpdate
-from mighty.mighty_utils.env_handling import MIGHTYENV
-from mighty.mighty_utils.types import TypeKwargs
+from mighty.mighty_utils.types import TypeKwargs, MIGHTYENV
 
 
 class MightySACAgent(MightyAgent):

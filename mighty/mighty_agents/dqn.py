@@ -20,8 +20,7 @@ if TYPE_CHECKING:
     from omegaconf import DictConfig
 
     from mighty.mighty_replay import MightyReplay
-    from mighty.mighty_utils.env_handling import MIGHTYENV
-    from mighty.mighty_utils.types import TypeKwargs
+    from mighty.mighty_utils.types import TypeKwargs, MIGHTYENV
 
 
 class MightyDQNAgent(MightyAgent):

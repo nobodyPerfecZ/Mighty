@@ -11,8 +11,7 @@ from mighty.mighty_models.ppo import PPOModel
 from mighty.mighty_replay import RolloutBatch
 from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer
 from mighty.mighty_update.ppo_update import PPOUpdate
-from mighty.mighty_utils.env_handling import MIGHTYENV
-from mighty.mighty_utils.types import TypeKwargs
+from mighty.mighty_utils.types import TypeKwargs, MIGHTYENV
 
 
 class MightyPPOAgent(MightyAgent):

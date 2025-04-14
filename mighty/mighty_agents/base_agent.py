@@ -16,8 +16,7 @@ from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingC
 
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
-from mighty.mighty_utils.agent_handling import retrieve_class
-from mighty.mighty_utils.env_handling import CARLENV, DACENV, MIGHTYENV
+from mighty.mighty_utils.types import CARLENV, DACENV, MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
     from mighty.mighty_utils.types import TypeKwargs
