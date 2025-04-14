@@ -1,7 +1,10 @@
-
 name: Publish Python Package
 permissions:
   id-token: write
+
+env:
+  package-name: "mighty"
+  UV_SYSTEM_PYTHON: 1
 
 on:
   # Manually triggerable in github
@@ -11,72 +14,61 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.kind }}
-    if: ${{ !github.event.pull_request.draft }}
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.10']
-        kind: ['conda']
+    name: publish-release
+    runs-on: "ubuntu-latest"
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        submodules: "recursive"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Install a specific version of uv.
+          version: "0.6.14"
 
-    - name: Conda install
-      if: matrix.kind == 'conda'
-      run: |
-        # Miniconda is available in $CONDA env var
-        $CONDA/bin/conda create -n testenv --yes pip wheel gxx_linux-64 gcc_linux-64 python=${{ matrix.python-version }}
-        $CONDA/envs/testenv/bin/python3 -m pip install --upgrade pip
-        $CONDA/envs/testenv/bin/pip3 install -e .[all]
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
 
-    - name: Tests
-      timeout-minutes: 60
-      run: |
-        echo "Running all tests..."
-        if [[ ${{ matrix.kind }} == 'conda' ]]; then
-          PYTHON=$CONDA/envs/testenv/bin/python3
-          export PATH="$CONDA/envs/testenv/bin:$PATH"
-        else
-          PYTHON=$(which python3)
-        fi
+      - name: Install ${{ env.package-name }}
+        run: make install-dev
 
-        if [ ${{ matrix.code-cov }} ]; then
-          $PYTHON -m pytest ${{ env.pytest-args }} ${{ env.code-cov-args }} --ignore=test/local_only tests
-        else
-          $PYTHON -m pytest ${{ env.pytest-args }} --ignore=test/local_only tests
-        fi
+      - name: Store git status
+        id: status-before
+        shell: bash
+        run: |
+          echo "::set-output name=BEFORE::$(git status --porcelain -b)"
+
+      - name: Tests
+        run: make test
+
   pypi-publish:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/mighty-rl
+      url: https://pypi.org/p/mighty
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
+          # Install a specific version of uv.
+          version: "0.6.14"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install ${{ env.package-name }}
+        run: make install-dev
       - name: Build package
-        run: python -m build
+        run: uv build
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.pypi_api_token }}
+        run: uv publish

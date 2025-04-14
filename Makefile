@@ -17,7 +17,9 @@ help:
 	@echo "* clean            to clean the dist and doc build files"
 	@echo "* build            to build a dist"
 	@echo "* test             to run the tests"
-	@echo "* doc              to generate and view the html files"
+	@echo "* docs             to serve and view the docs"
+	@echo "* docs-build-only  to generate and view the html files"
+	@echo "* docs-deploy      to push the latest doc version to gh-pages"
 	@echo "* publish          to help publish the current branch to pypi"
 
 PYTHON ?= python
@@ -76,11 +78,14 @@ clean: clean-doc clean-build
 build:
 	$(PYTHON) -m build
 
-doc:
-	$(MAKE) -C ${DOCDIR} docs
-	@echo
-	@echo "View docs at:"
-	@echo ${INDEX_HTML}
+docs:
+	mkdocs serve
+
+docs-build-only:
+	mkdocs build --clean --strict
+
+docs-deploy:
+	mkdocs gh-deploy
 
 # Publish to testpypi
 # Will echo the commands to actually publish to be run to publish to actual PyPi

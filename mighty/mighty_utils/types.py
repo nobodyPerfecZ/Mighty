@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
 from typing import Any, NewType
 
-import importlib
-
-from omegaconf import DictConfig
 import hydra
+from omegaconf import DictConfig
 
 TypeKwargs = NewType("TypeKwargs", dict[str, Any] | DictConfig)
 
