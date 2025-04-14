@@ -17,7 +17,8 @@
 <div align="center">
     <h3>
       <a href="#installation">Installation</a> |
-      <a href="#quickstart">Run a Mighty Agent</a> |
+      <a href="https://automl.github.io/Mighty/">Documentation</a> |
+      <a href="#run-a-mighty-agent">Run a Mighty Agent</a> |
       <a href="#cite-us">Cite Us</a>
     </h3>
 </div>
