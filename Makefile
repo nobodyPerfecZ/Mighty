@@ -66,7 +66,7 @@ test:
 	$(PYTEST) -v --cov=mighty test --durations=20 --cov-report html
 
 clean-doc:
-	$(MAKE) -C ${DOCDIR} clean
+	rm -rf site
 
 clean-build:
 	rm -rf ${DIST}
@@ -76,7 +76,7 @@ clean: clean-doc clean-build
 
 # Build a distribution in ./dist
 build:
-	$(PYTHON) -m build
+	uv build
 
 docs:
 	mkdocs serve
@@ -91,11 +91,10 @@ docs-deploy:
 # Will echo the commands to actually publish to be run to publish to actual PyPi
 # This is done to prevent accidental publishing but provide the same conveniences
 publish: clean-build build
-	$(PIP) install twine
-	$(PYTHON) -m twine upload --verbose --repository testpypi ${DIST}/*
+	uv publish --index testpypi
 	@echo
-	@echo "Test with the following line:"
-	@echo "pip install --index-url https://test.pypi.org/simple/ mighty"
+	@echo "Test by installing from testpypi:"
+	@echo "pip install --index-url https://test.pypi.org/simple/ mighty-rl"
 	@echo
 	@echo "Once you have decided it works, publish to actual pypi with"
-	@echo "python -m twine upload dist/*"
+	@echo "uv publish"

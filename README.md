@@ -6,7 +6,7 @@
 
 <div align="center">
     
-[![PyPI Version](https://img.shields.io/pypi/v/mighty-rl.svg)](https://pypi.python.org/pypi/mighty)
+[![PyPI Version](https://img.shields.io/pypi/v/mighty-rl.svg)](https://pypi.org/project/Mighty-RL/)
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB)
 ![License](https://img.shields.io/badge/License-BSD3-orange)
 [![Test](https://github.com/automl/Mighty/actions/workflows/test.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/test.yaml)
@@ -61,6 +61,11 @@ make install
 Optionally you can install the dev requirements directly:
 ```bash
 make install-dev
+```
+
+Alternatively, you can install Mighty from PyPI:
+```bash
+pip install mighty-rl
 ```
 
 ## Run a Mighty Agent
