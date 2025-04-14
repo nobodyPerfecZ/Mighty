@@ -1,5 +1,9 @@
 # This workflow is to test that the docs build successfully.
 name: test-docs
+env:
+  package-name: "mighty"
+  UV_SYSTEM_PYTHON: 1
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
