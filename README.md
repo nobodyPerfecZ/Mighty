@@ -109,5 +109,6 @@ If you use Mighty in your work, please cite us:
   author    = {A. Mohan and T. Eimer and C. Benjamins and F. Hutter and M. Lindauer and A. Biedenkapp},
   title     = {Mighty},
   year      = {2024},
-  url = {https://github.com/automl/mighty},
+  url = {https://github.com/automl/mighty}
+}
 ```

@@ -47,10 +47,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "automl-sphinx-theme==0.2.0", "build", "pytest", "pytest-cov"]
+dev = ["ruff", "mypy", "build", "pytest", "pytest-cov"]
 carl = ["carl_bench==1.1.0", "brax==0.9.3", "protobuf>=3.17.3", "mujoco==3.0.1"]
 dacbench = ["dacbench>=0.3.0", "torchvision", "ioh"]
 pufferlib = ["pufferlib"]
+docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",
+        "mkdocs-gen-files", "mkdocs-literate-nav",
+        "mkdocs-glightbox", "mkdocs-glossary-plugin",
+        "mkdocstrings[python]", "markdown-exec[ansi]", "mike"]
 
 [tool.ruff]
 extend-exclude = []

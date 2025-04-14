@@ -1,0 +1,35 @@
+
+Mighty is a Reinforcement Learning (RL) library that aims to make training general agents easy.
+We natively support context in RL, i.e. train and test distributions that can be easily configured, as well
+as Meta- and AutoRL methods on all levels.
+That means if you're interested in general RL, you can start with well-known simulation environments and scale up
+to actually applications using Mighty!
+
+### What Can I Do With Mighty?
+Mighty offers a lot of flexibility for training general agents with online RL:
+- train on standard and contextual RL environments
+- apply outer-loop methods like Bayesian Optimization or Evolutionary Strategies for Meta-Learning, Hyperparameter Optimization and more
+- use in-the-loop ideas like curriculum learning to enhance training
+- plug in modules for exploration, buffers or architectures without touching the full pipeline
+- combine different methods for Meta- and AutoRL to form full RL pipelines
+
+We currently do not support other learning paradigms, but might extend to e.g. include offline data as an option. 
+
+### Where Is Mighty Going?
+
+Currently Mighty is in early development and includes only standard RL algorithms compatible with cRL benchmarks and
+evaluation mechanisms. In the future, we hope to extend mighty with Meta-Learning methods as well as AutoRL, so stay tuned.
+
+### Contact & Citation
+Mighty is developed at [LUHAI Hannover]() by members of [AutoRL.org](). Your first contact is lead maintainer [Aditya Mohan](). If you found issues or want to contribute new features, it's best to visit our [GitHub page](https://github.com/automl/Mighty) page and start a discussion.
+
+If you use Mighty for your research, please cite us:
+
+```bibtex
+@misc{mohaneimer24,
+  author    = {A. Mohan and T. Eimer and C. Benjamins and F. Hutter and M. Lindauer and A. Biedenkapp},
+  title     = {Mighty},
+  year      = {2024},
+  url = {https://github.com/automl/mighty}
+}
+```

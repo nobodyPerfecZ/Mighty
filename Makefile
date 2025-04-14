@@ -39,7 +39,7 @@ INDEX_HTML := file://${DOCDIR}/html/build/index.html
 install-dev:
 	$(PIP) install pufferlib
 	$(PIP) install dacbench==0.3.0 torchvision ioh
-	$(PIP) install -e ".[dev,carl]"
+	$(PIP) install -e ".[dev,carl,docs]"
 
 install:
 	$(PIP) install -e ".[examples]"
