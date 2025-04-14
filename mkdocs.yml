@@ -138,7 +138,6 @@ plugins:
   - gen-files:
       scripts:
         - docs/api_generator.py
-        - docs/example_runner.py
   - literate-nav:
         nav_file: SUMMARY.md
   - mkdocstrings:
@@ -198,7 +197,5 @@ nav:
     - "methods/architectures.md"
     - "methods/outer_loops.md"
     - "methods/inner_loops.md"
-  # Auto generated with docs/examples_runner.py
-  - Examples: "examples/"
   # Auto generated with docs/api_generator.py
   - API: "api/"
