@@ -1,0 +1,4 @@
+- how models are implemented (feature extractor -> rest)
+- existing models
+- changing structure
+- when to add new models

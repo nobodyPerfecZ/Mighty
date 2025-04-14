@@ -1,0 +1,4 @@
+- general meta module idea
+- what info they get
+- when they can act
+- combining modules

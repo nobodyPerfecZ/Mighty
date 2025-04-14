@@ -1,0 +1,4 @@
+- Algorithms generally
+- exploration policies
+- buffers
+- update classes
