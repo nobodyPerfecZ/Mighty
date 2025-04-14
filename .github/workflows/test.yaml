@@ -26,11 +26,9 @@ env:
     -v
 
 jobs:
-
   # General unit tests
   source-test:
     name: test
-
     runs-on: "ubuntu-latest"
     defaults:
       run:
@@ -40,18 +38,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Setup Python
-      uses: actions/setup-python@v2
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
       with:
-        python-version: "3.10"
+        # Install a specific version of uv.
+        version: "0.6.14"
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
 
     - name: Install ${{ env.package-name }}
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install wheel
-        python -m pip install pufferlib==1.0.0
-        python -m pip install dacbench==0.3.0 torchvision ioh
-        python -m pip install -e ".${{ env.extra-requires }}"
+      run: make install-dev
 
     - name: Store git status
       id: status-before
