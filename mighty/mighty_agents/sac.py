@@ -137,7 +137,7 @@ class MightySACAgent(MightyAgent):
         """Return the value function model."""
         return self.model.value_net  # type: ignore
 
-    def update_agent(self, **kwargs) -> Dict:  # type: ignore
+    def update_agent(self, transition_batch, _, **kwargs) -> Dict:  # type: ignore
         """Update the agent using SAC.
 
         :return: Dictionary containing the update metrics.
@@ -147,9 +147,7 @@ class MightySACAgent(MightyAgent):
 
         metrics_sac: Dict = {}
 
-        for _ in range(self.n_gradient_steps):
-            transition_batch = self.buffer.sample(batch_size=self._batch_size)  # type: ignore
-            metrics_sac.update(self.update_fn.update(transition_batch))  # type: ignore
+        metrics_sac.update(self.update_fn.update(transition_batch))  # type: ignore
 
         # Log metrics
         loss_stats = {

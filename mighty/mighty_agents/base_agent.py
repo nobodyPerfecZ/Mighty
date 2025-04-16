@@ -292,19 +292,25 @@ class MightyAgent(ABC):
         for k in self.meta_modules:
             self.meta_modules[k].pre_update(metrics)
 
-        agent_update_metrics = self.update_agent(**update_kwargs)
-        metrics.update(agent_update_metrics)
-        metrics = {k: np.array(v) for k, v in metrics.items()}
-        metrics["step"] = self.steps
+        metrics["update_batches"] = []
+        for batches_left in reversed(range(self.n_gradient_steps)):
+            batch = self.buffer.sample(self._batch_size)
+            agent_update_metrics = self.update_agent(batch, batches_left, **update_kwargs)
+            metrics.update(agent_update_metrics)
+            metrics = {k: np.array(v) for k, v in metrics.items()}
+            metrics["step"] = self.steps
 
-        if self.log_wandb:
-            wandb.log(metrics)
+            if self.log_wandb:
+                wandb.log(metrics)
 
-        metrics["env"] = self.env
-        metrics["vf"] = self.value_function  # type: ignore
-        metrics["policy"] = self.policy
+            metrics["env"] = self.env
+            metrics["vf"] = self.value_function  # type: ignore
+            metrics["policy"] = self.policy
+            metrics["update_batches"].append(batch)
+
         for k in self.meta_modules:
             self.meta_modules[k].post_update(metrics)
+        del metrics["update_batches"]
         return metrics
 
     def run(  # noqa: PLR0915
@@ -396,13 +402,15 @@ class MightyAgent(ABC):
                     "mean_episode_reward": last_episode_reward.mean(),
                 }
                 metrics["episode_reward"] = episode_reward
+                metrics["transition"] = t
+
+                for k in self.meta_modules:
+                    self.meta_modules[k].post_step(metrics)
+
                 self.result_buffer = update_buffer(self.result_buffer, t)
 
                 if self.log_wandb:
                     wandb.log(t)
-
-                for k in self.meta_modules:
-                    self.meta_modules[k].post_step(metrics)
 
                 self.steps += len(action)
                 metrics["step"] = self.steps

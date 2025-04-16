@@ -200,14 +200,13 @@ class MightyDQNAgent(MightyAgent):
         # Then we won't need to have verbose checks
         print("Initialized agent.")
 
-    def update_agent(self, **kwargs) -> Any:  # type: ignore
+    def update_agent(self, transition_batch, _, **kwargs) -> Any:  # type: ignore
         """Compute and apply TD update.
 
         :param step: Current training step
         :return:
         """
 
-        transition_batch = self.buffer.sample(batch_size=self._batch_size)  # type: ignore
         preds, targets = self.qlearning.get_targets(  # type: ignore
             transition_batch, self.q, self.q_target
         )

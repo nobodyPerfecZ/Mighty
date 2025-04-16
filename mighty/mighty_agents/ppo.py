@@ -168,7 +168,7 @@ class MightyPPOAgent(MightyAgent):
         """Return the value function model."""
         return self.model.value_net  # type: ignore
 
-    def update_agent(self, next_s, dones, **kwargs) -> Dict:  # type: ignore
+    def update_agent(self, batch, batches_left, next_s, dones, **kwargs) -> Dict:  # type: ignore
         """Update the agent using PPO.
 
         :return: Dictionary containing the update metrics.
@@ -184,15 +184,14 @@ class MightyPPOAgent(MightyAgent):
         self.buffer.compute_returns_and_advantage(last_values, dones)  # type: ignore
 
         metrics: Dict = {}
-        for _ in range(self.n_gradient_steps):
-            for batch in self.buffer.sample(self._batch_size):  # type: ignore
-                metrics.update(self.update_fn.update(batch))  # type: ignore
+        metrics.update(self.update_fn.update(batch))  # type: ignore
 
         for key, value in metrics.items():
             self.loss_buffer[key].append(value)
         self.loss_buffer["step"].append(self.steps)
 
-        self.buffer.reset()  # type: ignore
+        if batches_left == 0:
+            self.buffer.reset()  # type: ignore
 
         return metrics
 
