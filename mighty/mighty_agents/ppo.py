@@ -86,7 +86,6 @@ class MightyPPOAgent(MightyAgent):
         self.value_loss_coef = value_loss_coef
         self.entropy_coef = entropy_coef
         self.max_grad_norm = max_grad_norm
-        self.n_gradient_steps = n_gradient_steps
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -107,6 +106,7 @@ class MightyPPOAgent(MightyAgent):
             learning_rate=learning_rate,
             batch_size=batch_size,
             learning_starts=learning_starts,
+            n_gradient_steps=n_gradient_steps,
             render_progress=render_progress,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
@@ -168,7 +168,7 @@ class MightyPPOAgent(MightyAgent):
         """Return the value function model."""
         return self.model.value_net  # type: ignore
 
-    def update_agent(self, batch, batches_left, next_s, dones, **kwargs) -> Dict:  # type: ignore
+    def update_agent(self, transition_batch, batches_left, next_s, dones, **kwargs) -> Dict:  # type: ignore
         """Update the agent using PPO.
 
         :return: Dictionary containing the update metrics.
@@ -184,7 +184,7 @@ class MightyPPOAgent(MightyAgent):
         self.buffer.compute_returns_and_advantage(last_values, dones)  # type: ignore
 
         metrics: Dict = {}
-        metrics.update(self.update_fn.update(batch))  # type: ignore
+        metrics.update(self.update_fn.update(transition_batch))  # type: ignore
 
         for key, value in metrics.items():
             self.loss_buffer[key].append(value)

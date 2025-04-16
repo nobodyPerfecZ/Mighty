@@ -87,7 +87,8 @@ class TestDQNAgent:
         original_params = deepcopy(list(dqn.q.parameters()))
         original_target_params = deepcopy(list(dqn.q_target.parameters()))
         original_feature_params = deepcopy(list(dqn.q.feature_extractor.parameters()))
-        metrics = dqn.update_agent()
+        batch = dqn.buffer.sample(2)
+        metrics = dqn.update_agent(batch, 0)
         new_params = deepcopy(list(dqn.q.parameters()))
         new_target_params = deepcopy(list(dqn.q_target.parameters()))
         for old, new in zip(original_params[:10], new_params[:10], strict=False):

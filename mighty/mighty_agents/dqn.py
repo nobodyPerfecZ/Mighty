@@ -64,6 +64,7 @@ class MightyDQNAgent(MightyAgent):
         td_update_class: type[QLearning] = QLearning,
         td_update_kwargs: TypeKwargs | None = None,
         save_replay: bool = False,
+        n_gradient_steps: int = 1,
     ):
         # FIXME: the arguments are not complete. Double check all classes.
         """DQN initialization.
@@ -137,6 +138,7 @@ class MightyDQNAgent(MightyAgent):
             epsilon=epsilon,
             batch_size=batch_size,
             learning_starts=learning_starts,
+            n_gradient_steps=n_gradient_steps,
             render_progress=render_progress,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
@@ -200,7 +202,7 @@ class MightyDQNAgent(MightyAgent):
         # Then we won't need to have verbose checks
         print("Initialized agent.")
 
-    def update_agent(self, transition_batch, _, **kwargs) -> Any:  # type: ignore
+    def update_agent(self, transition_batch, batches_left, **kwargs) -> Any:  # type: ignore
         """Compute and apply TD update.
 
         :param step: Current training step

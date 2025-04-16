@@ -75,7 +75,6 @@ class MightySACAgent(MightyAgent):
         self.soft_update_weight = soft_update_weight
         self.tau = tau
         self.alpha = alpha
-        self.n_gradient_steps = n_gradient_steps
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: SACModel | None = None
@@ -96,6 +95,7 @@ class MightySACAgent(MightyAgent):
             learning_rate=learning_rate,
             batch_size=batch_size,
             learning_starts=learning_starts,
+            n_gradient_steps=n_gradient_steps,
             render_progress=render_progress,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
@@ -137,7 +137,7 @@ class MightySACAgent(MightyAgent):
         """Return the value function model."""
         return self.model.value_net  # type: ignore
 
-    def update_agent(self, transition_batch, _, **kwargs) -> Dict:  # type: ignore
+    def update_agent(self, transition_batch, batches_left, **kwargs) -> Dict:  # type: ignore
         """Update the agent using SAC.
 
         :return: Dictionary containing the update metrics.

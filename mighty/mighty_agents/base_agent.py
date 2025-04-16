@@ -67,6 +67,7 @@ class MightyAgent(ABC):
         epsilon: float = 0.1,
         batch_size: int = 64,
         learning_starts: int = 1,
+        n_gradient_steps: int = 1,
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
@@ -111,6 +112,7 @@ class MightyAgent(ABC):
         self._epsilon = epsilon
         self._batch_size = batch_size
         self._learning_starts = learning_starts
+        self.n_gradient_steps = n_gradient_steps
 
         self.buffer: MightyReplay | None = None
         self.policy: MightyExplorationPolicy | None = None
@@ -292,10 +294,10 @@ class MightyAgent(ABC):
         for k in self.meta_modules:
             self.meta_modules[k].pre_update(metrics)
 
-        metrics["update_batches"] = []
+        metrics["update_batches"] = None
         for batches_left in reversed(range(self.n_gradient_steps)):
             batch = self.buffer.sample(self._batch_size)
-            agent_update_metrics = self.update_agent(batch, batches_left, **update_kwargs)
+            agent_update_metrics = self.update_agent(transition_batch=batch, batches_left=batches_left, **update_kwargs)
             metrics.update(agent_update_metrics)
             metrics = {k: np.array(v) for k, v in metrics.items()}
             metrics["step"] = self.steps
@@ -306,7 +308,12 @@ class MightyAgent(ABC):
             metrics["env"] = self.env
             metrics["vf"] = self.value_function  # type: ignore
             metrics["policy"] = self.policy
-            metrics["update_batches"].append(batch)
+            if metrics["update_batches"] is None:
+                metrics["update_batches"] = batch
+            else:
+                print(batch)
+                print(metrics["update_batches"])
+                metrics["update_batches"] = [metrics["update_batches"], batch]
 
         for k in self.meta_modules:
             self.meta_modules[k].post_update(metrics)
