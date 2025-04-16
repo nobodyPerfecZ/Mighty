@@ -294,7 +294,7 @@ class MightyAgent(ABC):
         for k in self.meta_modules:
             self.meta_modules[k].pre_update(metrics)
 
-        metrics["update_batches"] = None
+        batches = []
         for batches_left in reversed(range(self.n_gradient_steps)):
             batch = self.buffer.sample(self._batch_size)
             agent_update_metrics = self.update_agent(transition_batch=batch, batches_left=batches_left, **update_kwargs)
@@ -308,13 +308,9 @@ class MightyAgent(ABC):
             metrics["env"] = self.env
             metrics["vf"] = self.value_function  # type: ignore
             metrics["policy"] = self.policy
-            if metrics["update_batches"] is None:
-                metrics["update_batches"] = batch
-            else:
-                print(batch)
-                print(metrics["update_batches"])
-                metrics["update_batches"] = [metrics["update_batches"], batch]
+            batches.append(batch)
 
+        metrics["update_batches"] = batches
         for k in self.meta_modules:
             self.meta_modules[k].post_update(metrics)
         del metrics["update_batches"]
