@@ -55,6 +55,10 @@ docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",
         "mkdocs-gen-files", "mkdocs-literate-nav",
         "mkdocs-glightbox", "mkdocs-glossary-plugin",
         "mkdocstrings[python]", "markdown-exec[ansi]", "mike"]
+examples = []
+
+[tool.setuptools.packages.find]
+include = ["mighty*"]
 
 [tool.ruff]
 extend-exclude = []
