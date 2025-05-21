@@ -16,6 +16,7 @@ algorithm_kwargs:
     obs_shape: ???  # Placeholder for observation shape
     act_dim: ???  # Placeholder for action dimension
     n_envs: ???
+    
 
   # Training
   learning_rate: 0.001
@@ -27,6 +28,18 @@ algorithm_kwargs:
   entropy_coef: 0.01  # Coefficient for entropy loss.
   max_grad_norm: 0.5  # Maximum value for gradient clipping.
   
+
+  hidden_sizes: [64, 64]
+  activation: 'tanh'
+
+  n_epochs: 10
+  minibatch_size: 128
+  kl_target: 0.0001
+  use_value_clip: True
+  value_clip_eps: 0.2
+
   policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
   policy_kwargs:
-    entropy_coefficient: 0.2  # Coefficient for entropy-based exploration.
+    entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
+
+    

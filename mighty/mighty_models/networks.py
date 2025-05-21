@@ -28,6 +28,7 @@ class MLP(jit.ScriptModule):
             layers.append(ACTIVATIONS[activation]())
         self.layers = nn.Sequential(*layers)
 
+
     def forward(self, x):
         """Forward pass."""
         return self.layers(x)
@@ -61,8 +62,6 @@ class MLP(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.layers = state[0]
-
-
 class CNN(jit.ScriptModule):
     """CNN network."""
 
@@ -114,8 +113,6 @@ class CNN(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.cnn = state[0]
-
-
 class ResNetBlock(jit.ScriptModule):
     """Single ResNet block."""
 
@@ -137,8 +134,6 @@ class ResNetBlock(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.block = state[0]
-
-
 class ResNetLayer(jit.ScriptModule):
     """Single ResNet layer."""
 
@@ -168,8 +163,6 @@ class ResNetLayer(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.conv, self.pool, self.block1, self.block2 = state
-
-
 class ResNet(jit.ScriptModule):
     """ResNet with 3 layers network."""
 
@@ -271,7 +264,34 @@ def make_feature_extractor(
     repo: str = "pytorch/vision:v0.9.0",
     pretrained: bool = False,
 ):
-    """Make a feature extractor network."""
+    """
+    Construct a feature extractor module based on the specified architecture.
+
+    Parameters:
+        architecture (str | list): Type of architecture to use. Options include:
+            'mlp', 'cnn', 'resnet', 'torchhub', or a list of such architectures for a ComboNet.
+        n_layers (int): Number of layers (for MLP).
+        hidden_sizes (list[int] | None): Hidden layer sizes for MLP. Defaults to [32, 32, 32].
+        activation (str): Activation function to use (e.g., 'relu').
+        obs_shape (tuple | None): Shape of the input observations (e.g., (3, 64, 64)).
+        n_convolutions (int): Number of convolutional layers (for CNN).
+        out_channels (list[int] | None): Number of output channels per conv layer. Defaults to [32, 64, 64].
+        sizes (list[int] | None): Kernel sizes for conv layers. Defaults to [8, 4, 3].
+        strides (list[int] | None): Stride values for conv layers. Optional.
+        paddings (list[int] | None): Padding values for conv layers. Optional.
+        flatten_cnn (bool): Whether to flatten CNN output. Default is True.
+        conv_dim (int | None): Optional override for CNN output dimension.
+        planes (list[int] | None): List of feature planes (channels) for ResNet. Defaults to [16, 32, 32].
+        model_name (str): Model name to use with torch.hub (e.g., 'resnet18').
+        repo (str): TorchHub repo string, e.g., 'pytorch/vision:v0.9.0'.
+        pretrained (bool): Whether to use pretrained weights for torchhub models.
+
+    Returns:
+        fe (nn.Module): The constructed feature extractor network.
+        output_size (list[int]): Shape of the feature output (excluding batch dimension).
+    """
+    
+    # Set default hyperparameters if not provided
     if planes is None:
         planes = [16, 32, 32]
     if sizes is None:
@@ -280,10 +300,15 @@ def make_feature_extractor(
         out_channels = [32, 64, 64]
     if hidden_sizes is None:
         hidden_sizes = [32, 32, 32]
+
+    # Handle different architectures
     if architecture == "mlp":
+        # Feedforward MLP for flat observations
         fe = MLP(obs_shape, n_layers, hidden_sizes, activation)
         output_size = hidden_sizes[-1]
+
     elif architecture == "cnn":
+        # Convolutional feature extractor for image-based input
         fe = CNN(
             obs_shape,
             n_convolutions,
@@ -296,15 +321,21 @@ def make_feature_extractor(
             conv_dim,
         )
         output_size = list(fe(torch.rand((1, *obs_shape))).shape[1:])
+
     elif architecture == "resnet":
+        # Lightweight ResNet-style feature extractor
         fe = ResNet(obs_shape, planes, activation=activation)
         output_size = list(fe(torch.rand((1, *obs_shape))).shape[1:])
+
     elif architecture == "torchhub":
+        # Load model from torch.hub (e.g., torchvision pretrained resnet)
         fe = TorchHubModel(
             obs_shape, model_name=model_name, repo=repo, pretrained=pretrained
         )
         output_size = list(fe(torch.rand((1, *obs_shape))).shape[1:])
+
     elif isinstance(architecture, list | omegaconf.listconfig.ListConfig):
+        # Recursive case: compose multiple architectures into a ComboNet
         modules = []
         original_obs_shape = obs_shape
         for arch in architecture:
@@ -326,6 +357,7 @@ def make_feature_extractor(
 
         fe = ComboNet(*modules)
         output_size = list(fe(torch.rand((1, *original_obs_shape))).shape[1:])
+
     else:
         raise ValueError(f"Unknown architecture {architecture}")
 

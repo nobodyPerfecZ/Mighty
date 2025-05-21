@@ -302,8 +302,44 @@ class MightyAgent(ABC):
             metrics = {k: np.array(v) for k, v in metrics.items()}
             metrics["step"] = self.steps
 
+            # Wandb logging
             if self.log_wandb:
-                wandb.log(metrics)
+                import wandb
+                import json
+
+                # Only log relevant, serializable keys
+                log_keys = [
+                    "step", 
+                    "episode_reward", 
+                    "Update/policy_loss", 
+                    "Update/value_loss",
+                    "Update/entropy", 
+                    "Update/approx_kl"
+                ]
+                serializable_metrics = {}
+                for k in log_keys:
+                    if k in metrics:
+                        v = metrics[k]
+                        # Convert numpy arrays to scalars or lists
+                        if isinstance(v, np.ndarray):
+                            if v.size == 1:
+                                v = v.item()
+                            else:
+                                v = v.tolist()
+                        # Convert torch tensors to scalars or lists
+                        if isinstance(v, torch.Tensor):
+                            if v.numel() == 1:
+                                v = v.item()
+                            else:
+                                v = v.cpu().numpy().tolist()
+                        # Try to serialize, skip if not possible
+                        try:
+                            json.dumps(v)
+                            serializable_metrics[k] = v
+                        except TypeError:
+                            print(f"Skipping non-serializable metric: {k}")
+
+                wandb.log(serializable_metrics, step=self.steps)
 
             metrics["env"] = self.env
             metrics["vf"] = self.value_function  # type: ignore

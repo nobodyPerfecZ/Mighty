@@ -13,6 +13,8 @@ from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer
 from mighty.mighty_update.ppo_update import PPOUpdate
 from mighty.mighty_utils.types import MIGHTYENV, TypeKwargs
 
+import wandb
+import json
 
 class MightyPPOAgent(MightyAgent):
     def __init__(
@@ -26,8 +28,13 @@ class MightyPPOAgent(MightyAgent):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_wandb: bool = False,
-        wandb_kwargs: Optional[Dict] = None,
+        log_wandb: bool = True,
+        wandb_kwargs: Optional[Dict] = {
+            "project": "mighty",
+            "entity": "amsks",
+            "name": "ppo",
+            "group": "ppo"
+        },
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
         ] = MightyRolloutBuffer,
@@ -46,6 +53,14 @@ class MightyPPOAgent(MightyAgent):
         entropy_coef: float = 0.01,
         max_grad_norm: float = 0.5,
         n_gradient_steps: int = 10,
+        hidden_sizes: Optional[List[int]] = [64, 64],
+        activation: Optional[str] = "tanh",
+        n_epochs: int = 10,
+        minibatch_size: int = 32,
+        kl_target: float = 0.001,
+        use_value_clip: bool = True,
+        value_clip_eps: float = 0.2,
+        total_timesteps: int = 1_000_000,
     ):
         """Initialize the PPO agent.
 
@@ -78,6 +93,7 @@ class MightyPPOAgent(MightyAgent):
         :param n_gradient_steps: Number of gradient steps per update
         """
 
+        self.total_timesteps = total_timesteps
         self.gamma = gamma
         self.n_policy_units = n_policy_units
         self.n_critic_units = n_critic_units
@@ -86,6 +102,14 @@ class MightyPPOAgent(MightyAgent):
         self.value_loss_coef = value_loss_coef
         self.entropy_coef = entropy_coef
         self.max_grad_norm = max_grad_norm
+        self.hidden_sizes = hidden_sizes
+        self.activation = activation
+        
+        self.n_epochs = n_epochs
+        self.minibatch_size = minibatch_size
+        self.kl_target = kl_target
+        self.use_value_clip = use_value_clip
+        self.value_clip_eps= value_clip_eps
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -120,8 +144,12 @@ class MightyPPOAgent(MightyAgent):
             "Update/policy_loss": [],
             "Update/value_loss": [],
             "Update/entropy": [],
+            "Update/approx_kl": [],
             "step": [],
         }
+
+        if self.log_wandb:
+            wandb.init(**(wandb_kwargs or {}))
 
     def _initialize_agent(self) -> None:
         """Initialize PPO specific components."""
@@ -139,7 +167,7 @@ class MightyPPOAgent(MightyAgent):
         self.buffer_kwargs["n_envs"] = self.env.observation_space.shape[0]  # type: ignore
 
         self.model = PPOModel(
-            obs_size=self.env.single_observation_space.shape[0],  # type: ignore
+            obs_shape=self.env.single_observation_space.shape[0],  # type: ignore
             action_size=(
                 self.env.single_action_space.n  # type: ignore
                 if self.discrete_action
@@ -161,12 +189,18 @@ class MightyPPOAgent(MightyAgent):
             ent_coef=self.entropy_coef,
             vf_coef=self.value_loss_coef,
             max_grad_norm=self.max_grad_norm,
+            n_epochs = self.n_epochs,
+            minibatch_size = self.minibatch_size,
+            kl_target = self.kl_target,
+            use_value_clip = self.use_value_clip,
+            value_clip_eps= self.value_clip_eps,
+            total_timesteps = self.total_timesteps,
         )
 
     @property
     def value_function(self) -> torch.nn.Module:
         """Return the value function model."""
-        return self.model.value_net  # type: ignore
+        return self.model.value_head  # type: ignore
 
     def update_agent(self, transition_batch, batches_left, next_s, dones, **kwargs) -> Dict:  # type: ignore
         """Update the agent using PPO.
@@ -189,6 +223,18 @@ class MightyPPOAgent(MightyAgent):
         for key, value in metrics.items():
             self.loss_buffer[key].append(value)
         self.loss_buffer["step"].append(self.steps)
+
+        # Wandb logging
+        if self.log_wandb:
+            serializable_metrics = {}
+            for k, v in metrics.items():
+                try:
+                    json.dumps(v)
+                    serializable_metrics[k] = v
+                except TypeError:
+                    print(f"Skipping non-serializable metric: {k}")
+
+            wandb.log(serializable_metrics, step=self.steps)
 
         if batches_left == 0:
             self.buffer.reset()  # type: ignore
@@ -231,12 +277,12 @@ class MightyPPOAgent(MightyAgent):
         """Save current agent state."""
         super().make_checkpoint_dir(t)
         torch.save(
-            self.model.policy_net.state_dict(),  # type: ignore
-            self.checkpoint_dir / "policy_net.pt",
+            self.model.policy_head.state_dict(),  # type: ignore
+            self.checkpoint_dir / "policy_head.pt",
         )
         torch.save(
-            self.model.value_net.state_dict(),  # type: ignore
-            self.checkpoint_dir / "value_net.pt",
+            self.model.value_head.state_dict(),  # type: ignore
+            self.checkpoint_dir / "value_head.pt",
         )
         torch.save(
             self.update_fn.policy_optimizer.state_dict(),  # type: ignore
@@ -253,8 +299,8 @@ class MightyPPOAgent(MightyAgent):
     def load(self, path: str) -> None:
         """Load the internal state of the agent."""
         base_path = Path(path)
-        self.model.policy_net.load_state_dict(torch.load(base_path / "policy_net.pt"))  # type: ignore
-        self.model.value_net.load_state_dict(torch.load(base_path / "value_net.pt"))  # type: ignore
+        self.model.policy_head.load_state_dict(torch.load(base_path / "policy_head.pt"))  # type: ignore
+        self.model.value_head.load_state_dict(torch.load(base_path / "value_head.pt"))  # type: ignore
         self.update_fn.policy_optimizer.load_state_dict(  # type: ignore
             torch.load(base_path / "policy_optimizer.pt")
         )
