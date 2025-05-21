@@ -1,0 +1,6 @@
+# @package _global_
+algorithm_kwargs:
+  meta_methods: 
+    - mighty.mighty_meta.NovelD
+  meta_kwargs: 
+    - rnd_output_dim: 16

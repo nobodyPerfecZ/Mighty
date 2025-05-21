@@ -48,7 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "build", "pytest", "pytest-cov"]
-carl = ["carl_bench==1.1.0", "brax==0.9.3", "protobuf>=3.17.3"]
+carl = ["carl_bench==1.1.0", "brax==0.9.3", "protobuf>=3.17.3", "jax<0.6.0"]
 dacbench = ["dacbench>=0.3.0", "torchvision", "ioh"]
 pufferlib = ["pufferlib==2.0.6"]
 docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",

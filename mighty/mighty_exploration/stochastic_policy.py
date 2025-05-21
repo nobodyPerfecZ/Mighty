@@ -37,27 +37,6 @@ class StochasticPolicy(MightyExplorationPolicy):
                 entropy = dist.entropy().sum(dim=-1, keepdim=True)
                 weighted_log_prob = log_prob * entropy
 
-            return action.detach().numpy(), weighted_log_prob.detach().numpy()
+            return action.detach().numpy(), weighted_log_prob
 
         self.explore_func = explore_func
-
-    # FIXME: isn't this identical to the parent class? The only difference is the detach, no?
-    def __call__(self, state, return_logp=False, metrics=None, evaluate=False):
-        """Get action.
-
-        :param s: state
-        :param return_logp: return logprobs
-        :param metrics: current metric dict
-        :param eval: eval mode
-        :return: action or (action, logprobs)
-        """
-        if metrics is None:
-            metrics = {}
-        if evaluate:
-            action, logprobs = self.sample_action(state)
-            action = action.detach().numpy()
-            output = (action, logprobs.detach.numpy()) if return_logp else action
-        else:
-            output = self.explore(state, return_logp, metrics)
-
-        return output

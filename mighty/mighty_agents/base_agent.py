@@ -129,10 +129,14 @@ class MightyAgent(ABC):
             cls=replay_buffer_class,
             default_cls=MightyReplay,  # type: ignore
         )
-        if replay_buffer_kwargs is None:
-            replay_buffer_kwargs = {  # type: ignore
-                "capacity": 1_000_000,
-            }
+        if replay_buffer_kwargs is None or len(replay_buffer_kwargs) == 0:
+            if issubclass(replay_buffer_class, MightyReplay):
+                replay_buffer_kwargs = {  # type: ignore
+                    "capacity": 1_000_000,
+                }
+            else:
+                replay_buffer_kwargs = {}
+
         self.buffer_class = replay_buffer_class
         self.buffer_kwargs = replay_buffer_kwargs
 

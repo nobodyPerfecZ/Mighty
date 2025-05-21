@@ -1,0 +1,15 @@
+# @package _global_
+algorithm_kwargs:
+  meta_methods: 
+    - mighty.mighty_meta.RND
+  meta_kwargs: 
+    - rnd_output_dim: 16
+      rnd_network_config: 
+        - type: Linear
+          kwargs: 
+            out_features: 64
+        - type: ReLU
+          kwargs: {}
+        - type: Linear
+          kwargs: 
+            out_features: 16

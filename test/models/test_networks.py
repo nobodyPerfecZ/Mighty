@@ -194,11 +194,11 @@ class TestMLP:
         original_pred = mlp(dummy_input)
         mlp.soft_reset(1, 1, 1)
         reset_pred = mlp(dummy_input)
-        assert ~torch.allclose(original_pred, reset_pred), (
+        assert not torch.allclose(original_pred, reset_pred), (
             "Model prediction has not changed."
         )
         for new_param, old_param in zip(mlp.parameters(), prev_params, strict=False):
-            assert ~torch.allclose(new_param, old_param), (
+            assert not torch.allclose(new_param, old_param), (
                 "Weights have not been perturbed."
             )
 

@@ -1,0 +1,3 @@
+# @package _global_
+algorithm_kwargs:
+  policy_class: mighty.mighty_exploration.EZGreedy
