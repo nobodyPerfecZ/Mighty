@@ -297,24 +297,28 @@ class MightyAgent(ABC):
         batches = []
         for batches_left in reversed(range(self.n_gradient_steps)):
             batch = self.buffer.sample(self._batch_size)
-            agent_update_metrics = self.update_agent(transition_batch=batch, batches_left=batches_left, **update_kwargs)
+            agent_update_metrics = self.update_agent(
+                transition_batch=batch, batches_left=batches_left, **update_kwargs
+            )
             metrics.update(agent_update_metrics)
+
             metrics = {k: np.array(v) for k, v in metrics.items()}
             metrics["step"] = self.steps
 
             # Wandb logging
             if self.log_wandb:
-                import wandb
                 import json
+
+                import wandb
 
                 # Only log relevant, serializable keys
                 log_keys = [
-                    "step", 
-                    "episode_reward", 
-                    "Update/policy_loss", 
+                    "step",
+                    "episode_reward",
+                    "Update/policy_loss",
                     "Update/value_loss",
-                    "Update/entropy", 
-                    "Update/approx_kl"
+                    "Update/entropy",
+                    "Update/approx_kl",
                 ]
                 serializable_metrics = {}
                 for k in log_keys:
@@ -435,7 +439,7 @@ class MightyAgent(ABC):
                     "dones": dones.astype(int),
                     "mean_episode_reward": last_episode_reward.mean(),
                 }
-                metrics["log_prob"] = log_prob
+                metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
                 metrics["transition"] = t
 
@@ -443,7 +447,13 @@ class MightyAgent(ABC):
                     self.meta_modules[k].post_step(metrics)
 
                 transition_metrics = self.process_transition(
-                    metrics["transition"]["state"], metrics["transition"]["action"], metrics["transition"]["reward"], metrics["transition"]["next_state"], metrics["transition"]["dones"], metrics["log_prob"], metrics
+                    metrics["transition"]["state"],
+                    metrics["transition"]["action"],
+                    metrics["transition"]["reward"],
+                    metrics["transition"]["next_state"],
+                    metrics["transition"]["dones"],
+                    metrics["log_prob"],
+                    metrics,
                 )
                 metrics.update(transition_metrics)
 

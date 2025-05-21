@@ -25,7 +25,12 @@ class MaxiBatch:
 
         :return: Number of transitions.
         """
-        return sum([len(self.minibatches[i].observations) for i in range(len(self.minibatches))])
+        return sum(
+            [
+                len(self.minibatches[i].observations)
+                for i in range(len(self.minibatches))
+            ]
+        )
 
     def __len__(self):
         """
@@ -44,9 +49,20 @@ class MaxiBatch:
         yield from self.minibatches
 
     def __getattribute__(self, name):
-        if name in ["observations", "actions", "rewards", "advantages", "returns", "episode_starts", "log_probs", "values"]:
+        if name in [
+            "observations",
+            "actions",
+            "rewards",
+            "advantages",
+            "returns",
+            "episode_starts",
+            "log_probs",
+            "values",
+        ]:
             batch_stack = torch.stack([getattr(mb, name) for mb in self.minibatches])
-            batch_stack = batch_stack.reshape((-1, *getattr(self.minibatches[0], name).squeeze().shape[1:]))
+            batch_stack = batch_stack.reshape(
+                (-1, *getattr(self.minibatches[0], name).squeeze().shape[1:])
+            )
             return batch_stack
         else:
             return object.__getattribute__(self, name)
@@ -186,14 +202,18 @@ class MightyRolloutBuffer(MightyBuffer):
         :param last_values: Value estimates for the last observation of each environment (shape: [n_envs]).
         :param dones: Done flags for the last step of each environment (shape: [n_envs]).
         """
-        
+
         last_values = last_values.clone().cpu().squeeze(1)  # [n_envs]
         last_gae_lam = 0  # [n_envs], will be broadcasted as needed
 
-        for step in reversed(range(self.observations.shape[0])):  # step: int, loop over [num_steps]
+        for step in reversed(
+            range(self.observations.shape[0])
+        ):  # step: int, loop over [num_steps]
             if step == self.observations.shape[0] - 1:
                 # For the last step, use the dones and last_values provided
-                next_non_terminal = torch.FloatTensor(1.0 - dones.astype(np.float32))  # [n_envs]
+                next_non_terminal = torch.FloatTensor(
+                    1.0 - dones.astype(np.float32)
+                )  # [n_envs]
                 next_values = last_values  # [n_envs]
             else:
                 # For other steps, use episode_starts to determine if next state is terminal
@@ -255,7 +275,6 @@ class MightyRolloutBuffer(MightyBuffer):
             self.log_probs = torch.cat((self.log_probs, rollout_batch.log_probs))
             self.values = torch.cat((self.values, rollout_batch.values))
 
-
     def sample(self, batch_size: int):
         """
         Sample mini-batches of transitions from the buffer.
@@ -266,7 +285,10 @@ class MightyRolloutBuffer(MightyBuffer):
         # FIXME: maybe truncate batch size instead?
         hangover = len(self.observations) % batch_size
         indices = np.random.permutation(len(self.observations))
-        indices = indices[:-hangover].reshape(-1, batch_size).tolist() + indices[-hangover:].tolist()
+        indices = (
+            indices[:-hangover].reshape(-1, batch_size).tolist()
+            + indices[-hangover:].tolist()
+        )
         samples = []
         for ind in indices:
             samples.append(self._get_samples(ind))

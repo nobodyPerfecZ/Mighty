@@ -41,20 +41,24 @@ class PPOUpdate:
 
         # Optimizers
         policy_params = list(self.model.policy_head.parameters())
-        if getattr(self.model, "continuous_action", False) and hasattr(self.model, "log_std"):
+        if getattr(self.model, "continuous_action", False) and hasattr(
+            self.model, "log_std"
+        ):
             policy_params.append(self.model.log_std)
         self.policy_optimizer = optim.Adam(policy_params, lr=policy_lr, eps=1e-5)
-        self.value_optimizer = optim.Adam(self.model.value_head.parameters(), lr=value_lr)
+        self.value_optimizer = optim.Adam(
+            self.model.value_head.parameters(), lr=value_lr
+        )
 
         # Learning rate schedulers (linear decay)
         # FIXME: schedule parameters should come from config
         self.policy_scheduler = optim.lr_scheduler.LambdaLR(
             self.policy_optimizer,
-            lr_lambda=lambda step: 1 - step / float(self.total_steps)
+            lr_lambda=lambda step: 1 - step / float(self.total_steps),
         )
         self.value_scheduler = optim.lr_scheduler.LambdaLR(
             self.value_optimizer,
-            lr_lambda=lambda step: 1 - step / float(self.total_steps)
+            lr_lambda=lambda step: 1 - step / float(self.total_steps),
         )
 
     def update(self, batch: MaxiBatch) -> Dict[str, float]:
@@ -64,7 +68,10 @@ class PPOUpdate:
 
         # Precompute old values for clipping
         with torch.no_grad():
-            old_values = [self.model.forward_value(batch.minibatches[i].observations) for i in range(len(batch.minibatches))]
+            old_values = [
+                self.model.forward_value(batch.minibatches[i].observations)
+                for i in range(len(batch.minibatches))
+            ]
 
         metrics = {
             "policy_loss": 0.0,
@@ -89,7 +96,7 @@ class PPOUpdate:
                         -self.value_clip_eps,
                         self.value_clip_eps,
                     )
-                    
+
                     loss_unclipped = (values - mb.returns) ** 2
                     loss_clipped = (clipped_values - mb.returns) ** 2
                     value_loss = 0.5 * torch.max(loss_unclipped, loss_clipped).mean()
@@ -111,7 +118,10 @@ class PPOUpdate:
                 # Policy objective
                 ratios = torch.exp(log_probs - mb.log_probs)
                 surr1 = ratios * mb.advantages
-                surr2 = torch.clamp(ratios, 1.0 - self.epsilon, 1.0 + self.epsilon) * mb.advantages
+                surr2 = (
+                    torch.clamp(ratios, 1.0 - self.epsilon, 1.0 + self.epsilon)
+                    * mb.advantages
+                )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
                 # Approximate KL for early stopping
@@ -126,7 +136,9 @@ class PPOUpdate:
                 self.policy_optimizer.zero_grad()
                 self.value_optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.max_grad_norm
+                )
                 self.policy_optimizer.step()
                 self.value_optimizer.step()
 

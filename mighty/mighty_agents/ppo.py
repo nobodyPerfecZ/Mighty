@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
+import wandb
 from omegaconf import DictConfig
 
 from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
@@ -13,8 +15,6 @@ from mighty.mighty_replay.mighty_rollout_buffer import MightyRolloutBuffer
 from mighty.mighty_update.ppo_update import PPOUpdate
 from mighty.mighty_utils.types import MIGHTYENV, TypeKwargs
 
-import wandb
-import json
 
 class MightyPPOAgent(MightyAgent):
     def __init__(
@@ -33,7 +33,7 @@ class MightyPPOAgent(MightyAgent):
             "project": "mighty",
             "entity": "amsks",
             "name": "ppo",
-            "group": "ppo"
+            "group": "ppo",
         },
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
@@ -104,12 +104,12 @@ class MightyPPOAgent(MightyAgent):
         self.max_grad_norm = max_grad_norm
         self.hidden_sizes = hidden_sizes
         self.activation = activation
-        
+
         self.n_epochs = n_epochs
         self.minibatch_size = minibatch_size
         self.kl_target = kl_target
         self.use_value_clip = use_value_clip
-        self.value_clip_eps= value_clip_eps
+        self.value_clip_eps = value_clip_eps
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -189,12 +189,12 @@ class MightyPPOAgent(MightyAgent):
             ent_coef=self.entropy_coef,
             vf_coef=self.value_loss_coef,
             max_grad_norm=self.max_grad_norm,
-            n_epochs = self.n_epochs,
-            minibatch_size = self.minibatch_size,
-            kl_target = self.kl_target,
-            use_value_clip = self.use_value_clip,
-            value_clip_eps= self.value_clip_eps,
-            total_timesteps = self.total_timesteps,
+            n_epochs=self.n_epochs,
+            minibatch_size=self.minibatch_size,
+            kl_target=self.kl_target,
+            use_value_clip=self.use_value_clip,
+            value_clip_eps=self.value_clip_eps,
+            total_timesteps=self.total_timesteps,
         )
 
     @property
@@ -202,7 +202,9 @@ class MightyPPOAgent(MightyAgent):
         """Return the value function model."""
         return self.model.value_head  # type: ignore
 
-    def update_agent(self, transition_batch, batches_left, next_s, dones, **kwargs) -> Dict:  # type: ignore
+    def update_agent(
+        self, transition_batch, batches_left, next_s, dones, **kwargs
+    ) -> Dict:  # type: ignore
         """Update the agent using PPO.
 
         :return: Dictionary containing the update metrics.
@@ -230,7 +232,7 @@ class MightyPPOAgent(MightyAgent):
             self.buffer.reset()  # type: ignore
 
         return metrics
-    
+
     def update(self, metrics: Dict, update_kwargs: Dict) -> Dict:
         if len(self.buffer) < self._learning_starts:  # type: ignore
             return {}

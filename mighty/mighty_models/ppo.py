@@ -1,8 +1,8 @@
+import math
 from typing import Tuple
 
 import torch
 import torch.nn as nn
-import math
 
 from mighty.mighty_models.networks import make_feature_extractor
 
@@ -35,7 +35,7 @@ class PPOModel(nn.Module):
             hidden_sizes=hidden_sizes,
             activation=activation,
         )
-        
+
         self.feature_extractor_value, _ = make_feature_extractor(
             architecture="mlp",
             obs_shape=obs_shape,
@@ -43,10 +43,7 @@ class PPOModel(nn.Module):
             hidden_sizes=hidden_sizes,
             activation=activation,
         )
-        
-        
-        
-        
+
         # (Architecture based on
         # https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/policies.py)
 
@@ -54,10 +51,7 @@ class PPOModel(nn.Module):
         self.policy_head = nn.Sequential(
             self.feature_extractor_policy,
             nn.Linear(self.output_size, 64),
-            nn.Linear(
-                hidden_sizes[0],
-                2 if continuous_action else action_size
-            ),
+            nn.Linear(hidden_sizes[0], 2 if continuous_action else action_size),
         )
 
         # Value network
@@ -66,7 +60,7 @@ class PPOModel(nn.Module):
             nn.Linear(self.output_size, 64),
             nn.Linear(hidden_sizes[0], 1),
         )
-        
+
         # Orthogonal initialization
         def _init_weights(m: nn.Module):
             if isinstance(m, nn.Linear):
@@ -81,7 +75,6 @@ class PPOModel(nn.Module):
                 nn.init.constant_(m.bias, 0.0)
 
         self.apply(_init_weights)
-        
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Forward pass through the policy network."""

@@ -28,7 +28,6 @@ class MLP(jit.ScriptModule):
             layers.append(ACTIVATIONS[activation]())
         self.layers = nn.Sequential(*layers)
 
-
     def forward(self, x):
         """Forward pass."""
         return self.layers(x)
@@ -62,6 +61,8 @@ class MLP(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.layers = state[0]
+
+
 class CNN(jit.ScriptModule):
     """CNN network."""
 
@@ -113,6 +114,8 @@ class CNN(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.cnn = state[0]
+
+
 class ResNetBlock(jit.ScriptModule):
     """Single ResNet block."""
 
@@ -134,6 +137,8 @@ class ResNetBlock(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.block = state[0]
+
+
 class ResNetLayer(jit.ScriptModule):
     """Single ResNet layer."""
 
@@ -163,6 +168,8 @@ class ResNetLayer(jit.ScriptModule):
 
     def __setstate__(self, state):
         self.conv, self.pool, self.block1, self.block2 = state
+
+
 class ResNet(jit.ScriptModule):
     """ResNet with 3 layers network."""
 
@@ -290,7 +297,7 @@ def make_feature_extractor(
         fe (nn.Module): The constructed feature extractor network.
         output_size (list[int]): Shape of the feature output (excluding batch dimension).
     """
-    
+
     # Set default hyperparameters if not provided
     if planes is None:
         planes = [16, 32, 32]
