@@ -9,10 +9,49 @@ import torch
 from mighty.mighty_replay.buffer import MightyBuffer
 
 
-# FIXME: the only difference here is that there are more values, no?
-# There are two options which make for simpler code:
-# 1. make log_probs and values optional arguments
-# 2. move those to the transition metrics since they aren't in the transition anyway
+class MaxiBatch:
+    def __init__(self, minibatches):
+        """
+        Initialize a batch of rollout transitions.
+
+        :param minibatches: List of MiniBatch objects.
+        """
+        self.minibatches = minibatches
+
+    @property
+    def size(self):
+        """
+        Return the number of transitions in the batch.
+
+        :return: Number of transitions.
+        """
+        return sum([len(self.minibatches[i].observations) for i in range(len(self.minibatches))])
+
+    def __len__(self):
+        """
+        Return the number of transitions in the batch.
+
+        :return: Number of transitions.
+        """
+        return self.size
+
+    def __iter__(self):
+        """
+        Iterate over the minibatches in the batch.
+
+        :yield: Tuples of (observation, action, reward, advantage, return, episode_start, log_prob, value).
+        """
+        yield from self.minibatches
+
+    def __getattribute__(self, name):
+        if name in ["observations", "actions", "rewards", "advantages", "returns", "episode_starts", "log_probs", "values"]:
+            batch_stack = torch.stack([getattr(mb, name) for mb in self.minibatches])
+            batch_stack = batch_stack.reshape((-1, *getattr(self.minibatches[0], name).squeeze().shape[1:]))
+            return batch_stack
+        else:
+            return object.__getattribute__(self, name)
+
+
 class RolloutBatch:
     def __init__(
         self,
@@ -224,16 +263,14 @@ class MightyRolloutBuffer(MightyBuffer):
         :param batch_size: Number of transitions per mini-batch.
         :return: List of RolloutBatch samples.
         """
+        # FIXME: maybe truncate batch size instead?
+        hangover = len(self.observations) % batch_size
         indices = np.random.permutation(len(self.observations))
-        start_idx = 0
+        indices = indices[:-hangover].reshape(-1, batch_size).tolist() + indices[-hangover:].tolist()
         samples = []
-        # FIXME: this seems like a very inefficient way to do this
-        # Can't you just do this in one go? Fetch the whole buffer, then reshape the lsit of transitions into a list of batches?
-        while start_idx < len(self.observations):
-            batch_inds = indices[start_idx : start_idx + batch_size]
-            samples.append(self._get_samples(batch_inds))
-            start_idx += batch_size
-        return samples
+        for ind in indices:
+            samples.append(self._get_samples(ind))
+        return MaxiBatch(samples)
 
     def _get_samples(self, batch_inds: np.ndarray):
         """

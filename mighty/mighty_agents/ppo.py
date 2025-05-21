@@ -28,7 +28,7 @@ class MightyPPOAgent(MightyAgent):
         batch_size: int = 64,
         learning_starts: int = 1,
         render_progress: bool = True,
-        log_wandb: bool = True,
+        log_wandb: bool = False,
         wandb_kwargs: Optional[Dict] = {
             "project": "mighty",
             "entity": "amsks",
@@ -207,16 +207,6 @@ class MightyPPOAgent(MightyAgent):
 
         :return: Dictionary containing the update metrics.
         """
-        if len(self.buffer) < self._learning_starts:  # type: ignore
-            return {}
-
-        # Compute returns and advantages for PPO
-        last_values = self.value_function(
-            torch.as_tensor(next_s, dtype=torch.float32)
-        ).detach()
-
-        self.buffer.compute_returns_and_advantage(last_values, dones)  # type: ignore
-
         metrics: Dict = {}
         metrics.update(self.update_fn.update(transition_batch))  # type: ignore
 
@@ -240,6 +230,18 @@ class MightyPPOAgent(MightyAgent):
             self.buffer.reset()  # type: ignore
 
         return metrics
+    
+    def update(self, metrics: Dict, update_kwargs: Dict) -> Dict:
+        if len(self.buffer) < self._learning_starts:  # type: ignore
+            return {}
+
+        # Compute returns and advantages for PPO
+        last_values = self.value_function(
+            torch.as_tensor(update_kwargs["next_s"], dtype=torch.float32)
+        ).detach()
+
+        self.buffer.compute_returns_and_advantage(last_values, update_kwargs["dones"])  # type: ignore
+        return super().update(metrics, update_kwargs)  # type: ignore
 
     def process_transition(  # type: ignore
         self,

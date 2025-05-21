@@ -420,12 +420,6 @@ class MightyAgent(ABC):
                 next_s, reward, terminated, truncated, _ = self.env.step(action)  # type: ignore
                 dones = np.logical_or(terminated, truncated)
 
-                transition_metrics = self.process_transition(
-                    curr_s, action, reward, next_s, dones, log_prob, metrics
-                )
-
-                metrics.update(transition_metrics)
-
                 episode_reward += reward
 
                 # Log everything
@@ -438,13 +432,20 @@ class MightyAgent(ABC):
                     "next_state": next_s,
                     "terminated": terminated.astype(int),
                     "truncated": truncated.astype(int),
+                    "dones": dones.astype(int),
                     "mean_episode_reward": last_episode_reward.mean(),
                 }
+                metrics["log_prob"] = log_prob
                 metrics["episode_reward"] = episode_reward
                 metrics["transition"] = t
 
                 for k in self.meta_modules:
                     self.meta_modules[k].post_step(metrics)
+
+                transition_metrics = self.process_transition(
+                    metrics["transition"]["state"], metrics["transition"]["action"], metrics["transition"]["reward"], metrics["transition"]["next_state"], metrics["transition"]["dones"], metrics["log_prob"], metrics
+                )
+                metrics.update(transition_metrics)
 
                 self.result_buffer = update_buffer(self.result_buffer, t)
 
