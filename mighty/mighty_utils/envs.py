@@ -59,14 +59,10 @@ def make_dacbench_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]
                         )
                     elif desc["type"] == "cat":
                         hp = CS.CategoricalHyperparameter(name, desc["choices"])
-                    space.add_hyperparameter(hp)
-                print(bench.config)
-                print(space)
+                    space.add(hp)
                 bench.config.config_space = space
             else:
                 bench.config[k] = cfg.env_kwargs[k]
-        print(bench.config)
-        print(bench.config.keys())
         make_env = bench.get_environment
 
     def make_eval_env(make_env: Callable) -> Any:
