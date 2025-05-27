@@ -116,8 +116,11 @@ class PPOUpdate:
 
                 # 2c) new policy log-probs & entropy
                 if self.model.continuous_action:
-                    means, stds = self.model(mb.observations)
-                    dist       = torch.distributions.Normal(means, stds)
+                    means, raw_std = self.model(mb.observations)
+                    # derive a safe std
+                    log_std = raw_std.clamp(-20, 2)
+                    std = torch.exp(log_std).clamp(min=1e-3)
+                    dist = torch.distributions.Normal(means, std)
                     log_probs  = dist.log_prob(mb.actions).sum(-1)
                     entropy    = dist.entropy().sum(-1).mean()
                 else:
@@ -127,7 +130,7 @@ class PPOUpdate:
                     entropy    = dist.entropy().mean()
 
                 # 2d) PPO surrogate loss
-                ratios  = torch.exp(log_probs - old_log_probs[i])
+                ratios  = torch.exp((log_probs - old_log_probs[i]).clamp(-20,20))
                 surr1   = ratios * adv
                 surr2   = torch.clamp(ratios, 1 - self.epsilon, 1 + self.epsilon) * adv
                 p_loss  = -torch.min(surr1, surr2).mean()
@@ -141,7 +144,6 @@ class PPOUpdate:
 
                 # 2f) recompute log-probs *after* the step for a correct KL
                 
-                import pdb; pdb.set_trace()  # Debugging line to inspect the model's output
                 with torch.no_grad():
                     if self.model.continuous_action:
                         means, stds   = self.model(mb.observations)
@@ -189,4 +191,3 @@ class PPOUpdate:
             "Update/entropy":     metrics["entropy"],
             "Update/approx_kl":   metrics["approx_kl"],
         }
-

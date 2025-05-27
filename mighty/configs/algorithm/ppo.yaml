@@ -41,5 +41,3 @@ algorithm_kwargs:
   policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
   policy_kwargs:
     entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
-
-    
