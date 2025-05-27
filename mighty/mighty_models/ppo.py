@@ -83,7 +83,7 @@ class PPOModel(nn.Module):
 
         if self.continuous_action:
             mean, log_std = x.chunk(2, dim=-1)
-            # FIXME: the clamping is hardcoded here, should be a probabyl be a hyperparameter
+            # FIXME: EWRL: the clamping is hardcoded here, should be a probbaly be a hyperparameter
             log_std = log_std.clamp(-20, 2)  # Remove the extra dimension
             return mean, log_std.exp()
         else:

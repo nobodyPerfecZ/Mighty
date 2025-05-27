@@ -40,126 +40,153 @@ class PPOUpdate:
         self.total_steps = total_timesteps
 
         # Optimizers
-        policy_params = list(self.model.policy_head.parameters())
-        if getattr(self.model, "continuous_action", False) and hasattr(
-            self.model, "log_std"
-        ):
-            policy_params.append(self.model.log_std)
-        self.policy_optimizer = optim.Adam(policy_params, lr=policy_lr, eps=1e-5)
-        self.value_optimizer = optim.Adam(
-            self.model.value_head.parameters(), lr=value_lr
+        
+        policy_params = list(model.policy_head.parameters())      # includes feature_extractor_policy
+        value_params  = list(model.value_head.parameters())       # includes feature_extractor_value
+
+        extra_params = []
+        if getattr(model, "continuous_action", False) and hasattr(model, "log_std"):
+            extra_params.append(model.log_std)
+        
+        self.optimizer = optim.Adam(
+            [
+                {"params": policy_params, "lr": policy_lr},   # policy net (feat-extractor + head)
+                {"params": value_params,  "lr": value_lr},    # value net  (feat-extractor + head)
+                *(
+                    [{"params": extra_params, "lr": policy_lr}]
+                    if extra_params else []
+                ),
+            ],
+            eps=1e-5,
+        )
+        
+        self.scheduler = optim.lr_scheduler.LambdaLR(
+            self.optimizer,
+            lr_lambda=lambda step: 1 - step / float(self.total_steps),
         )
 
-        # Learning rate schedulers (linear decay)
-        # FIXME: schedule parameters should come from config
-        self.policy_scheduler = optim.lr_scheduler.LambdaLR(
-            self.policy_optimizer,
-            lr_lambda=lambda step: 1 - step / float(self.total_steps),
-        )
-        self.value_scheduler = optim.lr_scheduler.LambdaLR(
-            self.value_optimizer,
-            lr_lambda=lambda step: 1 - step / float(self.total_steps),
-        )
 
     def update(self, batch: MaxiBatch) -> Dict[str, float]:
-        """Perform PPO update with multiple epochs, minibatches, KL early stopping, and value clipping."""
-        advantages = batch.advantages.squeeze(0)
-        adv_mean, adv_std = advantages.mean(), advantages.std() + 1e-8
+        """PPO update with advantage normalisation, epoch-level KL-stop, value-clipping."""
 
-        # Precompute old values for clipping
+       
+        # cache old values / log-probs with *one* forward pass per minibatch
         with torch.no_grad():
-            old_values = [
-                self.model.forward_value(batch.minibatches[i].observations)
-                for i in range(len(batch.minibatches))
-            ]
+            old_values     = [self.model.forward_value(mb.observations) for mb in batch.minibatches]
+            old_log_probs  = [mb.log_probs.clone() for mb in batch.minibatches]
+
+       
+        # global advantage normalisation (once!) and detach from graph
+        flat_adv = batch.advantages.squeeze(0)
+        adv_mean = flat_adv.mean().detach()
+        adv_std  = (flat_adv.std() + 1e-8).detach()
 
         metrics = {
             "policy_loss": 0.0,
-            "value_loss": 0.0,
-            "entropy": 0.0,
-            "approx_kl": 0.0,
+            "value_loss":  0.0,
+            "entropy":     0.0,
+            "approx_kl":   0.0,
         }
+        mb_updates   = 0      # mini-batch counter
+        epoch_counts = 0      # how many epochs actually executed
 
-        # PPO update epochs
-        for _ in range(self.n_epochs):
+       
+        # main PPO loop
+        for epoch in range(self.n_epochs):
+            epoch_kls = []
+
             for i, mb in enumerate(batch.minibatches):
-                # Normalize advantages
-                mb.advantages = (mb.advantages - adv_mean) / adv_std
+                # 2a) use the globally normalised advantages
+                adv = ((mb.advantages - adv_mean) / adv_std).detach()
 
-                # Value estimates
+                # 2b) value loss (with optional clipping)
                 values = self.model.forward_value(mb.observations)
-
-                # Value loss with optional clipping
                 if self.use_value_clip:
-                    clipped_values = old_values[i] + torch.clamp(
+                    clipped = old_values[i] + torch.clamp(
                         values - old_values[i],
                         -self.value_clip_eps,
                         self.value_clip_eps,
                     )
-
-                    loss_unclipped = (values - mb.returns) ** 2
-                    loss_clipped = (clipped_values - mb.returns) ** 2
-                    value_loss = 0.5 * torch.max(loss_unclipped, loss_clipped).mean()
+                    v_loss = 0.5 * torch.max(
+                        (values - mb.returns).pow(2),
+                        (clipped - mb.returns).pow(2),
+                    ).mean()
                 else:
-                    value_loss = 0.5 * (mb.returns - values).pow(2).mean()
+                    v_loss = 0.5 * (mb.returns - values).pow(2).mean()
 
-                # Compute new log probs & entropy
+                # 2c) new policy log-probs & entropy
                 if self.model.continuous_action:
                     means, stds = self.model(mb.observations)
-                    dist = torch.distributions.Normal(means, stds)
-                    log_probs = dist.log_prob(mb.actions).sum(dim=-1)
-                    entropy = dist.entropy().sum(dim=-1).mean()
+                    dist       = torch.distributions.Normal(means, stds)
+                    log_probs  = dist.log_prob(mb.actions).sum(-1)
+                    entropy    = dist.entropy().sum(-1).mean()
                 else:
-                    logits = self.model(mb.observations)
-                    dist = torch.distributions.Categorical(logits=logits)
-                    log_probs = dist.log_prob(mb.actions)
-                    entropy = dist.entropy().mean()
+                    logits     = self.model(mb.observations)
+                    dist       = torch.distributions.Categorical(logits=logits)
+                    log_probs  = dist.log_prob(mb.actions)
+                    entropy    = dist.entropy().mean()
 
-                # Policy objective
-                ratios = torch.exp(log_probs - mb.log_probs)
-                surr1 = ratios * mb.advantages
-                surr2 = (
-                    torch.clamp(ratios, 1.0 - self.epsilon, 1.0 + self.epsilon)
-                    * mb.advantages
-                )
-                policy_loss = -torch.min(surr1, surr2).mean()
+                # 2d) PPO surrogate loss
+                ratios  = torch.exp(log_probs - old_log_probs[i])
+                surr1   = ratios * adv
+                surr2   = torch.clamp(ratios, 1 - self.epsilon, 1 + self.epsilon) * adv
+                p_loss  = -torch.min(surr1, surr2).mean()
 
-                # Approximate KL for early stopping
-                approx_kl = (mb.log_probs - log_probs).mean()
-                if approx_kl > self.kl_target:
-                    break
-
-                # Combined loss
-                loss = policy_loss + self.vf_coef * value_loss - self.ent_coef * entropy
-
-                # Backprop
-                self.policy_optimizer.zero_grad()
-                self.value_optimizer.zero_grad()
+                # 2e) total loss, backprop, step
+                loss = p_loss + self.vf_coef * v_loss - self.ent_coef * entropy
+                self.optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.max_grad_norm
-                )
-                self.policy_optimizer.step()
-                self.value_optimizer.step()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                self.optimizer.step()
 
-                # Accumulate metrics
-                metrics["policy_loss"] += policy_loss.item()
-                metrics["value_loss"] += value_loss.item()
-                metrics["entropy"] += entropy.item()
-                metrics["approx_kl"] += approx_kl.item()
+                # 2f) recompute log-probs *after* the step for a correct KL
+                
+                import pdb; pdb.set_trace()  # Debugging line to inspect the model's output
+                with torch.no_grad():
+                    if self.model.continuous_action:
+                        means, stds   = self.model(mb.observations)
+                        new_lp        = torch.distributions.Normal(means, stds)\
+                                            .log_prob(mb.actions).sum(-1)
+                    else:
+                        logits        = self.model(mb.observations)
+                        new_lp        = torch.distributions.Categorical(logits=logits)\
+                                            .log_prob(mb.actions)
+                kl = (old_log_probs[i] - new_lp).mean()
+                epoch_kls.append(kl)
 
-            # Scheduler step per epoch
-            self.policy_scheduler.step()
-            self.value_scheduler.step()
+                # 2g) log accumulators
+                metrics["policy_loss"] += p_loss.item()
+                metrics["value_loss"]  += v_loss.item()
+                metrics["entropy"]     += entropy.item()
+                mb_updates += 1
 
-        # Average metrics over updates
-        num_updates = self.n_epochs * len(batch.minibatches)
-        for k in metrics:
-            metrics[k] /= max(1, num_updates)
+            # epoch finished
+            mean_kl = torch.mean(torch.stack(epoch_kls))
+            metrics["approx_kl"] += mean_kl.item()
+            epoch_counts += 1
+
+            if mean_kl > self.kl_target:
+                break  # early-stop epochs
+
+       
+        # LR decay (once per update call)
+       
+        self.scheduler.step()
+
+       
+        # 4) final metric averages
+       
+        if mb_updates > 0:
+            metrics["policy_loss"] /= mb_updates
+            metrics["value_loss"]  /= mb_updates
+            metrics["entropy"]     /= mb_updates
+        if epoch_counts > 0:
+            metrics["approx_kl"]   /= epoch_counts
 
         return {
             "Update/policy_loss": metrics["policy_loss"],
-            "Update/value_loss": metrics["value_loss"],
-            "Update/entropy": metrics["entropy"],
-            "Update/approx_kl": metrics["approx_kl"],
+            "Update/value_loss":  metrics["value_loss"],
+            "Update/entropy":     metrics["entropy"],
+            "Update/approx_kl":   metrics["approx_kl"],
         }
+

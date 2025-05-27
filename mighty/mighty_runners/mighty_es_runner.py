@@ -80,7 +80,6 @@ class MightyESRunner(MightyRunner):
                     if target == "parameters":
                         continue
                     new_value = np.asarray(individual[i]).item()
-                    # TODO: check for other int-only hps
                     if target in ["_batch_size", "n_units"]:
                         new_value = max(0, int(new_value))
                     setattr(self.agent, target, new_value)

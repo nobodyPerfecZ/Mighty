@@ -66,7 +66,7 @@ class MightyDQNAgent(MightyAgent):
         save_replay: bool = False,
         n_gradient_steps: int = 1,
     ):
-        # FIXME: the arguments are not complete. Double check all classes.
+        # FIXME: EWRL: the arguments are not complete. Double check all classes.
         """DQN initialization.
 
         Creates all relevant class variables and calls agent-specific init function
@@ -159,7 +159,7 @@ class MightyDQNAgent(MightyAgent):
         """Q-function."""
         return self.q  # type: ignore
 
-    # FIXME: these were introduced to enable ES for parameters and only exist for DQN currently
+    # FIXME: EWRL: these were introduced to enable ES for parameters and only exist for DQN currently
     # If we want to keep the functionality, we should replicate the property in the other algorithms
     @property
     def parameters(self) -> List:
@@ -196,10 +196,6 @@ class MightyDQNAgent(MightyAgent):
 
         # specify how to update value function
         self.qlearning = self.td_update_class(model=self.q, **self.td_update_kwargs)  # type: ignore
-        # FIXME: I think we might want to replace all normal if statements:
-        # 1. richt print in base agent + runners
-        # 2. loggers everywhere else with configurable verbosity
-        # Then we won't need to have verbose checks
         print("Initialized agent.")
 
     def update_agent(self, transition_batch, batches_left, **kwargs) -> Any:  # type: ignore
@@ -342,7 +338,7 @@ class MightyDQNAgent(MightyAgent):
         for g in self.qlearning.optimizer.param_groups:  # type: ignore
             g["lr"] = self.learning_rate
 
-    # FIXME: what exactly do we use this for?
+    # FIXME: EWRL: what exactly do we use this for?
     # I know it was in the base agent ifs, but I think that's fundamentally not a good idea
     # I can see how something like on-policy vs off-policy would make sense though
     # Not sure whether we want to put this in the agent itself or in init

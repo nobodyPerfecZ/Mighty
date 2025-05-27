@@ -177,7 +177,6 @@ class MightyRolloutBuffer(MightyBuffer):
         self.n_envs = n_envs
         self.reset()
 
-    # FIXME: loads of code duplication here, just call super().reset() first
     def reset(self) -> None:
         """
         Reset the buffer by clearing all stored transitions.
@@ -192,6 +191,7 @@ class MightyRolloutBuffer(MightyBuffer):
         self.advantages = []
         self.pos = 0
         self.full = False
+
 
     def compute_returns_and_advantage(
         self, last_values: torch.Tensor, dones: np.ndarray
@@ -282,7 +282,7 @@ class MightyRolloutBuffer(MightyBuffer):
         :param batch_size: Number of transitions per mini-batch.
         :return: List of RolloutBatch samples.
         """
-        # FIXME: maybe truncate batch size instead?
+        # FIXME: EWRL: maybe truncate batch size instead?
         hangover = len(self.observations) % batch_size
         indices = np.random.permutation(len(self.observations))
         indices = (

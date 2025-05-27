@@ -164,7 +164,7 @@ class TestDQN:
             "Predictions should be different before loading"
         )
         for p1, p2 in zip(dqn.parameters(), dqn2.parameters(), strict=False):
-            assert ~torch.allclose(p1, p2), (
+            assert not torch.allclose(p1, p2), (
                 "Parameters should be different before loading"
             )
         dqn2.load_state_dict(state_dict)

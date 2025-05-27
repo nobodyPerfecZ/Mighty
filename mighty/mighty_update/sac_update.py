@@ -8,7 +8,7 @@ from mighty.mighty_models.sac import SACModel
 from mighty.mighty_replay.mighty_replay_buffer import TransitionBatch
 
 
-# FIXME: we might want to move this to a general update utils module
+# FIXME: EWRL: we might want to move this to a general update utils module
 def polyak_update(source_params, target_params, tau: float):  # type: ignore
     for target_param, param in zip(target_params, source_params):
         target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
@@ -58,8 +58,7 @@ class SACUpdate:
             next_std = next_log_std.exp()
             next_actions = torch.normal(
                 next_mean, next_std
-            )  # TODO: revisit action dimensionsa
-            # FIXME: is this still open?
+            )  
 
             next_log_probs = (
                 -0.5

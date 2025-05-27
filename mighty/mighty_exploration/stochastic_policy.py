@@ -19,7 +19,7 @@ class StochasticPolicy(MightyExplorationPolicy):
         super().__init__(algo, model, discrete)
         self.entropy_coefficient = entropy_coefficient
 
-        # FIXME: I did this already for the other exploration functions, but this would be nicer as a separate function
+        # FIXME: EWRL: I did this already for the other exploration functions, but this would be nicer as a separate function
         def explore_func(s):
             state = torch.FloatTensor(s)  # Add batch dimension if needed
             if discrete:

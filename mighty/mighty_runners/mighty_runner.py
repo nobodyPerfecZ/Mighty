@@ -28,7 +28,6 @@ class MightyRunner(ABC):
         # Make train and eval env
         env, base_eval_env, eval_default = make_mighty_env(cfg)
 
-        # TODO: move wrapping to env handling?
         wrapper_classes = []
         for w in cfg.env_wrappers:
             wkwargs = cfg.wrapper_kwargs if "wrapper_kwargs" in cfg else {}
@@ -45,7 +44,6 @@ class MightyRunner(ABC):
         eval_env = wrap_eval()
 
         # Setup agent
-        # TODO: agent currently needs more than just algo and algo_kwargs (see logging)
         agent_class = get_agent_class(cfg.algorithm)
         args_agent = dict(cfg.algorithm_kwargs)
         self.agent = agent_class(  # type: ignore

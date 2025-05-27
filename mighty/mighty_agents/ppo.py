@@ -289,13 +289,10 @@ class MightyPPOAgent(MightyAgent):
             self.checkpoint_dir / "value_head.pt",
         )
         torch.save(
-            self.update_fn.policy_optimizer.state_dict(),  # type: ignore
-            self.checkpoint_dir / "policy_optimizer.pt",
+            self.update_fn.optimizer.state_dict(),  # type: ignore
+            self.checkpoint_dir / "optimizer.pt",
         )
-        torch.save(
-            self.update_fn.value_optimizer.state_dict(),  # type: ignore
-            self.checkpoint_dir / "value_optimizer.pt",
-        )
+
 
         if self.verbose:
             print(f"Saved checkpoint at {self.checkpoint_dir}")

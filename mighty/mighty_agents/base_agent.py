@@ -263,7 +263,7 @@ class MightyAgent(ABC):
             "hp/learning_starts": self._learning_starts,
             "meta_modules": list(self.meta_modules.keys()),
         }
-        # TODO: this probably always fails
+        # FIXME: EWRL: Can we naively compare dictoinaries like this?
         if old_hps != updated_hps:
             self.hp_buffer = update_buffer(self.hp_buffer, updated_hps)
 
@@ -304,6 +304,9 @@ class MightyAgent(ABC):
             agent_update_metrics = self.update_agent(
                 transition_batch=batch, batches_left=batches_left, **update_kwargs
             )
+            
+            # FIXME: EWRL: Move logging out of gradient steps
+            
             metrics.update(agent_update_metrics)
 
             metrics = {k: np.array(v) for k, v in metrics.items()}
@@ -531,15 +534,6 @@ class MightyAgent(ABC):
                     episodes += 1
                     for k in self.meta_modules:
                         self.meta_modules[k].post_episode(metrics)
-
-                    # Remove rollout data from last episode
-                    # TODO: only do this for finished envs
-                    # FIXME: open todo, I think we need to use dones as a mask here
-                    # Proposed fix: metrics[k][:, dones] = 0
-                    # I don't think this is correct masking and I think we have to check the size of zeros
-                    for k in list(metrics.keys()):
-                        if "rollout" in k:
-                            del metrics[k]
 
                     # Meta Module hooks
                     for k in self.meta_modules:
