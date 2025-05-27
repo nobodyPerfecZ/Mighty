@@ -8,22 +8,17 @@ DAC can easily be modelled as a contextual MDP and is thus a real-world applicat
 In order to interface with configurable algorithms, we recommend [DACBench](https://github.com/automl/DACBench).
 It provides algorithms from different fields as well as artificial benchmarks, all with the OpenAI gym interface.
 
-Select the benchmark you want to run, for example the SigmoidBenchmark, and providing it as the "env" keyword:
+Select the benchmark you want to run, for example the FunctionApproximationBenchmark, and providing it as the "env" keyword:
 
 ```bash
-python mighty/run_mighty.py 'algorithm=dqn' 'env=SigmoidBenchmark'
+python mighty/run_mighty.py 'algorithm=dqn' 'env=FunctionApproximationBenchmark'
 ```
 The naming here will make Mighty autodetect it as a DACBench environment.
 
-The benchmarks in DACBench have many configuration options. You can use your hydra configs to include your changes, simply use the keyword TDO
+The benchmarks in DACBench have many configuration options. You can use your hydra configs to include your changes, simply add them to the env_kwargs like this:
 
 ```bash
-python run_mighty.py TODO
+python run_mighty.py 'algorithm=dqn' 'env=FunctionApproximationBenchmark' '+env_kwargs.dimension=3'
 ```
 
-Of course you can also load existing config files, e.g. to reproduce another experiment:
-
-```bash
-python run_mighty.py TODO
-```
-
+To see the full options for DACBench environments, refer to the [DACBench documentation](https://automl.github.io/DACBench/main/index.html).
