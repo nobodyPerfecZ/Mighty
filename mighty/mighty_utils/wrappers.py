@@ -191,7 +191,7 @@ class ContextualVecEnv(gym.vector.SyncVectorEnv):
     @inst_ids.setter
     def inst_ids(self, inst_ids):
         for i in range(self.num_envs):
-            self.envs[i].set_inst_id(inst_ids[i])
+            self.envs[i].set_inst_id(inst_ids[i%len(inst_ids)])
 
     @instance_set.setter
     def instance_set(self, instance_set):

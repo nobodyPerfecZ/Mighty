@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import torch
 
 from mighty.mighty_meta.mighty_component import MightyMetaComponent
 
@@ -58,7 +59,7 @@ class SPaCE(MightyMetaComponent):
                 / (self.last_evals + 1e-6)
                 <= self.threshold
             ):
-                self.current_instance_set_size += self.increase_by_k_instances
+                self.current_instance_set_size = min(self.current_instance_set_size+self.increase_by_k_instances, len(self.all_instances))
             self.last_evals = np.nanmean(rollout_values)
             evals = self.get_evals(env, vf)
             if self.criterion == "improvement":
@@ -83,9 +84,9 @@ class SPaCE(MightyMetaComponent):
         for i in self.all_instances:
             state, _ = env.reset()
             env.inst_ids = [i]
-            v = np.array(vf(state))
+            v = vf(torch.tensor(state)).squeeze().detach().numpy()
             # If we're dealing with a q function, we transform to value here
-            if len(v) > 1:
-                v = [sum(v)]
+            if isinstance(v[0], np.ndarray):
+                v = v.sum(axis=1)
             values.append(v[0])
         return values
