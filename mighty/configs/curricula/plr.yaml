@@ -1,0 +1,2 @@
+# @package _global_
+algorithm_kwargs.meta_methods: [mighty.mighty_meta.PrioritizedLevelReplay]

@@ -164,7 +164,7 @@ class MightyPPOAgent(MightyAgent):
             self.buffer_kwargs["act_dim"] = int(self.env.single_action_space.shape[0])  # type: ignore
             self.discrete_action = False
 
-        self.buffer_kwargs["n_envs"] = self.env.observation_space.shape[0]  # type: ignore
+        self.buffer_kwargs["n_envs"] = self.env.num_envs  # type: ignore
 
         self.model = PPOModel(
             obs_shape=self.env.single_observation_space.shape[0],  # type: ignore

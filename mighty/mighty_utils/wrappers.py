@@ -34,6 +34,7 @@ class FlattenVecObs(gym.Wrapper):
     def __init__(self, env):
         """Flatten observation space of a vectorized environment."""
         super().__init__(env)
+        self.og_single_observation_space = self.env.single_observation_space
         self.single_observation_space = gym.spaces.flatten_space(
             self.env.single_observation_space
         )
@@ -44,7 +45,7 @@ class FlattenVecObs(gym.Wrapper):
             options = {}
         obs, info = self.env.reset(options=options)
         obs = np.array(
-            list(map(partial(gym.spaces.flatten, self.single_observation_space), obs))
+            list(map(partial(gym.spaces.flatten, self.og_single_observation_space), obs))
         )
         return obs, info
 
@@ -104,12 +105,16 @@ class MultiDiscreteActionWrapper(gym.Wrapper):
 class CARLVectorEnvSimulator(gym.vector.VectorEnv):
     def __init__(self, env, **kwargs) -> None:
         self.env = env
-        self.single_action_space = env.action_space
-        self.single_observation_space = env.observation_space
+        self.action_space = env.action_space
+        self.observation_space = env.observation_space
         if hasattr(env, "num_envs"):
             self.num_envs = env.num_envs
+            self.single_action_space = env.single_action_space
+            self.single_observation_space = env.single_wobservation_space
         else:
             self.num_envs = 1
+            self.single_action_space = env.action_space
+            self.single_observation_space = env.observation_space
 
         if hasattr(env, "envs"):
             self.envs = env.envs
@@ -120,10 +125,22 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
         self.env.close()
 
     def reset(self, **kwargs):
-        return self.env.reset()
+        if self.num_envs > 1:
+            return self.env.reset()
+        else:
+            obs, info = self.env.reset(**kwargs)
+            return np.array([obs]), np.array([info])
 
     def step(self, actions):
-        return self.env.step(actions)
+        if self.num_envs > 1:
+            return self.env.step(actions)
+        else:
+            print(f"Full action space: {self.env.action_space}")
+            print(f"Single action space: {self.single_action_space}")
+            print(f"All actions: {actions}")
+            print(f"First action: {actions[0]}")
+            obs, info = self.env.step(actions[0])
+            return np.array([obs]), np.array([info])
 
     @property
     def instance_id_list(self):

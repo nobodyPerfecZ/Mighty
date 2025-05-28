@@ -172,7 +172,6 @@ class RND(MightyMetaComponent):
             mask = torch.rand(len(loss))
             mask = mask < self.update_proportion
             loss = (loss * mask).sum() / torch.max(mask.sum(), torch.tensor([1]))
-            print(loss)
             self.rnd_optimizer.zero_grad()
             loss.backward()
             self.rnd_optimizer.step()
