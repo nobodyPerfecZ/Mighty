@@ -192,7 +192,6 @@ class MightyRolloutBuffer(MightyBuffer):
         self.pos = 0
         self.full = False
 
-
     def compute_returns_and_advantage(
         self, last_values: torch.Tensor, dones: np.ndarray
     ) -> None:

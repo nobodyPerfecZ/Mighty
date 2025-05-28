@@ -56,9 +56,7 @@ class SACUpdate:
             )
 
             next_std = next_log_std.exp()
-            next_actions = torch.normal(
-                next_mean, next_std
-            )  
+            next_actions = torch.normal(next_mean, next_std)
 
             next_log_probs = (
                 -0.5

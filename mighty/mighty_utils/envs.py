@@ -86,6 +86,7 @@ def make_carl_env(
     cfg: DictConfig,
 ) -> Tuple[type[CARLVectorEnvSimulator], Callable, int]:
     """Make carl environment."""
+
     import carl
     from carl import envs
     from carl.context.sampler import ContextSampler

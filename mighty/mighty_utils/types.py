@@ -12,6 +12,7 @@ TypeKwargs = NewType("TypeKwargs", dict[str, Any] | DictConfig)
 
 MIGHTYENV = None
 
+
 dacbench = importlib.util.find_spec("dacbench")
 dacbench_found = dacbench is not None
 if dacbench_found:

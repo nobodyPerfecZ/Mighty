@@ -12,7 +12,12 @@ import torch
 import wandb
 from omegaconf import DictConfig
 from rich import print
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingColumn
+from rich.table import Table
+from uniplot import plot_to_string
 
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
@@ -304,9 +309,9 @@ class MightyAgent(ABC):
             agent_update_metrics = self.update_agent(
                 transition_batch=batch, batches_left=batches_left, **update_kwargs
             )
-            
+
             # FIXME: EWRL: Move logging out of gradient steps
-            
+
             metrics.update(agent_update_metrics)
 
             metrics = {k: np.array(v) for k, v in metrics.items()}
@@ -363,6 +368,56 @@ class MightyAgent(ABC):
         del metrics["update_batches"]
         return metrics
 
+    def make_logging_table(
+        self, step, episode_reward, step_reward, evaluation_reward, actions
+    ) -> Table:
+        table = Table(title="Training Stats")
+        table.add_column("Metric", style="yellow", justify="center")
+        table.add_column("At step", style="magenta", justify="center")
+        table.add_column("Latest Mean", style="yellow", justify="center")
+        table.add_column("Latest Std", style="yellow", justify="center")
+
+        table.add_row(
+            "Mean Episode Reward",
+            f"{step}",
+            str(np.round(np.mean(episode_reward), decimals=2)),
+            str(np.round(np.std(episode_reward), decimals=2)),
+        )
+        table.add_row(
+            "Mean Step Reward",
+            f"{step}",
+            str(np.round(np.mean(step_reward), decimals=2)),
+            str(np.round(np.std(step_reward), decimals=2)),
+        )
+        table.add_row(
+            "Mean Eval Reward",
+            f"{step}",
+            str(np.round(np.mean(evaluation_reward), decimals=2)),
+            str(np.round(np.std(evaluation_reward), decimals=2)),
+        )
+        table.add_row(
+            "Mean Action",
+            f"{step}",
+            str(np.round(np.mean(actions), decimals=2)),
+            str(np.round(np.std(actions), decimals=2)),
+        )
+        return table
+
+    def get_plot(self, steps, performances: list, label) -> Panel:
+        return Panel(
+            plot_to_string(
+                xs=steps,
+                ys=performances,
+                title=label,
+                height=8,
+                x_min=0,
+                x_unit="steps",
+                y_min=0,
+                y_unit="reward",
+                lines=True,
+            )
+        )
+
     def run(  # noqa: PLR0915
         self,
         n_steps: int,
@@ -375,8 +430,33 @@ class MightyAgent(ABC):
         episodes = 0
         if env is not None:
             self.env = env
-        # FIXME: can we add the eval result here? Else the evals spam the command line in a pretty ugly way
-        with Progress(
+
+        logging_layout = Layout()
+        logging_layout.split_column(
+            Layout(name="upper"), Layout(name="middle"), Layout(name="lower")
+        )
+        logging_layout["middle"].split_row(
+            Layout(name="left"),
+            Layout(name="right"),
+        )
+        logging_layout["lower"].split_row(
+            Layout(name="left"),
+            Layout(name="right"),
+        )
+
+        metrics_table = self.make_logging_table(0, [0], [0], [0], [0])  # type: ignore
+        training_detail_table = Table(title="Training Details")
+        training_detail_table.add_column("Name", style="cyan", justify="center")
+        training_detail_table.add_column("Value", style="cyan", justify="center")
+        training_detail_table.add_row("Training Steps", str(n_steps))
+        training_detail_table.add_row("Seed", str(self.seed))
+        training_detail_table.add_row("Learning Rate", str(self.learning_rate))
+        training_detail_table.add_row("Batch Size", str(self._batch_size))
+
+        logging_layout["middle"]["left"].update(metrics_table)
+        logging_layout["middle"]["right"].update(training_detail_table)
+
+        progress = Progress(
             "[progress.description]{task.description}",
             BarColumn(),
             "[progress.percentage]{task.percentage:>3.0f}%",
@@ -385,15 +465,28 @@ class MightyAgent(ABC):
             "Elapsed:",
             TimeElapsedColumn(),
             disable=not self.render_progress,
-        ) as progress:
-            steps_task = progress.add_task(
-                "Train Steps",
-                total=n_steps - self.steps,
-                start=False,
-                visible=False,
-            )
+        )
+        steps_task = progress.add_task(
+            "Train Steps",
+            total=n_steps - self.steps,
+            start=False,
+            visible=False,
+        )
+        progress.start_task(steps_task)
+
+        progress_table = Table.grid(expand=True)
+        progress_table.add_row(
+            Panel(
+                progress,
+                title="Training Progress",
+                border_style="green",
+                padding=(2, 2),
+            ),
+        )
+        logging_layout["upper"].update(progress_table)
+
+        with Live(logging_layout, refresh_per_second=10, vertical_overflow="visible"):
             steps_since_eval = 0
-            progress.start_task(steps_task)
             # FIXME: this is more of a question: are there cases where we don't want to reset this completely?
             # I can't think of any, can you? If yes, we should maybe add this as an optional argument
             metrics = {
@@ -418,13 +511,23 @@ class MightyAgent(ABC):
             if not torch.is_tensor(last_episode_reward):
                 last_episode_reward = torch.tensor(last_episode_reward).float()
             progress.update(steps_task, visible=True)
+            recent_episode_reward = []
+            recent_step_reward = []
+            recent_actions = []
+            evaluation_reward = []
+            eval_curve = [0]
+            learning_curve = [0]
+            curve_xs = [0]
+            logging_layout["lower"]["left"].update(
+                self.get_plot(curve_xs, learning_curve, "Training Reward")
+            )
+            logging_layout["lower"]["right"].update(
+                self.get_plot(curve_xs, eval_curve, "Evaluation Reward")
+            )
 
             # Main loop: rollouts, training and evaluation
             while self.steps < n_steps:
                 metrics["episode_reward"] = episode_reward
-
-                # TODO Remove
-                progress.stop()
 
                 action, log_prob = self.step(curr_s, metrics)
 
@@ -449,6 +552,10 @@ class MightyAgent(ABC):
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
                 metrics["transition"] = t
+
+                recent_actions.append(np.mean(action))
+                if len(recent_actions) > 100:
+                    recent_actions.pop(0)
 
                 for k in self.meta_modules:
                     self.meta_modules[k].post_step(metrics)
@@ -491,19 +598,28 @@ class MightyAgent(ABC):
                 # Evaluate
                 if eval_every_n_steps and steps_since_eval >= eval_every_n_steps:
                     steps_since_eval = 0
-                    self.evaluate()
+                    eval_metrics = self.evaluate()
+                    evaluation_reward = eval_metrics["eval_rewards"]
 
                 # Log to command line
                 if self.steps % human_log_every_n_steps == 0 and self.verbose:
-                    mean_last_ep_reward = np.round(
-                        np.mean(last_episode_reward), decimals=2
+                    metrics_table = self.make_logging_table(
+                        self.steps,
+                        recent_episode_reward,
+                        recent_step_reward,
+                        evaluation_reward,
+                        recent_actions,
                     )
-                    mean_last_step_reward = np.round(
-                        np.mean(mean_last_ep_reward / len(last_episode_reward)),
-                        decimals=2,
+                    logging_layout["middle"]["left"].update(metrics_table)
+                    eval_curve.append(np.mean(evaluation_reward))
+                    learning_curve.append(np.mean(recent_episode_reward))
+                    curve_xs.append(self.steps)
+
+                    logging_layout["lower"]["left"].update(
+                        self.get_plot(curve_xs, learning_curve, "Training Reward")
                     )
-                    print(
-                        f"""Steps: {self.steps}, Latest Episode Reward: {mean_last_ep_reward}, Latest Step Reward: {mean_last_step_reward}"""  # noqa: E501
+                    logging_layout["lower"]["right"].update(
+                        self.get_plot(curve_xs, eval_curve, "Evaluation Reward")
                     )
 
                 # Save
@@ -524,6 +640,13 @@ class MightyAgent(ABC):
                     last_episode_reward = np.where(  # type: ignore
                         dones, episode_reward, last_episode_reward
                     )
+                    recent_episode_reward.append(np.mean(last_episode_reward))
+                    recent_step_reward.append(
+                        np.mean(last_episode_reward) / len(last_episode_reward)
+                    )
+                    if len(recent_episode_reward) > 10:
+                        recent_episode_reward.pop(0)
+                        recent_step_reward.pop(0)
                     episode_reward = np.where(dones, 0, episode_reward)  # type: ignore
                     # End episode
                     if isinstance(self.env, DACENV) or isinstance(self.env, CARLENV):
@@ -560,7 +683,6 @@ class MightyAgent(ABC):
             else:
                 print(f"Trying to set hyperparameter {algo_name} which does not exist.")
 
-    # FIXME: as above, logging down here is ugly and we should add it to the progress bar instead
     def evaluate(self, eval_env: MIGHTYENV | None = None) -> Dict:  # type: ignore
         """Eval agent on an environment. (Full rollouts).
 
@@ -600,27 +722,9 @@ class MightyAgent(ABC):
             "mean_eval_step_reward": np.mean(rewards) / steps,
             "mean_eval_reward": np.mean(rewards),
             "instance": instance,
+            "eval_rewards": rewards,
         }
         self.eval_buffer = update_buffer(self.eval_buffer, eval_metrics)
-
-        # FIXME: this is the ugly I'm talking about
-        if self.verbose:
-            print("")
-            print(
-                "------------------------------------------------------------------------------"
-            )
-            print(
-                f"""Evaluation performance after {self.steps} steps:
-                {np.round(np.mean(rewards), decimals=2)}"""
-            )
-            print(
-                f"""Evaluation performance per step after {self.steps} steps:
-                {np.round(np.mean(rewards / steps), decimals=2)}"""
-            )
-            print(
-                "------------------------------------------------------------------------------"
-            )
-            print("")
 
         if self.log_wandb:
             wandb.log(eval_metrics)

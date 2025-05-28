@@ -59,7 +59,10 @@ class SPaCE(MightyMetaComponent):
                 / (self.last_evals + 1e-6)
                 <= self.threshold
             ):
-                self.current_instance_set_size = min(self.current_instance_set_size+self.increase_by_k_instances, len(self.all_instances))
+                self.current_instance_set_size = min(
+                    self.current_instance_set_size + self.increase_by_k_instances,
+                    len(self.all_instances),
+                )
             self.last_evals = np.nanmean(rollout_values)
             evals = self.get_evals(env, vf)
             if self.criterion == "improvement":

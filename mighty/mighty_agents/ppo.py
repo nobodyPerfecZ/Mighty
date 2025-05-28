@@ -293,7 +293,6 @@ class MightyPPOAgent(MightyAgent):
             self.checkpoint_dir / "optimizer.pt",
         )
 
-
         if self.verbose:
             print(f"Saved checkpoint at {self.checkpoint_dir}")
 
