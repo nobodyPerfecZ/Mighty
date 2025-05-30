@@ -43,7 +43,8 @@ dependencies = [
     "imageio",
     "evosax==0.1.6",
     "rliable",
-    "seaborn"
+    "seaborn", 
+    "uniplot"
 ]
 
 [project.optional-dependencies]
