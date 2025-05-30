@@ -66,6 +66,7 @@ These are classes that maintain lists of function calls to make at different poi
         self.post_episode_methods = []
 ```
 This gives meta modules a lot of flexibility of when to act upon training. Additionally, each of these function calls is given a "metrics" dictionary. This dictionary contains most, if not all, relevant information about training progress, e.g.:
+
 - the last transitions
 - the last losses, errors and predictions
 - policy, Q- and value-networks
@@ -86,5 +87,6 @@ The way they are used in the RL loop is fixed, however, such that these are a bi
 Agent loops outside of exploration, buffers and updates are harder to alter in Mighty, since Mighty is primarily focused on meta-methods.
 You can control the network architecture of your agent fairly easily, however. 
 There are two principal avenues for this: 
+
 1. You can use one of the pre-defined Mighty Models and configure it to use a different network architecture in the config. We use torch internally, that means you can allocate torch.nn layers and activations in different parts of these networks to form a custom architecture.
 2. If you also want to customize what exactly the network predicts or add things like frozen weights, you probably want to implement your own Mighty Model. These always contain a 'feature_extractor' as a base and can vary beyond that.

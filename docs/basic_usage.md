@@ -14,6 +14,7 @@ This meta methods list collects all meta modules in the order they should be use
 
 ### Implementing New Components
 Of course Mighty currently only supports a limited amount of methods. This is where you come in! It should be fairly easy for you to add your own. We recommend following these steps:
+
 1. What are you adding? A runner, meta module, exploration policy, buffer, update variation or model? Make sure you choose the best level to implement your idea in.
 2. Implement your method using the abstract class and existing methods as templates.
 3. Plug your class into your Mighty config file. This works by replacing the default value with the import path of your custom class.

@@ -7,6 +7,7 @@ to actually applications using Mighty!
 
 ### What Can I Do With Mighty?
 Mighty offers a lot of flexibility for training general agents with online RL:
+
 - train on standard and contextual RL environments
 - apply outer-loop methods like Bayesian Optimization or Evolutionary Strategies for Meta-Learning, Hyperparameter Optimization and more
 - use in-the-loop ideas like curriculum learning to enhance training

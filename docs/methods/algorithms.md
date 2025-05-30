@@ -7,10 +7,10 @@ Mighty has a central 'base_agent.py' class which handles the environment interac
 Algorithms are built as subclasses of this agent and define the structure of its value and policy functions as well as any additional preprocessing that needs to happen for initialization or before updates.
 All other algorithm components have their own classes which can easily be replaced. These are:
 
-- models
-- policies
-- buffers
-- updates
+- Models
+- Policies
+- Buffers
+- Updates
 
 Combined, these four implement the majority of algorithm functionality. You can think of the DQN, SAC and PPO algorithm classes as defining an algorithm structure and the assosciated components implementing the actual interaction patterns. 
 This also means that in most cases, you likely want to modify the algorithm components instead of the base class.
