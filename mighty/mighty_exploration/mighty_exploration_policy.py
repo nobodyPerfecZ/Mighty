@@ -71,7 +71,7 @@ class MightyExplorationPolicy:
 
         return output
 
-    def explore(self, s, return_logp, _):
+    def explore(self, s, return_logp, metrics=None):
         """Explore.
 
         :param s: state

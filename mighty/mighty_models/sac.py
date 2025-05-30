@@ -1,75 +1,108 @@
+import torch
 from torch import nn
 
 from mighty.mighty_models.networks import make_feature_extractor
 
 
 class SACModel(nn.Module):
-    """SAC Model with policy and Q-networks."""
+    """SAC Model with squashed Gaussian policy and twin Q-networks."""
 
-    def __init__(self, obs_size, action_size, hidden_sizes=[64, 64], activation="relu"):
+    def __init__(
+        self,
+        obs_size: int,
+        action_size: int,
+        hidden_sizes: list[int] = [64, 64],
+        activation: str = "relu",
+        log_std_min: float = -20,
+        log_std_max: float = 2,
+    ):
         super().__init__()
         self.obs_size = obs_size
         self.action_size = action_size
+        self.log_std_min = log_std_min
+        self.log_std_max = log_std_max
+        self.hidden_sizes = hidden_sizes
+        self.activation = activation
 
-        # Policy network mapping observations to actions
+        # Shared feature extractor for policy and Q-networks
+        extractor, out_dim = make_feature_extractor(
+            architecture="mlp",
+            obs_shape=obs_size,
+            n_layers=len(hidden_sizes),
+            hidden_sizes=hidden_sizes,
+            activation=activation,
+        )
+
+        # Policy network outputs mean and log_std
         self.policy_net = nn.Sequential(
-            make_feature_extractor(
-                architecture="mlp",
-                obs_shape=obs_size,
-                n_layers=len(hidden_sizes),
-                hidden_sizes=hidden_sizes,
-                activation=activation,
-            )[0],
-            nn.Linear(hidden_sizes[-1], 2),
+            extractor,
+            nn.Linear(out_dim, action_size * 2),
         )
 
-        # Q-networks mapping observation and actions to Q-values
-        self.q_net1 = nn.Sequential(
-            make_feature_extractor(
-                architecture="mlp",
-                obs_shape=obs_size + action_size,
-                n_layers=len(hidden_sizes),
-                hidden_sizes=hidden_sizes,
-                activation=activation,
-            )[0],
-            nn.Linear(hidden_sizes[-1], 1),
-        )
-        self.q_net2 = nn.Sequential(
-            make_feature_extractor(
-                architecture="mlp",
-                obs_shape=obs_size + action_size,
-                n_layers=len(hidden_sizes),
-                hidden_sizes=hidden_sizes,
-                activation=activation,
-            )[0],
-            nn.Linear(hidden_sizes[-1], 1),
-        )
+        # Twin Q-networks
+        # — live Q-nets —
+        self.q_net1 = self._make_q_net()
+        self.q_net2 = self._make_q_net()
 
-        # Value network
-        self.value_net = nn.Sequential(
-            make_feature_extractor(
-                architecture="mlp",
-                obs_shape=obs_size,
-                n_layers=len(hidden_sizes),
-                hidden_sizes=hidden_sizes,
-                activation=activation,
-            )[0],
-            nn.Linear(hidden_sizes[-1], 1),
-        )
+        self.target_q_net1 = self._make_q_net()
+        self.target_q_net1.load_state_dict(self.q_net1.state_dict())
+        self.target_q_net2 = self._make_q_net()
+        self.target_q_net2.load_state_dict(self.q_net2.state_dict())
+        for p in self.target_q_net1.parameters():
+            p.requires_grad = False
+        for p in self.target_q_net2.parameters():
+            p.requires_grad = False
 
-    def forward(self, state):
+    def _make_q_net(self) -> nn.Sequential:
+        q_in = self.obs_size + self.action_size
+        q_extractor, _ = make_feature_extractor(
+            architecture="mlp",
+            obs_shape=q_in,
+            n_layers=len(self.hidden_sizes),
+            hidden_sizes=self.hidden_sizes,
+            activation=self.activation,
+        )
+        return nn.Sequential(q_extractor, nn.Linear(self.hidden_sizes[-1], 1))
+
+    def forward(self, state: torch.Tensor, deterministic: bool = False):
+        """
+        Forward pass for policy sampling.
+
+        Returns:
+          action: torch.Tensor in [-1,1]
+          z: raw Gaussian sample before tanh
+          mean: Gaussian mean
+          log_std: Gaussian log std
+        """
         x = self.policy_net(state)
         mean, log_std = x.chunk(2, dim=-1)
-        # FIXME: EWRL:this should probably be a hyperparameter
-        log_std = log_std.clamp(-20, 2)
-        return mean, log_std.exp()
+        log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+        std = torch.exp(log_std)
 
-    # FIXME: EWRL: do all of these really need to be separate functions?
-    def forward_q1(self, state_action):
+        if deterministic:
+            z = mean
+        else:
+            z = mean + std * torch.randn_like(mean)
+        action = torch.tanh(z)
+        return action, z, mean, log_std
+
+    def policy_log_prob(
+        self, z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Compute log-prob of action a = tanh(z), correcting for tanh transform.
+        """
+        std = torch.exp(log_std)
+        dist = torch.distributions.Normal(mean, std)
+        log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
+        # Tanh correction term
+        log_pa = log_pz - (2 * (z - torch.tanh(z).abs().log1p())).sum(
+            dim=-1, keepdim=True
+        )
+        return log_pa
+
+    def forward_q1(self, state_action: torch.Tensor) -> torch.Tensor:
         return self.q_net1(state_action)
 
-    def forward_q2(self, state_action):
+    def forward_q2(self, state_action: torch.Tensor) -> torch.Tensor:
         return self.q_net2(state_action)
-
-    def forward_value(self, state):
-        return self.value_net(state)

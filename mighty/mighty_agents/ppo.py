@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
-import wandb
 from omegaconf import DictConfig
 
+import wandb
 from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
 from mighty.mighty_exploration import MightyExplorationPolicy, StochasticPolicy
 from mighty.mighty_models.ppo import PPOModel

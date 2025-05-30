@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Type, Union
 
-import numpy as np
 import torch
 from omegaconf import DictConfig
 
@@ -17,83 +16,77 @@ class MightySACAgent(MightyAgent):
     def __init__(
         self,
         output_dir: Path,
-        env: MIGHTYENV,  # type: ignore
-        eval_env: MIGHTYENV | None = None,  # type: ignore
+        env: MIGHTYENV,
+        eval_env: Optional[MIGHTYENV] = None,
         seed: Optional[int] = None,
-        learning_rate: float = 0.001,
+        # --- PPO-style network sizes ---
+        n_policy_units: int = 64,
+        n_critic_units: int = 64,
+        soft_update_weight: float = 0.005,
+        # --- Replay & update scheduling ---
+        batch_size: int = 256,
+        learning_starts: int = 10000,
+        update_every: int = 50,
+        n_gradient_steps: int = 1,
+        # --- Learning rates ---
+        policy_lr: float = 3e-4,
+        q_lr: float = 3e-4,
+        # --- SAC hyperparameters ---
         gamma: float = 0.99,
-        batch_size: int = 64,
-        learning_starts: int = 1,
+        alpha: float = 0.2,
+        # --- Network architecture (optional override) ---
+        hidden_sizes: Optional[List[int]] = None,
+        activation: str = "relu",
+        log_std_min: float = -20,
+        log_std_max: float = 2,
+        # --- Logging & buffer ---
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: Optional[Dict] = None,
-        replay_buffer_class: Optional[Type[MightyReplay]] = MightyReplay,
+        replay_buffer_class: Type[MightyReplay] = MightyReplay,
         replay_buffer_kwargs: Optional[TypeKwargs] = None,
-        meta_methods: Optional[List[str | type]] = None,
+        meta_methods: Optional[List[Union[str, type]]] = None,
         meta_kwargs: Optional[List[TypeKwargs]] = None,
-        n_policy_units: int = 8,
-        n_critic_units: int = 8,
-        soft_update_weight: float = 0.01,
         policy_class: Optional[
             Union[str, DictConfig, Type[MightyExplorationPolicy]]
         ] = None,
         policy_kwargs: Optional[Dict] = None,
-        tau: float = 0.005,
-        alpha: float = 0.2,
-        n_gradient_steps: int = 1,
     ):
-        """Initialize the SAC agent.
+        """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
+        # Map PPO-style units to hidden_sizes if not provided
+        if hidden_sizes is None:
+            hidden_sizes = [n_policy_units, n_policy_units]
+        tau = soft_update_weight
 
-        Creates all relevant class variables and calls the agent-specific init function.
-
-        :param env: Train environment
-        :param eval_env: Evaluation environment
-        :param seed: Seed for random number generators
-        :param learning_rate: Learning rate for training
-        :param gamma: Discount factor
-        :param batch_size: Batch size for training
-        :param learning_starts: Number of steps before learning starts
-        :param render_progress: Whether to render progress
-        :param log_wandb: Log to Weights and Biases
-        :param wandb_kwargs: Arguments for Weights and Biases logging
-        :param replay_buffer_class: Replay buffer class
-        :param replay_buffer_kwargs: Arguments for the replay buffer
-        :param meta_methods: Meta methods for the agent
-        :param meta_kwargs: Arguments for meta methods
-        :param n_policy_units: Number of units for the policy network
-        :param n_critic_units: Number of units for the critic network
-        :param soft_update_weight: Size of soft updates for the target network
-        :param policy_class: Policy class
-        :param policy_kwargs: Arguments for the policy
-        :param tau: Soft update parameter
-        :param alpha: Entropy coefficient
-        :param n_gradient_steps: Number of gradient steps per update
-        """
+        # Save hyperparameters
+        self.batch_size = batch_size
+        self.learning_starts = learning_starts
+        self.update_every = update_every
+        self.n_gradient_steps = n_gradient_steps
+        self.policy_lr = policy_lr
+        self.q_lr = q_lr
         self.gamma = gamma
-        self.n_policy_units = n_policy_units
-        self.n_critic_units = n_critic_units
-        self.soft_update_weight = soft_update_weight
         self.tau = tau
         self.alpha = alpha
+        self.hidden_sizes = hidden_sizes
+        self.activation = activation
+        self.log_std_min = log_std_min
+        self.log_std_max = log_std_max
 
-        # Placeholder variables which are filled in self._initialize_agent
+        # Placeholders for model and updater
         self.model: SACModel | None = None
         self.update_fn: SACUpdate | None = None
 
-        # Policy class
-        policy_class = retrieve_class(cls=policy_class, default_cls=StochasticPolicy)  # type: ignore
-        if policy_kwargs is None:
-            policy_kwargs = {}
+        # Exploration policy class
+        policy_class = retrieve_class(cls=policy_class, default_cls=StochasticPolicy)
         self.policy_class = policy_class
-        self.policy_kwargs = policy_kwargs
+        self.policy_kwargs = policy_kwargs or {}
 
         super().__init__(
             env=env,
             output_dir=output_dir,
             seed=seed,
             eval_env=eval_env,
-            learning_rate=learning_rate,
-            batch_size=batch_size,
             learning_starts=learning_starts,
             n_gradient_steps=n_gradient_steps,
             render_progress=render_progress,
@@ -105,146 +98,135 @@ class MightySACAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
         )
 
+        # Initialize loss buffer for logging
         self.loss_buffer = {
-            "Update/q_loss1": [],
-            "Update/q_loss2": [],
-            "Update/policy_loss": [],
+            "q_loss1": [],
+            "q_loss2": [],
+            "policy_loss": [],
+            "td_error1": [],
+            "td_error2": [],
             "step": [],
         }
 
     def _initialize_agent(self) -> None:
-        """Initialize SAC specific components."""
+        # Determine dimensions
+        obs_dim = self.env.single_observation_space.shape[0]
+        act_dim = self.env.single_action_space.shape[0]
 
+        # Build the SACModel
         self.model = SACModel(
-            obs_size=self.env.single_observation_space.shape[0],  # type: ignore
-            action_size=self.env.single_action_space.shape[0],  # type: ignore
+            obs_size=obs_dim,
+            action_size=act_dim,
+            hidden_sizes=self.hidden_sizes,
+            activation=self.activation,
+            log_std_min=self.log_std_min,
+            log_std_max=self.log_std_max,
         )
+
+        # Exploration policy wrapper
         self.policy = self.policy_class(
             algo=self, model=self.model, **self.policy_kwargs
         )
+
+        # Updater
         self.update_fn = SACUpdate(
             model=self.model,
-            policy_lr=self.learning_rate,
-            q_lr=self.learning_rate,
-            value_lr=self.learning_rate,
+            policy_lr=self.policy_lr,
+            q_lr=self.q_lr,
             tau=self.tau,
             alpha=self.alpha,
             gamma=self.gamma,
         )
 
-    @property
-    def value_function(self) -> torch.nn.Module:
-        """Return the value function model."""
-        return self.model.value_net  # type: ignore
-
-    def update_agent(self, transition_batch, batches_left, **kwargs) -> Dict:  # type: ignore
-        """Update the agent using SAC.
-
-        :return: Dictionary containing the update metrics.
-        """
-        if len(self.buffer) < self._learning_starts:  # type: ignore
+    def update_agent(self, *args, **kwargs) -> Dict[str, float]:
+        # Only update at intervals after warmup
+        if self.steps < self.learning_starts or self.steps % self.update_every != 0:
             return {}
 
-        metrics_sac: Dict = {}
+        # Accumulate metrics over multiple gradient steps
+        metrics_acc: Dict[str, float] = {}
+        for _ in range(self.n_gradient_steps):
+            batch = self.buffer.sample(self.batch_size)
+            metrics = self.update_fn.update(batch)
+            for k, v in metrics.items():
+                metrics_acc.setdefault(k, 0.0)
+                metrics_acc[k] += v
+        # Average
+        for k in metrics_acc:
+            metrics_acc[k] /= self.n_gradient_steps
 
-        metrics_sac.update(self.update_fn.update(transition_batch))  # type: ignore
+        # Log to buffer and wandb
+        stats = {**metrics_acc, "step": self.steps}
+        self.loss_buffer = update_buffer(self.loss_buffer, stats)
+        if self.log_wandb:
+            import wandb
 
-        # Log metrics
-        loss_stats = {
-            "Update/q_loss1": metrics_sac["q_loss1"],
-            "Update/q_loss2": metrics_sac["q_loss2"],
-            "Update/policy_loss": metrics_sac["policy_loss"],
-            "step": self.steps,
-        }
-        self.loss_buffer = update_buffer(self.loss_buffer, loss_stats)
-        return metrics_sac
+            wandb.log(stats, step=self.steps)
 
-    def process_transition(  # type: ignore
-        self, curr_s, action, reward, next_s, dones, log_prob=None, metrics=None
+        return metrics_acc
+
+    def process_transition(
+        self,
+        curr_s,
+        action,
+        reward,
+        next_s,
+        dones,
+        log_prob=None,
+        metrics: Optional[Dict] = None,
     ) -> Dict:
-        # convert into a transition object
+        # Ensure metrics dict
+        if metrics is None:
+            metrics = {}
+        # Pack transition
         transition = TransitionBatch(curr_s, action, reward, next_s, dones)
+        # Compute per-transition TD errors for logging
+        td1, td2 = self.update_fn.calculate_td_error(transition)
+        metrics["td_error1"] = td1.detach().cpu().numpy()
+        metrics["td_error2"] = td2.detach().cpu().numpy()
+        # Add to replay buffer
+        self.buffer.add(transition, metrics)
+        return metrics
 
-        if "rollout_values" not in metrics:
-            metrics["rollout_values"] = np.empty((0, self.env.single_action_space.n))  # type: ignore
+    @property
+    def value_function(self) -> torch.nn.Module:
+        """Value function for compatibility: V(s) = min(Q1,Q2)(s, a_policy) - alpha * log_pi(a|s)."""
+        # Lazily create a wrapper module
+        import torch
 
-        # Add Td-error to metrics
-        metrics["td_error"] = (
-            self.qlearning.td_error(transition, self.q, self.q_target).detach().numpy()  # type: ignore
-        )
+        class _ValueFunction(torch.nn.Module):
+            def __init__(self, agent):
+                super().__init__()
+                self.agent = agent
 
-        # Compute and add rollout values to metrics
-        values = (
-            self.value_function(
-                torch.as_tensor(transition.observations, dtype=torch.float32)
-            )
-            .detach()
-            .numpy()
-            .reshape((transition.observations.shape[0], -1))
-        )
+            def forward(self, state):
+                state_t = torch.as_tensor(state, dtype=torch.float32)
+                with torch.no_grad():
+                    # deterministic policy action
+                    a, z, mean, log_std = self.agent.model(state_t, deterministic=True)
+                    logp = self.agent.model.policy_log_prob(z, mean, log_std)
+                    sa = torch.cat([state_t, a], dim=-1)
+                    q1 = self.agent.model.q_net1(sa)
+                    q2 = self.agent.model.q_net2(sa)
+                    return torch.min(q1, q2) - self.agent.alpha * logp
 
-        metrics["rollout_values"] = np.append(metrics["rollout_values"], values, axis=0)
-
-        # Add the transition to the buffer
-        self.buffer.add(transition, metrics)  # type: ignore
-
-        return metrics  # type: ignore
+        if not hasattr(self, "_vf_module"):
+            self._vf_module = _ValueFunction(self)
+        return self._vf_module
 
     def save(self, t: int) -> None:
-        """Save current agent state."""
         super().make_checkpoint_dir(t)
         torch.save(
-            self.model.policy_net.state_dict(),  # type: ignore
-            self.checkpoint_dir / "policy_net.pt",
+            self.model.policy_net.state_dict(), self.checkpoint_dir / "policy_net.pt"
         )
-        torch.save(self.model.q_net1.state_dict(), self.checkpoint_dir / "q_net1.pt")  # type: ignore
-        torch.save(self.model.q_net2.state_dict(), self.checkpoint_dir / "q_net2.pt")  # type: ignore
-        torch.save(
-            self.model.value_net.state_dict(),  # type: ignore
-            self.checkpoint_dir / "value_net.pt",
-        )
-        torch.save(
-            self.update_fn.policy_optimizer.state_dict(),  # type: ignore
-            self.checkpoint_dir / "policy_optimizer.pt",
-        )
-        torch.save(
-            self.update_fn.q_optimizer1.state_dict(),  # type: ignore
-            self.checkpoint_dir / "q_optimizer1.pt",
-        )
-        torch.save(
-            self.update_fn.q_optimizer2.state_dict(),  # type: ignore
-            self.checkpoint_dir / "q_optimizer2.pt",
-        )
-        torch.save(
-            self.update_fn.value_optimizer.state_dict(),  # type: ignore
-            self.checkpoint_dir / "value_optimizer.pt",
-        )
-
-        if self.verbose:
-            print(f"Saved checkpoint at {self.checkpoint_dir}")
+        torch.save(self.model.q_net1.state_dict(), self.checkpoint_dir / "q_net1.pt")
+        torch.save(self.model.q_net2.state_dict(), self.checkpoint_dir / "q_net2.pt")
 
     def load(self, path: str) -> None:
-        """Load the internal state of the agent."""
-        base_path = Path(path)
-        self.model.policy_net.load_state_dict(torch.load(base_path / "policy_net.pt"))  # type: ignore
-        self.model.q_net1.load_state_dict(torch.load(base_path / "q_net1.pt"))  # type: ignore
-        self.model.q_net2.load_state_dict(torch.load(base_path / "q_net2.pt"))  # type: ignore
-        self.model.value_net.load_state_dict(torch.load(base_path / "value_net.pt"))  # type: ignore
-        self.update_fn.policy_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "policy_optimizer.pt")
-        )
-        self.update_fn.q_optimizer1.load_state_dict(  # type: ignore
-            torch.load(base_path / "q_optimizer1.pt")
-        )
-        self.update_fn.q_optimizer2.load_state_dict(  # type: ignore
-            torch.load(base_path / "q_optimizer2.pt")
-        )
-        self.update_fn.value_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "value_optimizer.pt")
-        )
-
-        if self.verbose:
-            print(f"Loaded checkpoint at {path}")
+        base = Path(path)
+        self.model.policy_net.load_state_dict(torch.load(base / "policy_net.pt"))
+        self.model.q_net1.load_state_dict(torch.load(base / "q_net1.pt"))
+        self.model.q_net2.load_state_dict(torch.load(base / "q_net2.pt"))
 
     @property
     def agent_type(self) -> str:

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
 from omegaconf import DictConfig
 from rich import print
 from rich.layout import Layout
@@ -19,6 +18,7 @@ from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingC
 from rich.table import Table
 from uniplot import plot_to_string
 
+import wandb
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
 from mighty.mighty_utils.types import CARLENV, DACENV, MIGHTYENV, retrieve_class
