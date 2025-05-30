@@ -2083,11 +2083,13 @@
 We implement some basic network architecture building block which can then be combined.
 You will usually choose a feature extractor architecture and a head architecture which can be the same or different. 
 Furthermore, you can combine two different architectures in the feature extractor. 
-You can choose between:
-- MLP: standard fully connected networks (flexible structure)
-- CNN: 1D or 2D convolutional networks (flexible structure)
-- ResNet: a 2D convolutional layer with two residual blocks
-- TorchHub model (experimental): loading models from TorchHub</p>
+You can choose between:</p>
+<ul>
+<li>MLP: standard fully connected networks (flexible structure)</li>
+<li>CNN: 1D or 2D convolutional networks (flexible structure)</li>
+<li>ResNet: a 2D convolutional layer with two residual blocks</li>
+<li>TorchHub model (experimental): loading models from TorchHub</li>
+</ul>
 <p>This should cover many standard combinations like a CNN feature extractor with an MLP head.</p>
 <h2 id="implemented-models">Implemented Models<a class="headerlink" href="#implemented-models" title="Permanent link">#</a></h2>
 <p>The implemented 'mighty_models' define the prediction patterns for different algorithm classes. 

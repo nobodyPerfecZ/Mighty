@@ -2099,11 +2099,13 @@
 <h2 id="how-algorithms-work">How Algorithms Work<a class="headerlink" href="#how-algorithms-work" title="Permanent link">#</a></h2>
 <p>Mighty has a central 'base_agent.py' class which handles the environment interaction, logging and calls to updates and meta components.
 Algorithms are built as subclasses of this agent and define the structure of its value and policy functions as well as any additional preprocessing that needs to happen for initialization or before updates.
-All other algorithm components have their own classes which can easily be replaced. These are:
-- models
-- policies
-- buffers
-- updates</p>
+All other algorithm components have their own classes which can easily be replaced. These are:</p>
+<ul>
+<li>models</li>
+<li>policies</li>
+<li>buffers</li>
+<li>updates</li>
+</ul>
 <p>Combined, these four implement the majority of algorithm functionality. You can think of the DQN, SAC and PPO algorithm classes as defining an algorithm structure and the assosciated components implementing the actual interaction patterns. 
 This also means that in most cases, you likely want to modify the algorithm components instead of the base class.</p>
 <h2 id="exploration-policies">Exploration Policies<a class="headerlink" href="#exploration-policies" title="Permanent link">#</a></h2>
@@ -2191,12 +2193,14 @@ This is why we recommend you be <strong>very careful</strong> when changing thin
 Think carefully why you can't accomplish your task in another way.
 If you believe you definitely need to touch the base agent, please also create an issue in the Mighty repo so we can improve the workflow!</p>
 <p>Here are possible changes in increasing order of possible problems. 
-Take this list as a guide to how much testing you should do for your additions:
-1. Changes to logging and command line output: this should be fairly unproblematic, if maybe slightly annoying. We would still be interested what you're missing!
-2. Changes to the evaluation: depending on what you change, this could be almost entirely independent of the rest of the loop. You should pay attention to maintaining the evaluation.
-3. Changes to meta component call timings: this can break existing components if you change the timing of existing functions. Adding new hooks should be fine in most cases, however. This is likely the most interesting case for us, so we'd be happy to discuss about our hook timings.
-4. Changes to the interaction: you should be careful here to maintain datatypes, shapes and counting. Also pay attention to the buffer interactions. This could easily break many parts of the loop, so be careful! 
-5. Changes to the base agent update functionality: changes here will almost surely generate several issues with the specific agent, update and model classes. Usually updates should really only be changed in the downstream classes. If you need large updates, talk to us on GitHub, but Mighty might not be the library for you.</p>
+Take this list as a guide to how much testing you should do for your additions:</p>
+<ol>
+<li>Changes to logging and command line output: this should be fairly unproblematic, if maybe slightly annoying. We would still be interested what you're missing!</li>
+<li>Changes to the evaluation: depending on what you change, this could be almost entirely independent of the rest of the loop. You should pay attention to maintaining the evaluation.</li>
+<li>Changes to meta component call timings: this can break existing components if you change the timing of existing functions. Adding new hooks should be fine in most cases, however. This is likely the most interesting case for us, so we'd be happy to discuss about our hook timings.</li>
+<li>Changes to the interaction: you should be careful here to maintain datatypes, shapes and counting. Also pay attention to the buffer interactions. This could easily break many parts of the loop, so be careful! </li>
+<li>Changes to the base agent update functionality: changes here will almost surely generate several issues with the specific agent, update and model classes. Usually updates should really only be changed in the downstream classes. If you need large updates, talk to us on GitHub, but Mighty might not be the library for you.</li>
+</ol>
 
 
 

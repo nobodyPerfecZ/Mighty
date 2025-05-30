@@ -2125,10 +2125,12 @@ It is also transmitted to many different Mighty components like the exploration 
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_episode_methods</span> <span class="o">=</span> <span class="p">[]</span>
 </code></pre></div>
 Each of these calls will receive the metrics dictionary, resulting in a very flexible type. 
-Right now Mighty contains a few meta-components doing very different things, e.g.:
-- task scheduling/curriculum learning
-- hyperparameter scheduling
-- intrinsic rewards</p>
+Right now Mighty contains a few meta-components doing very different things, e.g.:</p>
+<ul>
+<li>task scheduling/curriculum learning</li>
+<li>hyperparameter scheduling</li>
+<li>intrinsic rewards</li>
+</ul>
 <p>Meta-components are also stackable, i.e. you can run multiple ones per training run. 
 In principle, you can do almost anything in a meta-component, including training additional networks or calling the policy directly.
 Before you default to using this class, however, we recommend double checking if your idea isn't better suited to a more specific class.</p>
