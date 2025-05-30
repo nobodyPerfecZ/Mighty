@@ -20,7 +20,7 @@
     
     
       
-        <title>Algorithms - Mighty</title>
+        <title>Mighty Algorithms - Mighty</title>
       
     
     
@@ -86,6 +86,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#mighty-algorithms" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -121,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Algorithms
+              Mighty Algorithms
             
           </span>
         </div>
@@ -717,18 +722,106 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Mighty Algorithms
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    Algorithms
+    Mighty Algorithms
     
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-algorithms-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Algorithms Work
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exploration-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exploration Policies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buffers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Buffers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-should-i-implement-a-new-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      When Should I Implement A New Algorithm?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-base-agent-spicy-bits" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Base Agent - Spicy Bits
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -747,7 +840,7 @@
   
   
   <span class="md-ellipsis">
-    Architectures
+    Mighty Architectures
     
   </span>
   
@@ -770,7 +863,7 @@
   
   
   <span class="md-ellipsis">
-    Outer loops
+    Mighty Outer Loops
     
   </span>
   
@@ -793,7 +886,7 @@
   
   
   <span class="md-ellipsis">
-    Inner loops
+    Mighty Inner Loops
     
   </span>
   
@@ -1348,6 +1441,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/mighty/mighty_meta/rnd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rnd
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/mighty/mighty_meta/space/" class="md-nav__link">
         
   
@@ -1731,6 +1847,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/mighty/mighty_runners/mighty_eureka_runner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mighty eureka runner
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/mighty/mighty_runners/mighty_maml_runner/" class="md-nav__link">
         
   
@@ -1955,14 +2094,14 @@
   
 
 
-  <h1>Algorithms</h1>
-
-<ul>
-<li>Algorithms generally</li>
-<li>exploration policies</li>
-<li>buffers</li>
-<li>update classes</li>
-</ul>
+<h1 id="mighty-algorithms">Mighty Algorithms<a class="headerlink" href="#mighty-algorithms" title="Permanent link">#</a></h1>
+<p>Mighty implements three basic online RL algorithm classes: DQN, SAC and PPO. These can be extended and altered in a few different ways without implementing a completely new algorithm from scratch. This page will give you an overview how they're structured, what components you can work with and when it's time to code up a new algorithm.</p>
+<h2 id="how-algorithms-work">How Algorithms Work<a class="headerlink" href="#how-algorithms-work" title="Permanent link">#</a></h2>
+<h2 id="exploration-policies">Exploration Policies<a class="headerlink" href="#exploration-policies" title="Permanent link">#</a></h2>
+<h2 id="buffers">Buffers<a class="headerlink" href="#buffers" title="Permanent link">#</a></h2>
+<h2 id="updates">Updates<a class="headerlink" href="#updates" title="Permanent link">#</a></h2>
+<h2 id="when-should-i-implement-a-new-algorithm">When Should I Implement A New Algorithm?<a class="headerlink" href="#when-should-i-implement-a-new-algorithm" title="Permanent link">#</a></h2>
+<h2 id="the-base-agent-spicy-bits">The Base Agent - Spicy Bits<a class="headerlink" href="#the-base-agent-spicy-bits" title="Permanent link">#</a></h2>
 
 
 
@@ -2009,13 +2148,13 @@
         
         
           
-          <a href="../architectures/" class="md-footer__link md-footer__link--next" aria-label="Next: Architectures">
+          <a href="../architectures/" class="md-footer__link md-footer__link--next" aria-label="Next: Mighty Architectures">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Architectures
+                Mighty Architectures
               </div>
             </div>
             <div class="md-footer__button md-icon">

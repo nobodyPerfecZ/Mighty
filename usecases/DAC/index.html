@@ -777,7 +777,7 @@
   
   
   <span class="md-ellipsis">
-    Algorithms
+    Mighty Algorithms
     
   </span>
   
@@ -800,7 +800,7 @@
   
   
   <span class="md-ellipsis">
-    Architectures
+    Mighty Architectures
     
   </span>
   
@@ -823,7 +823,7 @@
   
   
   <span class="md-ellipsis">
-    Outer loops
+    Mighty Outer Loops
     
   </span>
   
@@ -846,7 +846,7 @@
   
   
   <span class="md-ellipsis">
-    Inner loops
+    Mighty Inner Loops
     
   </span>
   
@@ -1401,6 +1401,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/mighty/mighty_meta/rnd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rnd
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/mighty/mighty_meta/space/" class="md-nav__link">
         
   
@@ -1784,6 +1807,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/mighty/mighty_runners/mighty_eureka_runner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mighty eureka runner
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/mighty/mighty_runners/mighty_maml_runner/" class="md-nav__link">
         
   
@@ -2017,16 +2063,14 @@ DAC can easily be modelled as a contextual MDP and is thus a real-world applicat
 <h3 id="dynamic-algorithm-configuration-with-mighty">Dynamic Algorithm Configuration with Mighty<a class="headerlink" href="#dynamic-algorithm-configuration-with-mighty" title="Permanent link">#</a></h3>
 <p>In order to interface with configurable algorithms, we recommend <a href="https://github.com/automl/DACBench">DACBench</a>.
 It provides algorithms from different fields as well as artificial benchmarks, all with the OpenAI gym interface.</p>
-<p>Select the benchmark you want to run, for example the SigmoidBenchmark, and providing it as the "env" keyword:</p>
-<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>mighty/run_mighty.py<span class="w"> </span><span class="s1">&#39;algorithm=dqn&#39;</span><span class="w"> </span><span class="s1">&#39;env=SigmoidBenchmark&#39;</span>
+<p>Select the benchmark you want to run, for example the FunctionApproximationBenchmark, and providing it as the "env" keyword:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>mighty/run_mighty.py<span class="w"> </span><span class="s1">&#39;algorithm=dqn&#39;</span><span class="w"> </span><span class="s1">&#39;env=FunctionApproximationBenchmark&#39;</span>
 </code></pre></div>
 The naming here will make Mighty autodetect it as a DACBench environment.</p>
-<p>The benchmarks in DACBench have many configuration options. You can use your hydra configs to include your changes, simply use the keyword TDO</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>run_mighty.py<span class="w"> </span>TODO
+<p>The benchmarks in DACBench have many configuration options. You can use your hydra configs to include your changes, simply add them to the env_kwargs like this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>run_mighty.py<span class="w"> </span><span class="s1">&#39;algorithm=dqn&#39;</span><span class="w"> </span><span class="s1">&#39;env=FunctionApproximationBenchmark&#39;</span><span class="w"> </span><span class="s1">&#39;+env_kwargs.dimension=3&#39;</span>
 </code></pre></div>
-<p>Of course you can also load existing config files, e.g. to reproduce another experiment:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>run_mighty.py<span class="w"> </span>TODO
-</code></pre></div>
+<p>To see the full options for DACBench environments, refer to the <a href="https://automl.github.io/DACBench/main/index.html">DACBench documentation</a>.</p>
 
 
 
@@ -2073,13 +2117,13 @@ The naming here will make Mighty autodetect it as a DACBench environment.</p>
         
         
           
-          <a href="../../methods/algorithms/" class="md-footer__link md-footer__link--next" aria-label="Next: Algorithms">
+          <a href="../../methods/algorithms/" class="md-footer__link md-footer__link--next" aria-label="Next: Mighty Algorithms">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Algorithms
+                Mighty Algorithms
               </div>
             </div>
             <div class="md-footer__button md-icon">

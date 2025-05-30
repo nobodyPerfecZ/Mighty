@@ -718,7 +718,7 @@
   
   
   <span class="md-ellipsis">
-    Algorithms
+    Mighty Algorithms
     
   </span>
   
@@ -741,7 +741,7 @@
   
   
   <span class="md-ellipsis">
-    Architectures
+    Mighty Architectures
     
   </span>
   
@@ -764,7 +764,7 @@
   
   
   <span class="md-ellipsis">
-    Outer loops
+    Mighty Outer Loops
     
   </span>
   
@@ -787,7 +787,7 @@
   
   
   <span class="md-ellipsis">
-    Inner loops
+    Mighty Inner Loops
     
   </span>
   
@@ -1352,6 +1352,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../mighty_meta/rnd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rnd
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mighty_meta/space/" class="md-nav__link">
         
   
@@ -1720,6 +1743,29 @@
   
   <span class="md-ellipsis">
     Mighty es runner
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mighty_eureka_runner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mighty eureka runner
     
   </span>
   
@@ -2127,9 +2173,7 @@
 <span class="normal"><a href="#__codelineno-0-66">66</a></span>
 <span class="normal"><a href="#__codelineno-0-67">67</a></span>
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
-<span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse config and run Mighty agent.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a>    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">seed</span><span class="si">}</span><span class="s2">&quot;</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">output_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
@@ -2139,47 +2183,45 @@
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="c1"># Make train and eval env</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>    <span class="n">env</span><span class="p">,</span> <span class="n">base_eval_env</span><span class="p">,</span> <span class="n">eval_default</span> <span class="o">=</span> <span class="n">make_mighty_env</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>    <span class="c1"># TODO: move wrapping to env handling?</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>    <span class="n">wrapper_classes</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">env_wrappers</span><span class="p">:</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="n">wkwargs</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">wrapper_kwargs</span> <span class="k">if</span> <span class="s2">&quot;wrapper_kwargs&quot;</span> <span class="ow">in</span> <span class="n">cfg</span> <span class="k">else</span> <span class="p">{}</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>        <span class="bp">cls</span> <span class="o">=</span> <span class="n">get_class</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="n">env</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">wkwargs</span><span class="p">)</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="n">wrapper_classes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">cls</span><span class="p">,</span> <span class="n">wkwargs</span><span class="p">))</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wrap_eval</span><span class="p">():</span>  <span class="c1"># type: ignore</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">wrapped_env</span> <span class="o">=</span> <span class="n">base_eval_env</span><span class="p">()</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="k">for</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">wkwargs</span> <span class="ow">in</span> <span class="n">wrapper_classes</span><span class="p">:</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a>            <span class="n">wrapped_env</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">wrapped_env</span><span class="p">,</span> <span class="o">**</span><span class="n">wkwargs</span><span class="p">)</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="k">return</span> <span class="n">wrapped_env</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="n">eval_env</span> <span class="o">=</span> <span class="n">wrap_eval</span><span class="p">()</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="c1"># Setup agent</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="c1"># TODO: agent currently needs more than just algo and algo_kwargs (see logging)</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="n">agent_class</span> <span class="o">=</span> <span class="n">get_agent_class</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">algorithm</span><span class="p">)</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="n">args_agent</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">algorithm_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent_class</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>        <span class="n">eval_env</span><span class="o">=</span><span class="n">eval_env</span><span class="p">,</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="n">seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>        <span class="o">**</span><span class="n">args_agent</span><span class="p">,</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="p">)</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">eval_every_n_steps</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">eval_every_n_steps</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">num_steps</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="c1"># Load checkpoint if one is given</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">)</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;#&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading checkpoint at </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="c1"># Train</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a>    <span class="n">wrapper_classes</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">env_wrappers</span><span class="p">:</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="n">wkwargs</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">wrapper_kwargs</span> <span class="k">if</span> <span class="s2">&quot;wrapper_kwargs&quot;</span> <span class="ow">in</span> <span class="n">cfg</span> <span class="k">else</span> <span class="p">{}</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="bp">cls</span> <span class="o">=</span> <span class="n">get_class</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>        <span class="n">env</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">wkwargs</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="n">wrapper_classes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">cls</span><span class="p">,</span> <span class="n">wkwargs</span><span class="p">))</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wrap_eval</span><span class="p">():</span>  <span class="c1"># type: ignore</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="n">wrapped_env</span> <span class="o">=</span> <span class="n">base_eval_env</span><span class="p">()</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="k">for</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">wkwargs</span> <span class="ow">in</span> <span class="n">wrapper_classes</span><span class="p">:</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>            <span class="n">wrapped_env</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">wrapped_env</span><span class="p">,</span> <span class="o">**</span><span class="n">wkwargs</span><span class="p">)</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="k">return</span> <span class="n">wrapped_env</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="n">eval_env</span> <span class="o">=</span> <span class="n">wrap_eval</span><span class="p">()</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="c1"># Setup agent</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="n">agent_class</span> <span class="o">=</span> <span class="n">get_agent_class</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">algorithm</span><span class="p">)</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="n">args_agent</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">algorithm_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent_class</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>        <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="n">eval_env</span><span class="o">=</span><span class="n">eval_env</span><span class="p">,</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>        <span class="n">seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="o">**</span><span class="n">args_agent</span><span class="p">,</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="p">)</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">eval_every_n_steps</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">eval_every_n_steps</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">num_steps</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="c1"># Load checkpoint if one is given</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">)</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;#&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading checkpoint at </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="c1"># Train</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;#&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Using agent type &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="si">}</span><span class="s1">&quot; to learn&#39;</span><span class="p">)</span>
 <a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;#&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Using agent type &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="si">}</span><span class="s1">&quot; to learn&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;#&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 

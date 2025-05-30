@@ -718,7 +718,7 @@
   
   
   <span class="md-ellipsis">
-    Algorithms
+    Mighty Algorithms
     
   </span>
   
@@ -741,7 +741,7 @@
   
   
   <span class="md-ellipsis">
-    Architectures
+    Mighty Architectures
     
   </span>
   
@@ -764,7 +764,7 @@
   
   
   <span class="md-ellipsis">
-    Outer loops
+    Mighty Outer Loops
     
   </span>
   
@@ -787,7 +787,7 @@
   
   
   <span class="md-ellipsis">
-    Inner loops
+    Mighty Inner Loops
     
   </span>
   
@@ -1440,6 +1440,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../mighty_meta/rnd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rnd
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mighty_meta/space/" class="md-nav__link">
         
   
@@ -1823,6 +1846,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../mighty_runners/mighty_eureka_runner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mighty eureka runner
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../mighty_runners/mighty_maml_runner/" class="md-nav__link">
         
   
@@ -2154,7 +2200,7 @@
 <a id="__codelineno-0-19" name="__codelineno-0-19"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">algo</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">discrete</span><span class="p">)</span>
 <a id="__codelineno-0-20" name="__codelineno-0-20"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">entropy_coefficient</span> <span class="o">=</span> <span class="n">entropy_coefficient</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21"></a>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="c1"># FIXME: I did this already for the other exploration functions, but this would be nicer as a separate function</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="c1"># FIXME: EWRL: I did this already for the other exploration functions, but this would be nicer as a separate function</span>
 <a id="__codelineno-0-23" name="__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">explore_func</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24"></a>        <span class="n">state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>  <span class="c1"># Add batch dimension if needed</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25"></a>        <span class="k">if</span> <span class="n">discrete</span><span class="p">:</span>
@@ -2172,7 +2218,7 @@
 <a id="__codelineno-0-37" name="__codelineno-0-37"></a>            <span class="n">entropy</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">entropy</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a>            <span class="n">weighted_log_prob</span> <span class="o">=</span> <span class="n">log_prob</span> <span class="o">*</span> <span class="n">entropy</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="k">return</span> <span class="n">action</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">weighted_log_prob</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="k">return</span> <span class="n">action</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">weighted_log_prob</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41"></a>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">explore_func</span> <span class="o">=</span> <span class="n">explore_func</span>
 </code></pre></div></td></tr></table></div>
@@ -2199,7 +2245,7 @@
 
 <a href="#mighty.mighty_exploration.stochastic_policy.StochasticPolicy.__call__" class="headerlink" title="Permanent link">#</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="fm">__call__</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="nf">state</span><span class="p">,</span> <span class="n">return_logp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="nf">s</span><span class="p">,</span> <span class="n">return_logp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </code></pre></div>
 
@@ -2214,17 +2260,8 @@
 
 
             <details class="quote">
-              <summary>Source code in <code>mighty/mighty_exploration/stochastic_policy.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45">45</a></span>
-<span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span>
-<span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span>
-<span class="normal"><a href="#__codelineno-0-51">51</a></span>
-<span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+              <summary>Source code in <code>mighty/mighty_exploration/mighty_exploration_policy.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-54">54</a></span>
 <span class="normal"><a href="#__codelineno-0-55">55</a></span>
 <span class="normal"><a href="#__codelineno-0-56">56</a></span>
 <span class="normal"><a href="#__codelineno-0-57">57</a></span>
@@ -2233,25 +2270,34 @@
 <span class="normal"><a href="#__codelineno-0-60">60</a></span>
 <span class="normal"><a href="#__codelineno-0-61">61</a></span>
 <span class="normal"><a href="#__codelineno-0-62">62</a></span>
-<span class="normal"><a href="#__codelineno-0-63">63</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">return_logp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get action.</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">    :param s: state</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    :param return_logp: return logprobs</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    :param metrics: current metric dict</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    :param eval: eval mode</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    :return: action or (action, logprobs)</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="k">if</span> <span class="n">metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="k">if</span> <span class="n">evaluate</span><span class="p">:</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>        <span class="n">action</span><span class="p">,</span> <span class="n">logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_action</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>        <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">logprobs</span><span class="o">.</span><span class="n">detach</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span> <span class="k">if</span> <span class="n">return_logp</span> <span class="k">else</span> <span class="n">action</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">return_logp</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="k">return</span> <span class="n">output</span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">return_logp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get action.</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    :param s: state</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    :param return_logp: return logprobs</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    :param metrics: current metric dict</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    :param eval: eval mode</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    :return: action or (action, logprobs)</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="k">if</span> <span class="n">metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="k">if</span> <span class="n">evaluate</span><span class="p">:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>        <span class="n">action</span><span class="p">,</span> <span class="n">logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_action</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>        <span class="n">action</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">logprobs</span><span class="p">)</span> <span class="k">if</span> <span class="n">return_logp</span> <span class="k">else</span> <span class="n">action</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">return_logp</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">return</span> <span class="n">output</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
