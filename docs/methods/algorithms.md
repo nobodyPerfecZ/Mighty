@@ -6,6 +6,7 @@ Mighty implements three basic online RL algorithm classes: DQN, SAC and PPO. The
 Mighty has a central 'base_agent.py' class which handles the environment interaction, logging and calls to updates and meta components.
 Algorithms are built as subclasses of this agent and define the structure of its value and policy functions as well as any additional preprocessing that needs to happen for initialization or before updates.
 All other algorithm components have their own classes which can easily be replaced. These are:
+
 - models
 - policies
 - buffers
@@ -110,6 +111,7 @@ If you believe you definitely need to touch the base agent, please also create a
 
 Here are possible changes in increasing order of possible problems. 
 Take this list as a guide to how much testing you should do for your additions:
+
 1. Changes to logging and command line output: this should be fairly unproblematic, if maybe slightly annoying. We would still be interested what you're missing!
 2. Changes to the evaluation: depending on what you change, this could be almost entirely independent of the rest of the loop. You should pay attention to maintaining the evaluation.
 3. Changes to meta component call timings: this can break existing components if you change the timing of existing functions. Adding new hooks should be fine in most cases, however. This is likely the most interesting case for us, so we'd be happy to discuss about our hook timings.

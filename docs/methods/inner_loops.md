@@ -53,6 +53,7 @@ Meta-components are classes with methods that can be called at different points 
 ```
 Each of these calls will receive the metrics dictionary, resulting in a very flexible type. 
 Right now Mighty contains a few meta-components doing very different things, e.g.:
+
 - task scheduling/curriculum learning
 - hyperparameter scheduling
 - intrinsic rewards

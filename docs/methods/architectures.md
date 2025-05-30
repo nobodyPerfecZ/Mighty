@@ -7,6 +7,7 @@ We implement some basic network architecture building block which can then be co
 You will usually choose a feature extractor architecture and a head architecture which can be the same or different. 
 Furthermore, you can combine two different architectures in the feature extractor. 
 You can choose between:
+
 - MLP: standard fully connected networks (flexible structure)
 - CNN: 1D or 2D convolutional networks (flexible structure)
 - ResNet: a 2D convolutional layer with two residual blocks
