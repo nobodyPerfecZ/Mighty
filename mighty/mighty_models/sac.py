@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 from torch import nn
 
@@ -64,7 +66,10 @@ class SACModel(nn.Module):
         )
         return nn.Sequential(q_extractor, nn.Linear(self.hidden_sizes[-1], 1))
 
-    def forward(self, state: torch.Tensor, deterministic: bool = False):
+    def forward(self, 
+        state: torch.Tensor, 
+        deterministic: bool = False
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass for policy sampling.
 

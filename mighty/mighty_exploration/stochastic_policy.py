@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import torch
+from typing import Tuple
+import numpy as np
 
 from mighty.mighty_exploration.mighty_exploration_policy import MightyExplorationPolicy
 from mighty.mighty_models import SACModel
@@ -34,12 +36,12 @@ class StochasticPolicy(MightyExplorationPolicy):
 
             self.sample_action = _sac_sample
 
-    def explore(self, s, return_logp, metrics=None):
+    def explore(self, s, return_logp, metrics=None) -> Tuple[np.ndarray, torch.Tensor]:
         """
         Given observations `s`, sample an exploratory action and compute a weighted log-prob.
 
         Returns:
-          action_np: numpy array of actions
+          action: numpy array of actions
           weighted_log_prob: Tensor of shape [batch, 1]
         """
         state = torch.as_tensor(s, dtype=torch.float32)
