@@ -2097,11 +2097,106 @@
 <h1 id="mighty-algorithms">Mighty Algorithms<a class="headerlink" href="#mighty-algorithms" title="Permanent link">#</a></h1>
 <p>Mighty implements three basic online RL algorithm classes: DQN, SAC and PPO. These can be extended and altered in a few different ways without implementing a completely new algorithm from scratch. This page will give you an overview how they're structured, what components you can work with and when it's time to code up a new algorithm.</p>
 <h2 id="how-algorithms-work">How Algorithms Work<a class="headerlink" href="#how-algorithms-work" title="Permanent link">#</a></h2>
+<p>Mighty has a central 'base_agent.py' class which handles the environment interaction, logging and calls to updates and meta components.
+Algorithms are built as subclasses of this agent and define the structure of its value and policy functions as well as any additional preprocessing that needs to happen for initialization or before updates.
+All other algorithm components have their own classes which can easily be replaced. These are:
+- models
+- policies
+- buffers
+- updates</p>
+<p>Combined, these four implement the majority of algorithm functionality. You can think of the DQN, SAC and PPO algorithm classes as defining an algorithm structure and the assosciated components implementing the actual interaction patterns. 
+This also means that in most cases, you likely want to modify the algorithm components instead of the base class.</p>
 <h2 id="exploration-policies">Exploration Policies<a class="headerlink" href="#exploration-policies" title="Permanent link">#</a></h2>
+<p>Exploration policies are the interface between actions predicted and actions taken. 
+The base Mighty exploration policy class takes greedy actions in evaluation mode and calls an 'explore' function in training. Defining a new 'explore' function thus allows you to implement a new exploration strategy.
+Exploration policies are called at every step. 
+Note that this means they are not the correct category for every exploration behavior! If your exploration strategy requires additional information or interaction beyond the action prediction, you should instead implement it in a meta component. 
+An example is RND, which needs to be updated regularly in addition to action selection.</p>
 <h2 id="buffers">Buffers<a class="headerlink" href="#buffers" title="Permanent link">#</a></h2>
+<p>Buffers in Mighty work similarly than in other RL libraries. There are rollout and replay buffers, each of which implements and 'add' and a 'sample' function. 
+Buffers have access to the full trajectories and metrics, which means you can implement a variety of priorization or re-sampling ideas.</p>
 <h2 id="updates">Updates<a class="headerlink" href="#updates" title="Permanent link">#</a></h2>
+<p>Just like exploration policies or buffers, updates are classes with fairly contained utility.
+Their main function is to implement a function computing an update and also to apply it. 
+Examples for update classes are DQN vs DDQN for Q-learning: the algorithm structure can stay the same and only the update class is varied. 
+The base DQN update class implements 'apply_update', 'td_error' and 'get_targets' functions. 
+Thus, to get to DDQN we define a subclass of this update that overrides 'get_targets':
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DoubleQLearning</span><span class="p">(</span><span class="n">QLearning</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Double Q-learning update.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_kwargs</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Double Q-learning update.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">q_net</span><span class="p">,</span> <span class="n">target_net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">if</span> <span class="n">target_net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="n">target_net</span> <span class="o">=</span> <span class="n">q_net</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">argmax_a</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="n">q_net</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">next_obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">max_next</span> <span class="o">=</span> <span class="n">target_net</span><span class="p">(</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">next_obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="p">)</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">argmax_a</span><span class="p">)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">targets</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>            <span class="n">batch</span><span class="o">.</span><span class="n">rewards</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            <span class="o">+</span> <span class="p">(</span><span class="o">~</span><span class="n">batch</span><span class="o">.</span><span class="n">dones</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">*</span> <span class="n">max_next</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="p">)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">preds</span> <span class="o">=</span> <span class="n">q_net</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">observations</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            <span class="mi">1</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="p">)</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="k">return</span> <span class="n">preds</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">targets</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</code></pre></div>
+Each algorithm class requires slightly different update functions. </p>
 <h2 id="when-should-i-implement-a-new-algorithm">When Should I Implement A New Algorithm?<a class="headerlink" href="#when-should-i-implement-a-new-algorithm" title="Permanent link">#</a></h2>
+<p>In general, you should try to avoid this simply because it will involve more code duplication an implementation of fundamental methods like saving and loading. 
+The main factor for when you need a new algorithm class is likely a fundamental change in network structures and combinations.
+The agent classes define how to save and load networks as well as intialize them. 
+They also implement the unified interfact for accessing policies and value functions.
+Compare DQN:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@property</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">value_function</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DQN</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Q-function.&quot;&quot;&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">q</span>  <span class="c1"># type: ignore</span>
+</code></pre></div>
+To PPO:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@property</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">value_function</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the value function model.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">value_head</span>  <span class="c1"># type: ignore</span>
+</code></pre></div>
+So if you combine elements like value/Q-functions and policies in ways that don't fit the interfaces of SAC, PPO and DQN, you will have to write a new algorithm class.</p>
+<p>A different reason for a new algorithm class is preprocessing that needs to happen before the update and can't be done within the update class. 
+This is likely a rare case, but there is an example in PPO where we first need to do the return computation:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">update_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_learning_starts</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>            <span class="k">return</span> <span class="p">{}</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="c1"># Compute returns and advantages for PPO</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="n">last_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_function</span><span class="p">(</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>            <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">update_kwargs</span><span class="p">[</span><span class="s2">&quot;next_s&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">compute_returns_and_advantage</span><span class="p">(</span><span class="n">last_values</span><span class="p">,</span> <span class="n">update_kwargs</span><span class="p">[</span><span class="s2">&quot;dones&quot;</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">update_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+</code></pre></div>
+If this is the only issue, we recommend only overwriting this method and implementing other functionality in more suitable classes.</p>
 <h2 id="the-base-agent-spicy-bits">The Base Agent - Spicy Bits<a class="headerlink" href="#the-base-agent-spicy-bits" title="Permanent link">#</a></h2>
+<p>The base agent class is by far the most complex element in Mighty. 
+It's the hub for all activity and environment interaction as well as logging and plotting. 
+This is why we recommend you be <strong>very careful</strong> when changing things on this level. 
+Think carefully why you can't accomplish your task in another way.
+If you believe you definitely need to touch the base agent, please also create an issue in the Mighty repo so we can improve the workflow!</p>
+<p>Here are possible changes in increasing order of possible problems. 
+Take this list as a guide to how much testing you should do for your additions:
+1. Changes to logging and command line output: this should be fairly unproblematic, if maybe slightly annoying. We would still be interested what you're missing!
+2. Changes to the evaluation: depending on what you change, this could be almost entirely independent of the rest of the loop. You should pay attention to maintaining the evaluation.
+3. Changes to meta component call timings: this can break existing components if you change the timing of existing functions. Adding new hooks should be fine in most cases, however. This is likely the most interesting case for us, so we'd be happy to discuss about our hook timings.
+4. Changes to the interaction: you should be careful here to maintain datatypes, shapes and counting. Also pay attention to the buffer interactions. This could easily break many parts of the loop, so be careful! 
+5. Changes to the base agent update functionality: changes here will almost surely generate several issues with the specific agent, update and model classes. Usually updates should really only be changed in the downstream classes. If you need large updates, talk to us on GitHub, but Mighty might not be the library for you.</p>
 
 
 
