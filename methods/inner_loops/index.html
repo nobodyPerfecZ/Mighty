@@ -835,9 +835,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#meta-components" class="md-nav__link">
+  <a href="#what-are-meta-components" class="md-nav__link">
     <span class="md-ellipsis">
-      Meta Components
+      What Are Meta Components?
     </span>
   </a>
   
@@ -862,18 +862,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#combining-modules" class="md-nav__link">
+  <a href="#combining-components" class="md-nav__link">
     <span class="md-ellipsis">
-      Combining Modules
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples-of-meta-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples Of Meta Components
+      Combining Components
     </span>
   </a>
   
@@ -2087,11 +2078,65 @@
 
 <h1 id="mighty-inner-loops">Mighty Inner Loops<a class="headerlink" href="#mighty-inner-loops" title="Permanent link">#</a></h1>
 <p>A key motivation for Mighty is to make it easy to create systems that interact with the RL loop. If these systems work during an algorithm's runtime, they are inner loop components. In Mighty, we call them Meta Components. This page documents their structure and why they're so useful.</p>
-<h2 id="meta-components">Meta Components<a class="headerlink" href="#meta-components" title="Permanent link">#</a></h2>
+<h2 id="what-are-meta-components">What Are Meta Components?<a class="headerlink" href="#what-are-meta-components" title="Permanent link">#</a></h2>
+<p>Meta components are elements interacting with the main loop at various points. 
+Within this interaction, they have access to virtually all current internal information and can adapt it.
+This means everything from hyperparameter scheduling to learning a separate dynamics models and more is possible within this structure. 
+Meta components can be stacked on top of one another to combine different approaches in a single run.
+This enables complex inner loop setups without entangling methods in code.</p>
 <h2 id="the-metrics-dictionary">The Metrics Dictionary<a class="headerlink" href="#the-metrics-dictionary" title="Permanent link">#</a></h2>
+<p>The most important part when adding components is the 'metrics' dictionary. This is Mighty's central information hub. 
+Here you can find transitions, losses, predictions, batches and parameters - everything you need to build methods that actively work with the RL loop.
+If you want examples of how it is used, you can check out our RND implementation:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Adapt LR on step.</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">        :param metrics: Dict of current metrics</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">        :return:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnd_net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">initialize_networks</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;transition&quot;</span><span class="p">][</span><span class="s2">&quot;next_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">rnd_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnd_net</span><span class="o">.</span><span class="n">get_error</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;transition&quot;</span><span class="p">][</span><span class="s2">&quot;next_state&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;transition&quot;</span><span class="p">][</span><span class="s2">&quot;intrinsic_reward&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">internal_reward_weight</span> <span class="o">*</span> <span class="n">rnd_error</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;transition&quot;</span><span class="p">][</span><span class="s2">&quot;reward&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;transition&quot;</span><span class="p">][</span><span class="s2">&quot;reward&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal_reward_weight</span> <span class="o">*</span> <span class="n">rnd_error</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="k">return</span> <span class="n">metrics</span>
+</code></pre></div>
+Here we read the next state from the metrics dictionary, predict state novelty from it and update the transition reward.
+We also add a new intrinsic reward key to enable logging.
+You can assume that most if not all relevant information is contained in the metrics dictionary at any given time. 
+It is also transmitted to many different Mighty components like the exploration policy, the buffer, the update function or to any meta-components.</p>
 <h2 id="interactions-with-the-main-loop">Interactions With The Main Loop<a class="headerlink" href="#interactions-with-the-main-loop" title="Permanent link">#</a></h2>
-<h2 id="combining-modules">Combining Modules<a class="headerlink" href="#combining-modules" title="Permanent link">#</a></h2>
-<h2 id="examples-of-meta-components">Examples Of Meta Components<a class="headerlink" href="#examples-of-meta-components" title="Permanent link">#</a></h2>
+<p>Meta-components are classes with methods that can be called at different points in the learning loop. There are several different call positions and they are specified by the component itself:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Meta module init.</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="sd">        :return:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_step_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_step_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_update_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_update_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pre_episode_methods</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">post_episode_methods</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div>
+Each of these calls will receive the metrics dictionary, resulting in a very flexible type. 
+Right now Mighty contains a few meta-components doing very different things, e.g.:
+- task scheduling/curriculum learning
+- hyperparameter scheduling
+- intrinsic rewards</p>
+<p>Meta-components are also stackable, i.e. you can run multiple ones per training run. 
+In principle, you can do almost anything in a meta-component, including training additional networks or calling the policy directly.
+Before you default to using this class, however, we recommend double checking if your idea isn't better suited to a more specific class.</p>
+<h2 id="combining-components">Combining Components<a class="headerlink" href="#combining-components" title="Permanent link">#</a></h2>
+<p>When combining different modules, they are stacked on top of one another. 
+This means they are executed in order for each method. 
+For meta components interacting with each other or the same parts of the base loop, this order can be important!
+If you, for example, use a curriculum based on training reward and intrinsic reward, you should likely configure the curriculum to be called first to avoid basing the difficulty on the reward bonus.</p>
 
 
 
