@@ -70,6 +70,24 @@ class MinigridImgVecObs(gym.Wrapper):
             shape=self.env.observation_space.shape[1:], low=0, high=255
         )
 
+class DictToVecActions(gym.Wrapper):
+    """Flatten observation space of a vectorized environment."""
+
+    def __init__(self, env):
+        """Flatten observation space of a vectorized environment."""
+        super().__init__(env)
+        self.og_single_action_space = self.env.single_action_space
+        self.single_action_space = gym.spaces.flatten_space(
+            self.env.single_action_space
+        )
+        self.action_keys = list(self.env.single_action_space.spaces.keys())
+
+    def step(self, action):
+        """Take a step in the environment."""
+        action = {
+            key: action[i] for i, key in enumerate(self.action_keys)
+        }
+        return self.env.step(action)
 
 class MultiDiscreteActionWrapper(gym.Wrapper):
     """Wrapper to cast MultiDiscrete action spaces to Discrete. This should improve usability with standard RL libraries."""

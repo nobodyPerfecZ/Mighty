@@ -38,10 +38,14 @@ class QValueUCB(MightyExplorationPolicy):
         # Get Q-values
         _, qvals = self.sample_action(s)
         # Calculate UCB bonus
-        ucb_bonus = self.c*np.sqrt(np.log(metrics["step"] + 1e-4)/(self.action_selected_count + 1e-4))
+        ucb_bonus = self.c*np.sqrt(np.log(metrics["step"] + 1)/(self.action_selected_count + 1e-4))
         # Add bonus and selection actions
-        ucb_actions = np.argmax(qvals + ucb_bonus)
+        ucb_actions = np.argmax(qvals.detach().numpy() + ucb_bonus, axis=1)
         # Update action counter
-        for action in ucb_actions:
-            self.action_selected_count[action] += 1
+        if isinstance(ucb_actions, np.ndarray):
+            for action in ucb_actions:
+                self.action_selected_count[action] += 1
+        else:
+            self.action_selected_count[ucb_actions] += 1
+            ucb_actions = np.array([ucb_actions])
         return (ucb_actions, qvals) if return_logp else ucb_actions

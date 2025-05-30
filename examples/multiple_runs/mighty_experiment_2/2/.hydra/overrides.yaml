@@ -1,0 +1,5 @@
+- env=CartPole-v1
+- num_steps=50000
+- num_envs=10
+- seed=2
+- output_dir=examples/multiple_runs

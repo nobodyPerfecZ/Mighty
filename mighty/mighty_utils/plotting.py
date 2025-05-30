@@ -341,7 +341,7 @@ def _plot_performance_over_time(
             estimator=aggregation,
         ).set(**sets)
         grid.fig.subplots_adjust(top=0.92)
-        grid.fig.suptitle(f"{agg_name} over Time (num_seeds={nseeds})")
+        grid.fig.suptitle(f"{agg_name} of {xlabel} over {ylabel} (num_seeds={nseeds})")
         grid.set_axis_labels(xlabel, ylabel)
         grid.add_legend()
     else:
@@ -363,11 +363,11 @@ def _plot_performance_over_time(
             ax.set_xscale("log")
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
-        ax.set_title(f"{agg_name} over Time (num_seeds={nseeds})")
+        ax.set_title(f"{agg_name} of {xlabel} over {ylabel} (num_seeds={nseeds})")
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         sns.move_legend(
-            ax,
+            ax, 
             "lower center",
             bbox_to_anchor=(0.5, 1.1),
             ncol=5,

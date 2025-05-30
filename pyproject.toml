@@ -59,7 +59,7 @@ docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",
 examples = []
 
 [tool.setuptools.packages.find]
-include = ["mighty*"]
+include = ["mighty*", "examples"]
 
 [tool.ruff]
 extend-exclude = []

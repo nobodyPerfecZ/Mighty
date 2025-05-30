@@ -1,0 +1,105 @@
+defaults:
+  - _self_
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+  - override hydra/sweeper: HyperSMAC
+
+runner: standard
+debug: false
+seed: 0
+output_dir: examples/hypersweeper_example_output
+wandb_project: null
+tensorboard_file: null
+experiment_name: optuna_tuning_example
+num_steps: 50_000 
+env: pufferlib.ocean.bandit
+env_kwargs: {}
+env_wrappers: []
+num_envs: 64
+
+# @package _global_
+algorithm: PPO
+
+algorithm_kwargs:
+  # Hyperparameters
+  n_policy_units: 128
+  n_critic_units: 128
+  soft_update_weight: 0.01
+
+  rollout_buffer_class:
+    _target_: mighty.mighty_replay.MightyRolloutBuffer  # Using rollout buffer
+  rollout_buffer_kwargs:
+    buffer_size: 4096  # Size of the rollout buffer.
+    gamma: 0.99  # Discount factor for future rewards.
+    gae_lambda: 0.95  # GAE lambda.
+    obs_shape: ???  # Placeholder for observation shape
+    act_dim: ???  # Placeholder for action dimension
+    n_envs: ???
+    
+
+  # Training
+  learning_rate:  3e-4
+  batch_size: 1024  # Batch size for training.
+  gamma: 0.99  # The amount by which to discount future rewards.
+  n_gradient_steps: 3  # Number of epochs for updating policy.
+  ppo_clip: 0.2  # Clipping parameter for PPO.
+  value_loss_coef: 0.5  # Coefficient for value loss.
+  entropy_coef: 0.01  # Coefficient for entropy loss.
+  max_grad_norm: 0.5  # Maximum value for gradient clipping.
+  
+
+  hidden_sizes: [64, 64]
+  activation: 'tanh'
+
+  n_epochs: 10
+  minibatch_size: 64
+  kl_target: 0.01
+  use_value_clip: True
+  value_clip_eps: 0.2
+
+  policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
+  policy_kwargs:
+    entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
+
+# Training
+eval_every_n_steps: 1e4  # After how many steps to evaluate.
+n_episodes_eval: 10
+checkpoint: null  # Path to load model checkpoint
+save_model_every_n_steps: 5e5
+
+hydra:
+  run:
+    dir: ${output_dir}/${experiment_name}_${seed}
+  sweep:
+    dir: ${output_dir}/${experiment_name}_${seed}
+  sweeper:
+    n_trials: 20
+    budget_variable: num_steps
+    sweeper_kwargs:
+      optimizer_kwargs:
+        smac_facade: 
+          _target_: smac.facade.multi_fidelity_facade.MultiFidelityFacade
+          _partial_: true
+        intensifier: 
+          _target_: smac.facade.multi_fidelity_facade.MultiFidelityFacade.get_intensifier
+          _partial_: true
+          eta: 3
+        scenario:
+          n_trials: ${hydra.sweeper.n_trials}
+          seed: ${seed}
+          min_budget: 5000
+          max_budget: 50000
+          deterministic: true
+          n_workers: 1
+          output_directory: ${hydra.sweep.dir}
+    search_space: 
+      hyperparameters:
+        algorithm_kwargs.learning_rate:
+          type: uniform_float
+          lower: 1e-5
+          upper: 1e-3
+          log: true
+        algorithm_kwargs.batch_size:
+          type: uniform_int
+          lower: 8
+          upper: 128

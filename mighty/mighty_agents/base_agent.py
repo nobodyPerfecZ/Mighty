@@ -422,7 +422,6 @@ class MightyAgent(ABC):
         self,
         n_steps: int,
         eval_every_n_steps: int = 1_000,
-        human_log_every_n_steps: int = 5000,
         save_model_every_n_steps: int | None = 5000,
         env: MIGHTYENV = None,  # type: ignore
     ) -> Dict:
@@ -484,6 +483,7 @@ class MightyAgent(ABC):
             ),
         )
         logging_layout["upper"].update(progress_table)
+        update_multiplier = 0
 
         with Live(logging_layout, refresh_per_second=10, vertical_overflow="visible"):
             steps_since_eval = 0
@@ -547,7 +547,7 @@ class MightyAgent(ABC):
                     "terminated": terminated.astype(int),
                     "truncated": truncated.astype(int),
                     "dones": dones.astype(int),
-                    "mean_episode_reward": last_episode_reward.mean(),
+                    "mean_episode_reward": last_episode_reward.mean().cpu().numpy().item(),
                 }
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
@@ -602,7 +602,7 @@ class MightyAgent(ABC):
                     evaluation_reward = eval_metrics["eval_rewards"]
 
                 # Log to command line
-                if self.steps % human_log_every_n_steps == 0 and self.verbose:
+                if self.steps >= 1000*update_multiplier:
                     metrics_table = self.make_logging_table(
                         self.steps,
                         recent_episode_reward,
@@ -621,6 +621,7 @@ class MightyAgent(ABC):
                     logging_layout["lower"]["right"].update(
                         self.get_plot(curve_xs, eval_curve, "Evaluation Reward")
                     )
+                    update_multiplier += 1
 
                 # Save
                 if (
@@ -644,6 +645,7 @@ class MightyAgent(ABC):
                     recent_step_reward.append(
                         np.mean(last_episode_reward) / len(last_episode_reward)
                     )
+                    last_episode_reward = torch.tensor(last_episode_reward).float()
                     if len(recent_episode_reward) > 10:
                         recent_episode_reward.pop(0)
                         recent_step_reward.pop(0)

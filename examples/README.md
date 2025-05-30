@@ -9,6 +9,7 @@ Here's an overview of example content:
     - [Setting the Environment](#setting-the-environment)
     - [Configuring Agents](#configuring-agents)
     - [Meta Components](#meta-components)
+    - [Running Multiple Seeds](#running-multiple-seeds)
   - [Building Mighty Hydra Configs](#building-mighty-hydra-configs)
     - [Configuration Basics](#configuration-basics)
     - [Considerations for configuration stacking](#considerations-for-configuration-stacking)
@@ -71,20 +72,20 @@ python mighty/run_mighty.py 'env=CartPole-v1'
 ```
 We can also be more specific, e.g. by adding our desired number of interaction steps and the number of parallel environments we want to run:
 ```bash
-python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=1'
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10'
 ```
 For some environments, including CartPole-1, these details are pre-configured in the Mighty configs, meaning we can use the environment keyword to set them all at once:
 ```bash
 python mighty/run_mighty.py 'environment=gymnasium/cartpole'
 ```
 ### Configuring Agents
-Overriding algorithms works very similarly, we can change from DQN to PPO by running:
+Overriding algorithms works very similarly, we can change from PPO to DQN by running:
 ```bash
-python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=ppo'
+python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn'
 ```
 Algorithms have pre-configured algorithm arguments like the learning rate or type of policy they use. These overrides work the same as the ones we have seem so far:
 ```bash
-python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=ppo' 'algorithm_kwargs.learning_rate=0.1'
+python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' 'algorithm_kwargs.learning_rate=0.1'
 ```
 Or to use e.g. an ez-greedy exploration policy for DQN:
 ```bash
@@ -95,9 +96,17 @@ You can see that in this case, the value we pass to the script is a class name s
 ### Meta Components
 The meta components are a bit more complex, since they are a list of class names and optional keyword arguments:
 ```bash
-python mighty/run_mighty.py algorithm=ddqn environment=dacbench/function_approximation_benchmark +algorithm_kwargs.meta_methods=[mighty.mighty_meta.PrioritizedLevelReplay]
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' '+algorithm_kwargs.meta_methods=[mighty.mighty_meta.RND]'
 ```
 As this can become complex, we recommend configuring these in Hydra config files.
+
+### Running Multiple Seeds
+Hydra has a multirun functionality with which you can specify a grid of arguments that will automatically be run when appending '-m'. 
+Its best use is probably for easily running multiple seeds at once like this:
+
+```bash
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' 'seed=0,1,2,3,4' 'output_dir=examples/multiple_runs' -m 
+```
 
 ## Building Mighty Hydra Configs
 
@@ -212,17 +221,23 @@ Hyperparameter Optimization (HPO) is often essential for RL. Mighty comes with a
 The simplest way to do hyperparameter optimization is likely to use the sweepers installable via hydra. These include grid search (though that's not recommended!), optuna or Ax. Each has their own documentation of how to set up the search space and meta-parameters, so you should pick one and look them up individually. A nice feature of these runners is that they can parallelize runs on slurm and ray clusters as well as run locally.
 
 We have prepared an example using Optuna, you can run it by:
-TODO
+
 
 ### Hypersweeper
 We do our own HPO with [Hypersweeper](https://github.com/automl/hypersweeper), a package that integrates HPO packages from research. Similarly to the hydra sweepers, you should look into the Hypersweeper examples, though the HPO configurations in Mighty are already set up to directly use Hypersweeper, so it will run out of the box. If you want to run it on clusters, you will need to add a cluster config containing partitions etc.
 
 As an example, you can run:
-TODO
+```bash
+uv pip install hydra-optuna-sweeper --upgrade
+python mighty/run_mighty.py --config-path=../examples --config-name=optuna_example_config -m
+```
 
 ### ES Runner
 You can also do HPO with the ES runner within Mighty. This is usually not the most efficient way of doing things (there are also ES in Hypersweeper which will parallelize), but you won't have to deal with external packages. You can select any evosax algorithm to optimize the hyperparameters of your choice and simply run it like any other Mighty run in the command line like this:
-TODO
+```bash
+uv pip install hypersweeper
+python mighty/run_mighty.py --config-path=../examples --config-name=hypersweeper_smac_example_config -m
+```
 
 ## Adding Custom Mighty Components
 You can add your own components to Mighty without touching the core loop. Generally, this makes sense for the following components:
@@ -290,7 +305,17 @@ Before you default to using this class, however, we recommend double checking if
 
 ### Building a Custom Component
 
-TODO
+The 'examples/custom_policy.py' file contains an example of a custom exploration policy and 'examples/custom_exploration_scheduler.py' contains and example of a meta module for epsilon scheduling.
+Compare their structure: the custom policy has a fixed set of methods inherited form the abstract class while the meta module is free to choose the interaction time.
+
+If you want to run these custom modules, you can do so by adding them by their import path:
+```bash
+python mighty/run_mighty.py 'algorithm=dqn' '+algorithm_kwargs.policy_class=examples.custom_policy.QValueUCB' '+algorithm_kwargs.policy_kwargs={}'
+```
+For the meta-module, it works exactly the same way:
+```bash
+python mighty/run_mighty.py 'algorithm=dqn' '+algorithm_kwargs.meta_methods=[examples.custom_exploration_scheduler.EpsilonSchedule]'
+```
 
 ## Logging & Plotting
 We have an example notebook that shows you how to load and plot the default Mighty logs. Apart from these, you can also use Tensorboard or W&B for your plotting needs, though for these you should refer to their own documentations.

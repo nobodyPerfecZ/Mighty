@@ -23,7 +23,7 @@ def run_mighty(cfg: DictConfig) -> None:
     print(
         f"Reached a reward of {np.round(eval_result['mean_eval_reward'], decimals=2)} in {train_result['step']} steps and {np.round(end - start, decimals=2)}s."
     )
-
+    return eval_result['mean_eval_reward']
 
 if __name__ == "__main__":
     run_mighty()

@@ -1,0 +1,83 @@
+runner: standard
+debug: false
+seed: 2
+output_dir: examples/multiple_runs
+wandb_project: null
+tensorboard_file: null
+experiment_name: mighty_experiment
+algorithm_kwargs:
+  n_policy_units: 128
+  n_critic_units: 128
+  soft_update_weight: 0.01
+  rollout_buffer_class:
+    _target_: mighty.mighty_replay.MightyRolloutBuffer
+  rollout_buffer_kwargs:
+    buffer_size: 4096
+    gamma: 0.99
+    gae_lambda: 0.95
+    obs_shape: ???
+    act_dim: ???
+    n_envs: ???
+  learning_rate: 0.0003
+  batch_size: 1024
+  gamma: 0.99
+  n_gradient_steps: 3
+  ppo_clip: 0.2
+  value_loss_coef: 0.5
+  entropy_coef: 0.01
+  max_grad_norm: 0.5
+  hidden_sizes:
+  - 64
+  - 64
+  activation: tanh
+  n_epochs: 10
+  minibatch_size: 64
+  kl_target: 0.01
+  use_value_clip: true
+  value_clip_eps: 0.2
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+eval_every_n_steps: 10000.0
+n_episodes_eval: 10
+checkpoint: null
+save_model_every_n_steps: 500000.0
+algorithm: PPO
+num_steps: 50000
+env: CartPole-v1
+env_kwargs: {}
+env_wrappers: []
+num_envs: 10
+search_space:
+  hyperparameters:
+    algorithm_kwargs.learning_rate:
+      type: uniform_float
+      lower: 1.0e-06
+      upper: 0.01
+      log: true
+      default_value: 0.005
+    algorithm_kwargs.epsilon:
+      type: uniform_float
+      lower: 0.01
+      upper: 0.25
+      default_value: 0.1
+    algorithm_kwargs.batch_size:
+      type: categorical
+      choices:
+      - 32
+      - 64
+      - 128
+      - 256
+      default_value: 32
+    algorithm_kwargs.soft_update_weight:
+      type: uniform_float
+      lower: 0.01
+      upper: 1.0
+      log: true
+      default_value: 1.0
+    algorithm_kwargs.td_update_class:
+      type: categorical
+      choices:
+      - mighty.mighty_update.QLearning
+      - mighty.mighty_update.DoubleQLearning
+      default_value: mighty.mighty_update.DoubleQLearning

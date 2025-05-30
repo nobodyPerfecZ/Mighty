@@ -3,5 +3,5 @@
 num_steps: 1e5
 env: FunctionApproximationBenchmark
 env_kwargs: {benchmark: true, dimension: 1}
-env_wrappers: [mighty.utils.wrappers.MultiDiscreteActionWrapper]
+env_wrappers: []
 num_envs: 16
