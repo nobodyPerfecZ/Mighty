@@ -6,14 +6,7 @@ import torch.optim as optim
 
 from mighty.mighty_models.sac import SACModel
 from mighty.mighty_replay.mighty_replay_buffer import TransitionBatch
-
-
-# FIXME: EWRL: we might want to move this to a general update utils module
-def polyak_update(source_params, target_params, tau: float):
-    """Polyak averaging for target network updates."""
-    for source, target in zip(source_params, target_params):
-        target.data.copy_(tau * source.data + (1 - tau) * target.data)
-
+from mighty.mighty_utils.update_utils import polyak_update
 
 class SACUpdate:
     def __init__(
