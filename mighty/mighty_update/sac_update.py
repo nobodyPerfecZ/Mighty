@@ -100,12 +100,14 @@ class SACUpdate:
         actions = torch.as_tensor(batch.actions, dtype=torch.float32)
         rewards = torch.as_tensor(batch.rewards, dtype=torch.float32).unsqueeze(-1)
         dones = torch.as_tensor(batch.dones, dtype=torch.float32).unsqueeze(-1)
+        next_states = torch.as_tensor(batch.next_obs, dtype=torch.float32)
 
         # --- Q-network update ---
         with torch.no_grad():
-            a_next, z_next, mean_next, log_std_next = self.model(states)
+            # BUG: this uses `states` but should use `next_states`
+            a_next, z_next, mean_next, log_std_next = self.model(next_states)
             logp_next = self.model.policy_log_prob(z_next, mean_next, log_std_next)
-            sa_next = torch.cat([states, a_next], dim=-1)
+            sa_next = torch.cat([next_states, a_next], dim=-1)
             q1_t = self.model.target_q_net1(sa_next)
             q2_t = self.model.target_q_net2(sa_next)
             q_target = rewards + (1 - dones) * self.gamma * (
@@ -125,7 +127,7 @@ class SACUpdate:
         logp = self.model.policy_log_prob(z, mean, log_std)
         sa_pi = torch.cat([states, a], dim=-1)
         q1_pi = self.model.q_net1(sa_pi)
-        q2_pi = self.model.q_net1(sa_pi)
+        q2_pi = self.model.q_net2(sa_pi)
         q_pi = torch.min(q1_pi, q2_pi)
         policy_loss = (self.alpha * logp - q_pi).mean()
 

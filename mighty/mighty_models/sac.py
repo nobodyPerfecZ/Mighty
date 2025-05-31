@@ -66,9 +66,8 @@ class SACModel(nn.Module):
         )
         return nn.Sequential(q_extractor, nn.Linear(self.hidden_sizes[-1], 1))
 
-    def forward(self, 
-        state: torch.Tensor, 
-        deterministic: bool = False
+    def forward(
+        self, state: torch.Tensor, deterministic: bool = False
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass for policy sampling.
@@ -100,10 +99,11 @@ class SACModel(nn.Module):
         std = torch.exp(log_std)
         dist = torch.distributions.Normal(mean, std)
         log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
-        # Tanh correction term
-        log_pa = log_pz - (2 * (z - torch.tanh(z).abs().log1p())).sum(
+        eps = 1e-6  # small constant to avoid numerical issues
+        log_correction = (torch.log(1 - torch.tanh(z).pow(2) + eps)).sum(
             dim=-1, keepdim=True
         )
+        log_pa = log_pz - log_correction
         return log_pa
 
     def forward_q1(self, state_action: torch.Tensor) -> torch.Tensor:
