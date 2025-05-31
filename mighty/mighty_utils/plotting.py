@@ -367,7 +367,7 @@ def _plot_performance_over_time(
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         sns.move_legend(
-            ax, 
+            ax,
             "lower center",
             bbox_to_anchor=(0.5, 1.1),
             ncol=5,

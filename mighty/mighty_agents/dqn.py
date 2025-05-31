@@ -159,8 +159,6 @@ class MightyDQNAgent(MightyAgent):
         """Q-function."""
         return self.q  # type: ignore
 
-    # FIXME: EWRL: these were introduced to enable ES for parameters and only exist for DQN currently
-    # If we want to keep the functionality, we should replicate the property in the other algorithms
     @property
     def parameters(self) -> List:
         """Q-function parameters."""

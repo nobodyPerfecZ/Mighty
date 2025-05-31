@@ -198,6 +198,14 @@ class MightyPPOAgent(MightyAgent):
         )
 
     @property
+    def parameters(self) -> List[torch.nn.Parameter]:
+        """Return all trainable parameters (policy + value) for PPO."""
+        # note: self.model is a PPOModel with .policy_head and .value_head
+        return list(self.model.policy_head.parameters()) + list(
+            self.model.value_head.parameters()
+        )
+
+    @property
     def value_function(self) -> torch.nn.Module:
         """Return the value function model."""
         return self.model.value_head  # type: ignore

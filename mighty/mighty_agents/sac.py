@@ -138,6 +138,15 @@ class MightySACAgent(MightyAgent):
             gamma=self.gamma,
         )
 
+    @property
+    def parameters(self) -> List[torch.nn.Parameter]:
+        """Collect policy + Q‐network parameters for SAC."""
+        return (
+            list(self.model.policy_net.parameters())
+            + list(self.model.q_net1.parameters())
+            + list(self.model.q_net2.parameters())
+        )
+
     def update_agent(self, *args, **kwargs) -> Dict[str, float]:
         # Only update at intervals after warmup
         if self.steps < self.learning_starts or self.steps % self.update_every != 0:

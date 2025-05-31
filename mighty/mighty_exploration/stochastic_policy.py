@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import torch
 from typing import Tuple
+
 import numpy as np
+import torch
 
 from mighty.mighty_exploration.mighty_exploration_policy import MightyExplorationPolicy
 from mighty.mighty_models import SACModel
