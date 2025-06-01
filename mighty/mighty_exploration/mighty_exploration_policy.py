@@ -65,7 +65,7 @@ class MightyExplorationPolicy:
                     dist = Categorical(logits=logits)
                     action = dist.sample()  # [batch]
                     log_prob = dist.log_prob(action)  # [batch]
-                    return action, log_prob
+                    return action.detach().cpu().numpy(), log_prob
 
                 # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
                 out = self.model(state)
@@ -86,7 +86,7 @@ class MightyExplorationPolicy:
 
                     # 2c) final log_prob of a = tanh(z)
                     log_prob = log_pz - log_correction  # [batch]
-                    return action, log_prob
+                    return action.detach().cpu().numpy(), log_prob
 
                 # ─── Legacy continuous branch (model returns (mean, std)) ────────────
                 if isinstance(out, tuple) and len(out) == 2:
@@ -105,14 +105,14 @@ class MightyExplorationPolicy:
                     )  # [batch]
 
                     log_prob = log_pz - log_correction  # [batch]
-                    return action, log_prob
+                    return action.detach().cpu().numpy(), log_prob
 
                 # ─── Fallback: if model(state) returns a Distribution ────────────────
                 if isinstance(out, torch.distributions.Distribution):
                     dist = out  # user returned a Distribution
                     action = dist.sample()  # [batch]
                     log_prob = dist.log_prob(action)  # [batch]
-                    return action, log_prob
+                    return action.detach().cpu().numpy(), log_prob
 
                 # ─── Otherwise, we don’t know how to sample ─────────────────────────
                 raise RuntimeError(
@@ -135,7 +135,6 @@ class MightyExplorationPolicy:
             metrics = {}
         if evaluate:
             action, logprobs = self.sample_action(s)
-            action = action.detach().numpy()
             output = (action, logprobs) if return_logp else action
         else:
             output = self.explore(s, return_logp, metrics)

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from omegaconf import DictConfig
 
     from mighty.mighty_replay import MightyReplay
-    from mighty.mighty_utils.types import MIGHTYENV, TypeKwargs
+    from mighty.mighty_utils.migthy_types import MIGHTYENV, TypeKwargs
 
 
 class MightyDQNAgent(MightyAgent):
@@ -335,14 +335,3 @@ class MightyDQNAgent(MightyAgent):
             self.soft_update_weight = metrics["hp/soft_update_weight"]
         for g in self.qlearning.optimizer.param_groups:  # type: ignore
             g["lr"] = self.learning_rate
-
-    # FIXME: EWRL: what exactly do we use this for?
-    # I know it was in the base agent ifs, but I think that's fundamentally not a good idea
-    # I can see how something like on-policy vs off-policy would make sense though
-    # Not sure whether we want to put this in the agent itself or in init
-    # Pro agent: each class tells us what algo it is
-    # Pro init: we can import a list of agents of a certain kind
-    # Of course we could do it in the agent itself as a static attribute and check for it in init
-    @property
-    def agent_type(self) -> str:
-        return "DQN"

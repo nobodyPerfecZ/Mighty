@@ -318,8 +318,3 @@ class MightyPPOAgent(MightyAgent):
 
         if self.verbose:
             print(f"Loaded checkpoint at {path}")
-
-    @property
-    def agent_type(self) -> str:
-        """Return the type of the agent."""
-        return "PPO"

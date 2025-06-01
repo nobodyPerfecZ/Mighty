@@ -236,7 +236,3 @@ class MightySACAgent(MightyAgent):
         self.model.policy_net.load_state_dict(torch.load(base / "policy_net.pt"))
         self.model.q_net1.load_state_dict(torch.load(base / "q_net1.pt"))
         self.model.q_net2.load_state_dict(torch.load(base / "q_net2.pt"))
-
-    @property
-    def agent_type(self) -> str:
-        return "SAC"

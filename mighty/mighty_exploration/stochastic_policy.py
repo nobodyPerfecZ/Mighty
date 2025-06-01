@@ -34,7 +34,8 @@ class StochasticPolicy(MightyExplorationPolicy):
                 # forward returns (action, z, mean, log_std)
                 action, z, mean, log_std = model(state, deterministic=True)
                 logp = model.policy_log_prob(z, mean, log_std)
-                return action, logp
+
+                return action.detach().cpu().numpy(), logp
 
             self.sample_action = _sac_sample
 
