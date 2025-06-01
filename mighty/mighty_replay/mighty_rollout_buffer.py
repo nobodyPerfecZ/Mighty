@@ -79,31 +79,51 @@ class RolloutBatch:
         episode_starts,
         log_probs,
         values,
+        device: torch.device | str = "cpu",
     ):
         """
-        Initialize a batch of rollout transitions.
+        Initialize a batch of rollout transitions, immediately moving everything to `device`.
 
-        :param observations: Numpy array of observations.
-        :param actions: Numpy array of actions.
-        :param rewards: Numpy array of rewards.
-        :param advantages: Numpy array of advantages.
-        :param returns: Numpy array of returns.
-        :param episode_starts: Numpy array indicating episode starts.
-        :param log_probs: Numpy array of log probabilities.
-        :param values: Numpy array of value estimates.
+        :param observations: NumPy array with shape (n_steps, n_envs, *obs_shape)
+        :param actions:      NumPy array with shape (n_steps, n_envs, *action_shape)
+        :param rewards:      NumPy array with shape (n_steps, n_envs)
+        :param advantages:   NumPy array with shape (n_steps, n_envs)
+        :param returns:      NumPy array with shape (n_steps, n_envs)
+        :param episode_starts: NumPy array with shape (n_steps, n_envs)
+        :param log_probs:    NumPy array with shape (n_steps, n_envs)
+        :param values:       NumPy array with shape (n_steps, n_envs)
+        :param device:       Torch device (e.g. "cpu", "cuda:0")
         """
-        self.observations = torch.from_numpy(observations.astype(np.float32)).unsqueeze(
-            0
+        self.device = device
+
+        self.observations = (
+            torch.from_numpy(observations.astype(np.float32))
+            .unsqueeze(0)
+            .to(self.device)
         )
-        self.actions = torch.from_numpy(actions.astype(np.float32)).unsqueeze(0)
-        self.rewards = torch.from_numpy(rewards.astype(np.float32)).unsqueeze(0)
-        self.advantages = torch.from_numpy(advantages.astype(np.float32)).unsqueeze(0)
-        self.returns = torch.from_numpy(returns.astype(np.float32)).unsqueeze(0)
-        self.episode_starts = torch.from_numpy(
-            episode_starts.astype(np.float32)
-        ).unsqueeze(0)
-        self.log_probs = torch.from_numpy(log_probs.astype(np.float32)).unsqueeze(0)
-        self.values = torch.from_numpy(values.astype(np.float32)).unsqueeze(0)
+        self.actions = (
+            torch.from_numpy(actions.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
+        self.rewards = (
+            torch.from_numpy(rewards.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
+        self.advantages = (
+            torch.from_numpy(advantages.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
+        self.returns = (
+            torch.from_numpy(returns.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
+        self.episode_starts = (
+            torch.from_numpy(episode_starts.astype(np.float32))
+            .unsqueeze(0)
+            .to(self.device)
+        )
+        self.log_probs = (
+            torch.from_numpy(log_probs.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
+        self.values = (
+            torch.from_numpy(values.astype(np.float32)).unsqueeze(0).to(self.device)
+        )
 
     @property
     def size(self):
@@ -152,7 +172,7 @@ class MightyRolloutBuffer(MightyBuffer):
         buffer_size: int,
         obs_shape,
         act_dim,
-        device: str = "auto",
+        device: torch.device | str = "cpu",
         gae_lambda: float = 1,
         gamma: float = 0.99,
         n_envs: int = 1,
@@ -251,28 +271,37 @@ class MightyRolloutBuffer(MightyBuffer):
         :param _: Unused argument (for compatibility).
         """
 
-        if len(self.observations) == 0:
-            self.observations = rollout_batch.observations
-            self.actions = rollout_batch.actions
-            self.rewards = rollout_batch.rewards
-            self.advantages = rollout_batch.advantages
-            self.returns = rollout_batch.returns
-            self.episode_starts = rollout_batch.episode_starts
-            self.log_probs = rollout_batch.log_probs
-            self.values = rollout_batch.values
+        # Move each field in rollout_batch onto self.device (if it isn’t already).
+        rb_obs = rollout_batch.observations.to(self.device)
+        rb_acts = rollout_batch.actions.to(self.device)
+        rb_rews = rollout_batch.rewards.to(self.device)
+        rb_advs = rollout_batch.advantages.to(self.device)
+        rb_rets = rollout_batch.returns.to(self.device)
+        rb_eps = rollout_batch.episode_starts.to(self.device)
+        rb_logp = rollout_batch.log_probs.to(self.device)
+        rb_vals = rollout_batch.values.to(self.device)
+
+        # If buffer was empty (first insertion), just assign:
+        if not isinstance(self.observations, torch.Tensor):
+            self.observations = rb_obs  # shape = (1, T, n_envs, *obs_shape)
+            self.actions = rb_acts  # shape = (1, T, n_envs, *act_shape)
+            self.rewards = rb_rews  # shape = (1, T, n_envs)
+            self.advantages = rb_advs  # shape = (1, T, n_envs)
+            self.returns = rb_rets  # shape = (1, T, n_envs)
+            self.episode_starts = rb_eps  # shape = (1, T, n_envs)
+            self.log_probs = rb_logp  # shape = (1, T, n_envs)
+            self.values = rb_vals  # shape = (1, T, n_envs)
+
         else:
-            self.observations = torch.cat(
-                (self.observations, rollout_batch.observations)
-            )
-            self.actions = torch.cat((self.actions, rollout_batch.actions))
-            self.rewards = torch.cat((self.rewards, rollout_batch.rewards))
-            self.advantages = torch.cat((self.advantages, rollout_batch.advantages))
-            self.returns = torch.cat((self.returns, rollout_batch.returns))
-            self.episode_starts = torch.cat(
-                (self.episode_starts, rollout_batch.episode_starts)
-            )
-            self.log_probs = torch.cat((self.log_probs, rollout_batch.log_probs))
-            self.values = torch.cat((self.values, rollout_batch.values))
+            # Concatenate along dim=1 (time dimension)
+            self.observations = torch.cat((self.observations, rb_obs), dim=1)
+            self.actions = torch.cat((self.actions, rb_acts), dim=1)
+            self.rewards = torch.cat((self.rewards, rb_rews), dim=1)
+            self.advantages = torch.cat((self.advantages, rb_advs), dim=1)
+            self.returns = torch.cat((self.returns, rb_rets), dim=1)
+            self.episode_starts = torch.cat((self.episode_starts, rb_eps), dim=1)
+            self.log_probs = torch.cat((self.log_probs, rb_logp), dim=1)
+            self.values = torch.cat((self.values, rb_vals), dim=1)
 
     # def sample(self, batch_size: int):
     #     """

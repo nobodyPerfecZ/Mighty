@@ -30,7 +30,13 @@ class TransitionBatch:
     """Transition batch."""
 
     def __init__(
-        self, observations, actions, rewards, next_observations, dones
+        self,
+        observations,
+        actions,
+        rewards,
+        next_observations,
+        dones,
+        device: torch.device | str = "cpu",
     ) -> None:
         """Initialize TransitionBatch."""
         if isinstance(rewards, float | int):
@@ -40,17 +46,21 @@ class TransitionBatch:
             next_observations = np.array([next_observations], dtype=np.float32)
             dones = np.array([dones], dtype=np.float32)
         if isinstance(rewards, np.ndarray):
-            self.observations = torch.from_numpy(observations.astype(np.float32))
-            self.actions = torch.from_numpy(actions.astype(np.float32))
-            self.rewards = torch.from_numpy(rewards.astype(np.float32))
-            self.next_obs = torch.from_numpy(next_observations.astype(np.float32))
-            self.dones = torch.from_numpy(dones.astype(np.int64))
+            self.observations = torch.from_numpy(observations.astype(np.float32)).to(
+                device
+            )
+            self.actions = torch.from_numpy(actions.astype(np.float32)).to(device)
+            self.rewards = torch.from_numpy(rewards.astype(np.float32)).to(device)
+            self.next_obs = torch.from_numpy(next_observations.astype(np.float32)).to(
+                device
+            )
+            self.dones = torch.from_numpy(dones.astype(np.int64)).to(device)
         else:
-            self.observations = observations
-            self.actions = actions
-            self.rewards = rewards
-            self.next_obs = next_observations
-            self.dones = dones
+            self.observations = observations.to(device)
+            self.actions = actions.to(device)
+            self.rewards = rewards.to(device)
+            self.next_obs = next_observations.to(device)
+            self.dones = dones.to(device)
 
     @property
     def size(self):
@@ -74,8 +84,13 @@ class TransitionBatch:
 class MightyReplay(MightyBuffer):
     """Simple replay buffer."""
 
-    # FIXME: EWRL: add device to everything -- we should actually send as much as possible to the device, both buffers and models
-    def __init__(self, capacity, keep_infos=False, flatten_infos=False):
+    def __init__(
+        self,
+        capacity,
+        keep_infos=False,
+        flatten_infos=False,
+        device: torch.device | str = "cpu",
+    ):
         """Initialize Buffer.
 
         :param capacity: Buffer size
@@ -88,6 +103,7 @@ class MightyReplay(MightyBuffer):
         self.capacity = capacity
         self.keep_infos = keep_infos
         self.flatten_infos = flatten_infos
+        self.device = torch.device(device)
         self.rng = np.random.default_rng()
         self.reset()
 
@@ -140,6 +156,7 @@ class MightyReplay(MightyBuffer):
             self.rewards[batch_indices],
             self.next_obs[batch_indices],
             self.dones[batch_indices],
+            device=self.device,
         )
 
     def reset(self):
@@ -173,6 +190,7 @@ class PrioritizedReplay(MightyReplay):
         alpha=1.0,
         beta=1.0,
         epsilon=1e-4,
+        device: torch.device | str = "cpu",
         keep_infos=False,
         flatten_infos=False,
     ):
@@ -188,7 +206,7 @@ class PrioritizedReplay(MightyReplay):
             Might be necessary, depending on info content.
         :return:
         """
-        super().__init__(capacity, keep_infos, flatten_infos)
+        super().__init__(capacity, keep_infos, flatten_infos, device)
         self.alpha = alpha
         self.beta = beta
         self.epsilon = epsilon
@@ -234,4 +252,5 @@ class PrioritizedReplay(MightyReplay):
             self.rewards[batch_indices],
             self.next_obs[batch_indices],
             self.dones[batch_indices],
+            device=self.device,
         )
