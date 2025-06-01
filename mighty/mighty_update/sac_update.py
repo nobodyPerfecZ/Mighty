@@ -8,6 +8,7 @@ from mighty.mighty_models.sac import SACModel
 from mighty.mighty_replay.mighty_replay_buffer import TransitionBatch
 from mighty.mighty_utils.update_utils import polyak_update
 
+
 class SACUpdate:
     def __init__(
         self,

@@ -97,7 +97,7 @@ class PPOUpdate:
         epoch_counts = 0  # how many epochs actually executed
 
         # main PPO loop
-        for epoch in range(self.n_epochs):
+        for _ in range(self.n_epochs):
             epoch_kls = []
 
             for i, mb in enumerate(batch.minibatches):
@@ -124,13 +124,25 @@ class PPOUpdate:
 
                 # 2c) new policy log-probs & entropy
                 if self.model.continuous_action:
-                    means, raw_std = self.model(mb.observations)
-                    # derive a safe std
-                    log_std = raw_std.clamp(-20, 2)
-                    std = torch.exp(log_std).clamp(min=1e-3)
-                    dist = torch.distributions.Normal(means, std)
-                    log_probs = dist.log_prob(mb.actions).sum(-1)
-                    entropy = dist.entropy().sum(-1).mean()
+                    # Run forward() to get (action, z, mean, log_std)
+                    _, z_pred, mean, log_std = self.model(mb.observations)
+                    std = torch.exp(log_std)  # [batch_size, action_dim]
+                    dist = torch.distributions.Normal(mean, std)
+
+                    # Compute log_pz = ∑ᵢ log N(z_predᵢ; meanᵢ, stdᵢ)
+                    log_pz = dist.log_prob(z_pred).sum(dim=-1)  # [batch_size]
+
+                    # Tanh‐correction: ∑ᵢ log(1 − tanh(z_predᵢ)² + ε)
+                    eps = 1e-6
+                    log_correction = torch.log(
+                        1.0 - torch.tanh(z_pred).pow(2) + eps
+                    ).sum(dim=-1)  # [batch_size]
+
+                    # Final logπ(a|s) = log_pz − log_correction
+                    log_probs = log_pz - log_correction  # [batch_size]
+
+                    # Entropy = ∑ᵢ H(N(meanᵢ, stdᵢ))
+                    entropy = dist.entropy().sum(dim=-1).mean()  # scalar
                 else:
                     logits = self.model(mb.observations)
                     dist = torch.distributions.Categorical(logits=logits)
@@ -156,12 +168,18 @@ class PPOUpdate:
 
                 with torch.no_grad():
                     if self.model.continuous_action:
-                        means, stds = self.model(mb.observations)
-                        new_lp = (
-                            torch.distributions.Normal(means, stds)
-                            .log_prob(mb.actions)
-                            .sum(-1)
-                        )
+                        # After update, forward again
+                        _, z_new, mean_new, log_std_new = self.model(mb.observations)
+                        std_new = torch.exp(log_std_new)
+                        dist_new = torch.distributions.Normal(mean_new, std_new)
+
+                        log_pz_new = dist_new.log_prob(z_new).sum(
+                            dim=-1
+                        )  # [batch_size]
+                        log_correction_new = torch.log(
+                            1.0 - torch.tanh(z_new).pow(2) + 1e-6
+                        ).sum(dim=-1)  # [batch_size]
+                        new_lp = log_pz_new - log_correction_new  # [batch_size]
                     else:
                         logits = self.model(mb.observations)
                         new_lp = torch.distributions.Categorical(

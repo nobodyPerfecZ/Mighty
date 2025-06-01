@@ -4,6 +4,7 @@ from typing import Tuple
 
 import numpy as np
 import torch
+from torch.distributions import Categorical, Normal
 
 from mighty.mighty_exploration.mighty_exploration_policy import MightyExplorationPolicy
 from mighty.mighty_models import SACModel
@@ -48,19 +49,67 @@ class StochasticPolicy(MightyExplorationPolicy):
         state = torch.as_tensor(s, dtype=torch.float32)
         if self.discrete:
             logits = self.model(state)
-            dist = torch.distributions.Categorical(logits=logits)
+            dist = Categorical(logits=logits)
             action = dist.sample()
             log_prob = dist.log_prob(action).unsqueeze(-1)
+            return action.detach().cpu().numpy(), log_prob * self.entropy_coefficient
         else:
-            # Model returns: action (tanh-squashed), z (pre-tanh), mean, log_std
-            action, z, mean, log_std = self.model(state)
-            std = torch.exp(log_std)
-            dist = torch.distributions.Normal(mean, std)
-            # log_prob and entropy over pre-tanh sample
-            log_prob = dist.log_prob(z).sum(dim=-1, keepdim=True)
-        # Weighted by entropy coefficient
-        weighted_log_prob = log_prob * self.entropy_coefficient
-        return action.detach().cpu().numpy(), weighted_log_prob
+            # If model has attribute continuous_action=True, we know:
+            #   model(state) → (action, z, mean, log_std)
+            if hasattr(self.model, "continuous_action") and getattr(
+                self.model, "continuous_action"
+            ):
+                # 1) Forward pass: get (action, z, mean, log_std)
+                action, z, mean, log_std = self.model(
+                    state
+                )  # each: [batch, action_dim]
+                std = torch.exp(log_std)  # [batch, action_dim]
+                dist = Normal(mean, std)
+
+                # 2) Compute log_prob of "z" under N(mean, std)
+                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
+
+                # 3) Tanh Jacobian‐correction: sum_i log(1 − tanh(z_i)^2 + ε)
+                eps = 1e-6
+                log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
+                    dim=-1, keepdim=True
+                )  # [batch, 1]
+
+                # 4) Final log_prob of a = tanh(z)
+                log_prob = log_pz - log_correction  # [batch, 1]
+
+                # 5) (Optional) multiply by entropy_coeff to get “weighted log_prob”
+                weighted_log_prob = log_prob * self.entropy_coefficient
+
+                return action.detach().cpu().numpy(), weighted_log_prob
+
+            # If it’s actually a SACModel, fallback (should only happen in training if model∈SACModel)
+            elif isinstance(self.model, SACModel):
+                action, z, mean, log_std = self.model(state, deterministic=False)
+                std = torch.exp(log_std)
+                dist = Normal(mean, std)
+
+                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
+                weighted_log_prob = log_pz * self.entropy_coefficient
+                return action.detach().cpu().numpy(), weighted_log_prob
+
+            # If it’s “mean, std”‐style continuous (rare in our code), handle that case
+            else:
+                mean, std = self.model(state)
+                dist = Normal(mean, std)
+                z = dist.rsample()  # [batch, action_dim]
+                action = torch.tanh(z)  # [batch, action_dim]
+
+                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
+                eps = 1e-6
+                log_correction = torch.log(1.0 - action.pow(2) + eps).sum(
+                    dim=-1, keepdim=True
+                )
+                log_prob = log_pz - log_correction  # [batch, 1]
+                entropy = dist.entropy().sum(dim=-1, keepdim=True)  # [batch, 1]
+                weighted_log_prob = log_prob * entropy
+
+                return action.detach().cpu().numpy(), weighted_log_prob
 
     def forward(self, s):
         """

@@ -10,7 +10,7 @@ algorithm_kwargs:
   rollout_buffer_class:
     _target_: mighty.mighty_replay.MightyRolloutBuffer  # Using rollout buffer
   rollout_buffer_kwargs:
-    buffer_size: 4096  # Size of the rollout buffer.
+    buffer_size: 8192  # Size of the rollout buffer.
     gamma: 0.99  # Discount factor for future rewards.
     gae_lambda: 0.95  # GAE lambda.
     obs_shape: ???  # Placeholder for observation shape
@@ -20,9 +20,8 @@ algorithm_kwargs:
 
   # Training
   learning_rate:  3e-4
-  batch_size: 1024  # Batch size for training.
+  batch_size: 8192  # Batch size for training.
   gamma: 0.99  # The amount by which to discount future rewards.
-  n_gradient_steps: 3  # Number of epochs for updating policy.
   ppo_clip: 0.2  # Clipping parameter for PPO.
   value_loss_coef: 0.5  # Coefficient for value loss.
   entropy_coef: 0.01  # Coefficient for entropy loss.
@@ -32,8 +31,8 @@ algorithm_kwargs:
   hidden_sizes: [64, 64]
   activation: 'tanh'
 
-  n_epochs: 10
-  minibatch_size: 64
+  n_epochs: 64
+  minibatch_size: 4
   kl_target: 0.01
   use_value_clip: True
   value_clip_eps: 0.2

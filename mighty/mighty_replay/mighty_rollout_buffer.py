@@ -274,23 +274,111 @@ class MightyRolloutBuffer(MightyBuffer):
             self.log_probs = torch.cat((self.log_probs, rollout_batch.log_probs))
             self.values = torch.cat((self.values, rollout_batch.values))
 
+    # def sample(self, batch_size: int):
+    #     """
+    #     Sample mini-batches of transitions from the buffer.
+
+    #     :param batch_size: Number of transitions per mini-batch.
+    #     :return: List of RolloutBatch samples.
+    #     """
+    #     # FIXME: EWRL: maybe truncate batch size instead?
+    #     hangover = len(self.observations) % batch_size
+    #     # import pdb; pdb.set_trace()
+    #     indices = np.random.permutation(len(self.observations))
+    #     indices = (
+    #         indices[:-hangover].reshape(-1, batch_size).tolist()
+    #         + indices[-hangover:].tolist()
+    #     )
+    #     samples = []
+    #     for ind in indices:
+    #         samples.append(self._get_samples(ind))
+
+    #     return MaxiBatch(samples)
+
+    # def sample(self, batch_size: int):
+    #     """
+    #     Sample mini‐batches of exactly `batch_size` transitions,
+    #     dropping any leftover indices so all batches have equal size.
+    #     """
+    #     total = len(self.observations)  # total # of stored transitions
+    #     # randomly permute indices
+    #     perm = np.random.permutation(total)
+    #     # compute how many full batches we can make
+    #     n_full = total // batch_size
+    #     if n_full == 0:
+    #         # not enough samples for even one full batch
+    #         return MaxiBatch([])
+
+    #     # keep only the first n_full * batch_size indices
+    #     perm = perm[: n_full * batch_size]
+    #     # reshape into (n_full, batch_size)
+    #     perm = perm.reshape(n_full, batch_size)
+
+    #     samples = []
+    #     for batch_inds in perm:
+    #         samples.append(self._get_samples(batch_inds))
+
+    #     import pdb; pdb.set_trace()
+
+    #     return MaxiBatch(samples)
+
     def sample(self, batch_size: int):
         """
-        Sample mini-batches of transitions from the buffer.
-
-        :param batch_size: Number of transitions per mini-batch.
-        :return: List of RolloutBatch samples.
+        Sample minibatches of exactly `batch_size` transitions
+        from a flattened (T * n_envs)-long buffer.
         """
-        # FIXME: EWRL: maybe truncate batch size instead?
-        hangover = len(self.observations) % batch_size
-        indices = np.random.permutation(len(self.observations))
-        indices = (
-            indices[:-hangover].reshape(-1, batch_size).tolist()
-            + indices[-hangover:].tolist()
+        # self.observations: shape = (T, n_envs, *obs_shape)
+        num_steps, n_envs = self.observations.shape[0], self.observations.shape[1]
+        total = num_steps * n_envs
+        if total < batch_size:
+            # Not enough individual transitions to form even one full minibatch
+            return MaxiBatch([])
+
+        # ―― 1) Flatten all tensors from shape (T, n_envs, …) → (T*n_envs, …):
+        obs_flat = self.observations.reshape(total, *self.observations.shape[2:])
+        act_flat = self.actions.reshape(total, *self.actions.shape[2:])
+        rew_flat = self.rewards.reshape(total, *self.rewards.shape[2:])
+        adv_flat = self.advantages.reshape(total, *self.advantages.shape[2:])
+        ret_flat = self.returns.reshape(total, *self.returns.shape[2:])
+        epstart_flat = self.episode_starts.reshape(
+            total, *self.episode_starts.shape[2:]
         )
+        logp_flat = self.log_probs.reshape(total, *self.log_probs.shape[2:])
+        val_flat = self.values.reshape(total, *self.values.shape[2:])
+
+        # ―― 2) Randomly permute the “total” indices, keep only full‐batch multiples:
+        perm = np.random.permutation(total)
+        n_full = total // batch_size
+        perm = perm[: n_full * batch_size]
+        perm = perm.reshape(n_full, batch_size)
+
+        # ―― 3) Build one RolloutBatch per row of indices:
         samples = []
-        for ind in indices:
-            samples.append(self._get_samples(ind))
+        for batch_inds in perm:
+            obs_batch = obs_flat[batch_inds].numpy()  # shape = (batch_size, *obs_shape)
+            act_batch = act_flat[
+                batch_inds
+            ].numpy()  # shape = (batch_size, *action_shape)
+            rew_batch = rew_flat[batch_inds].numpy()  # etc.
+            adv_batch = adv_flat[batch_inds].numpy()
+            ret_batch = ret_flat[batch_inds].numpy()
+            epstart_batch = epstart_flat[batch_inds].numpy()
+            logp_batch = logp_flat[batch_inds].numpy()
+            val_batch = val_flat[batch_inds].numpy()
+
+            samples.append(
+                RolloutBatch(
+                    obs_batch,
+                    act_batch,
+                    rew_batch,
+                    adv_batch,
+                    ret_batch,
+                    epstart_batch,
+                    logp_batch,
+                    val_batch,
+                )
+            )
+
         return MaxiBatch(samples)
 
     def _get_samples(self, batch_inds: np.ndarray):
