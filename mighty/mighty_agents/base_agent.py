@@ -20,11 +20,11 @@ from uniplot import plot_to_string
 
 import wandb
 from mighty.mighty_exploration import MightyExplorationPolicy
-from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer
-from mighty.mighty_utils.types import CARLENV, DACENV, MIGHTYENV, retrieve_class
+from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer, PrioritizedReplay
+from mighty.mighty_utils.migthy_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
-    from mighty.mighty_utils.types import TypeKwargs
+    from mighty.mighty_utils.migthy_types import TypeKwargs
 
 
 def update_buffer(buffer, new_data):
@@ -239,6 +239,33 @@ class MightyAgent(ABC):
         are done in _initialize_agent
         """
         self._initialize_agent()
+
+        if isinstance(self.buffer_class, type) and issubclass(
+            self.buffer_class, PrioritizedReplay
+        ):
+            # 1) Get observation‐space shape
+            try:
+                obs_space = self.env.single_observation_space
+                obs_shape = tuple(obs_space.shape)
+            except Exception:
+                # Fallback: call env.reset() once and infer shape from returned numpy/torch array
+                first_obs, _ = self.env.reset()
+                obs_shape = tuple(np.array(first_obs).shape)
+
+            # 2) Get action‐space shape (if discrete, .n is number of actions)
+            action_space = self.env.single_action_space
+            if hasattr(action_space, "n"):
+                # Discrete action space → action_shape = () (scalar), but Q-net will expect a single integer
+                # We store it as a zero-length tuple, and treat it as int later.
+                action_shape = ()
+            else:
+                # Continuous action space, e.g. Box(shape=(3,)), so we store that tuple
+                action_shape = tuple(action_space.shape)
+
+            # 3) Overwrite the YAML placeholders (null → actual)
+            self.buffer_kwargs["obs_shape"] = obs_shape
+            self.buffer_kwargs["action_shape"] = action_shape
+
         self.buffer = self.buffer_class(**self.buffer_kwargs)  # type: ignore
 
     def update_agent(self) -> Dict:
@@ -485,6 +512,7 @@ class MightyAgent(ABC):
         logging_layout["upper"].update(progress_table)
         update_multiplier = 0
 
+        # FIXME: Get this back -- Aditya
         with Live(logging_layout, refresh_per_second=10, vertical_overflow="visible"):
             steps_since_eval = 0
             # FIXME: this is more of a question: are there cases where we don't want to reset this completely?
@@ -530,7 +558,6 @@ class MightyAgent(ABC):
                 metrics["episode_reward"] = episode_reward
 
                 action, log_prob = self.step(curr_s, metrics)
-
                 next_s, reward, terminated, truncated, _ = self.env.step(action)  # type: ignore
                 dones = np.logical_or(terminated, truncated)
 
@@ -547,7 +574,10 @@ class MightyAgent(ABC):
                     "terminated": terminated.astype(int),
                     "truncated": truncated.astype(int),
                     "dones": dones.astype(int),
-                    "mean_episode_reward": last_episode_reward.mean().cpu().numpy().item(),
+                    "mean_episode_reward": last_episode_reward.mean()
+                    .cpu()
+                    .numpy()
+                    .item(),
                 }
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
@@ -588,7 +618,6 @@ class MightyAgent(ABC):
                     and self.steps >= self._learning_starts
                 ):
                     update_kwargs = {"next_s": next_s, "dones": dones}
-
                     metrics = self.update(metrics, update_kwargs)
 
                 # End step
@@ -602,7 +631,7 @@ class MightyAgent(ABC):
                     evaluation_reward = eval_metrics["eval_rewards"]
 
                 # Log to command line
-                if self.steps >= 1000*update_multiplier:
+                if self.steps >= 1000 * update_multiplier:
                     metrics_table = self.make_logging_table(
                         self.steps,
                         recent_episode_reward,

@@ -4,57 +4,66 @@ q_func: ???
 
 algorithm_kwargs:
   # Core architecture / model
-  n_units: 128
+  n_units: 64
   q_kwargs:
-    dueling: False
+    dueling: True
     feature_extractor_kwargs:
       architecture: mlp
       n_layers: 1
-      hidden_sizes: [32]
+      hidden_sizes: [64]
     head_kwargs:
-      hidden_sizes: [32]
+      hidden_sizes: [64]
 
-  # Exploration (force ε=0.2)
-  epsilon: 0.2
+  # Exploration (decaying ε‐greedy)
+  policy_class:
+    _target_: mighty.mighty_exploration.DecayingEpsilonGreedy
   policy_kwargs:
-    epsilon: 0.2
+    epsilon_start: 1.0
+    epsilon_final: 0.05
+    epsilon_decay_steps: 320000
 
   # Replay‐buffer settings
   replay_buffer_class:
     _target_: mighty.mighty_replay.PrioritizedReplay
   replay_buffer_kwargs:
-    capacity: 1000000
+    capacity: 250000
     alpha: 0.6
+    beta: 0.4
+    epsilon: 1e-6
+    device: "cpu"
+    obs_shape: ???     # ← will be auto-filled at runtime
+    action_shape: ???  # ← will be auto-filled at runtime
 
   # Training hyperparameters
   learning_rate: 3e-4
-  batch_size: 32
-  gamma: 0.99
-  learning_starts: 10000        # wait 10k transitions before training
+  batch_size: 256
+  gamma: 0.97
+  learning_starts: 64000       # wait 1k transitions before training
 
-  # Target‐network / updating
+  # Target‐network / updating (hard update every 1k ∇‐steps)
   use_target: True
-  soft_update_weight: 0.1
+  soft_update_weight: 0.25
   target_update_freq: null
 
-  # Choose plain Q‐learning instead of DDQN
+  # Double DQN update
   td_update_class: mighty.mighty_update.QLearning
 
-  # ‣ IMPORTANT: explicitly configure the optimizer inside your TD updater
   td_update_kwargs:
-    gamma: 0.99
-    # optimizer_class: torch.optim.Adam
+    gamma: 0.97
+    optimizer_class:
+      _target_: torch.optim.Adam
     optimizer_kwargs:
-      lr: 3e-4
-      eps: 1e-5
+      lr: 5e-5
+      weight_decay: 1e-5
+      eps: 1e-6
     max_grad_norm: 10.0
 
   # Checkpointing
-  save_replay: True
+  save_replay: False
   n_gradient_steps: 1
 
   # Misc/Evaluation/Logging
   log_wandb: False
   wandb_kwargs:
     project: "my_dqn_experiment"
-    name: "DQN-prioritized-replay"
+    name: "DQN-cartpole"

@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import torch
 import torch.nn.functional as F
+from hydra.utils import get_class, instantiate
+from omegaconf import DictConfig
 
 
 class QLearning:
@@ -31,14 +33,28 @@ class QLearning:
 
         if optimizer_kwargs is None:
             optimizer_kwargs = {}
-        self.optimizer = optimizer_class(params=model.parameters(), **optimizer_kwargs)
+        # self.optimizer = optimizer_class(params=model.parameters(), **optimizer_kwargs)
+
+        if isinstance(optimizer_class, DictConfig):
+            # Hydra DictConfig typically has {"_target_": "torch.optim.Adam", "lr": 3e-4, ...}
+            # instantiate() will call that class with any fields inside, so we pass params=model.parameters() too.
+            self.optimizer = instantiate(optimizer_class, params=model.parameters())
+        elif isinstance(optimizer_class, str):
+            # If it's a string "torch.optim.Adam" (no nested kwargs), get the class then call it:
+            cls = get_class(optimizer_class)
+            self.optimizer = cls(params=model.parameters(), **optimizer_kwargs)
+        else:
+            # Already a Python class (e.g. torch.optim.Adam)
+            self.optimizer = optimizer_class(
+                params=model.parameters(), **optimizer_kwargs
+            )
 
     def apply_update(self, preds, targets):
         """Apply the Q-learning update."""
         self.optimizer.zero_grad()
         loss = F.mse_loss(preds, targets)
         loss.backward()
-        if self.max_grad_norm is not None:  # FIXME:Changed – apply gradient clipping
+        if self.max_grad_norm is not None:
             torch.nn.utils.clip_grad_norm_(
                 self.optimizer.param_groups[0]["params"], self.max_grad_norm
             )
@@ -54,10 +70,10 @@ class QLearning:
             .max(1)[0]
             .unsqueeze(1)
         )
-        targets = (
-            batch.rewards.unsqueeze(-1)
-            + (~batch.dones.unsqueeze(-1)) * self.gamma * max_next
-        )
+
+        nonterminal_mask = 1.0 - batch.dones.unsqueeze(-1).to(torch.float32)
+        targets = batch.rewards.unsqueeze(-1) + nonterminal_mask * self.gamma * max_next
+
         preds = q_net(torch.as_tensor(batch.observations, dtype=torch.float32)).gather(
             1, batch.actions.to(torch.int64).unsqueeze(-1)
         )
@@ -81,9 +97,7 @@ class DoubleQLearning(QLearning):
         max_grad_norm: float | None = None,  # inherits new signature
     ) -> None:
         """Initialize the Double Q-learning update."""
-        super().__init__(
-            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
-        )  # FIXME:Changed call
+        super().__init__(model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm)
 
     def get_targets(self, batch, q_net, target_net=None):
         if target_net is None:
@@ -96,10 +110,9 @@ class DoubleQLearning(QLearning):
         max_next = target_net(
             torch.as_tensor(batch.next_obs, dtype=torch.float32)
         ).gather(1, argmax_a)
-        targets = (
-            batch.rewards.unsqueeze(-1)
-            + (~batch.dones.unsqueeze(-1)) * self.gamma * max_next
-        )
+
+        nonterminal_mask = 1.0 - batch.dones.unsqueeze(-1).to(torch.float32)
+        targets = batch.rewards.unsqueeze(-1) + nonterminal_mask * self.gamma * max_next
         preds = q_net(torch.as_tensor(batch.observations, dtype=torch.float32)).gather(
             1, batch.actions.to(torch.int64).unsqueeze(-1)
         )
@@ -118,9 +131,7 @@ class ClippedDoubleQLearning(QLearning):
         max_grad_norm: float | None = None,  # inherits new signature
     ) -> None:
         """Initialize the Clipped Double Q-learning update."""
-        super().__init__(
-            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
-        )  # FIXME:Changed call
+        super().__init__(model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm)
 
     def get_targets(self, batch, q_net, target_net=None):
         if target_net is None:
@@ -159,9 +170,7 @@ class SPRQLearning(QLearning):
         huber_delta=1,
     ) -> None:
         """Initialize the SPR Q-learning update."""
-        super().__init__(
-            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
-        )  # FIXME:Changed call
+        super().__init__(model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm)
         self.spr_loss_weight = spr_loss_weight
         self.huber_delta = huber_delta
 
