@@ -4,7 +4,7 @@ q_func: ???
 
 algorithm_kwargs:
   # Hyperparameters
-  n_units: 8
+  n_units: 128
   epsilon: 0.2  # Controls epsilon-greedy action selection in policy.
 
   replay_buffer_class:
@@ -14,11 +14,11 @@ algorithm_kwargs:
     alpha: 0.6
 
   # Training
-  learning_rate: 0.001
-  batch_size: 64  # Batch size for training.
-  gamma: 0.9  # The amount by which to discount future rewards.
+  learning_rate: 3e-4
+  batch_size: 32  # Batch size for training.
+  gamma: 0.99  # The amount by which to discount future rewards.
 #  begin_updating_weights: 1  # Begin updating policy weights after this many observed transitions.
-  soft_update_weight: 1.  # If we set :math:`\tau=1` we do a hard update. If we pick a smaller value, we do a smooth update.
+  soft_update_weight: 0.1  # If we set :math:`\tau=1` we do a hard update. If we pick a smaller value, we do a smooth update.
   td_update_class: mighty.mighty_update.QLearning #Simple Q-learning update instead of default DDQN
   q_kwargs:
     dueling: False

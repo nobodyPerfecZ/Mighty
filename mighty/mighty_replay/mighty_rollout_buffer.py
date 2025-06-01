@@ -310,7 +310,7 @@ class MightyRolloutBuffer(MightyBuffer):
     #     :param batch_size: Number of transitions per mini-batch.
     #     :return: List of RolloutBatch samples.
     #     """
-    #     # FIXME: EWRL: maybe truncate batch size instead?
+    #
     #     hangover = len(self.observations) % batch_size
     #     # import pdb; pdb.set_trace()
     #     indices = np.random.permutation(len(self.observations))
