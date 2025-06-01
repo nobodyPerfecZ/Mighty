@@ -1,0 +1,8 @@
+# @package _global_
+algorithm_kwargs:
+  policy_class: mighty.mighty_exploration.DecayingEpsilonGreedy
+  policy_kwargs:
+    # start at ε=1.0, linearly decay down to ε=0.05 over 10 000 actions
+    epsilon_start: 1.0
+    epsilon_final: 0.05
+    epsilon_decay_steps: 10000
