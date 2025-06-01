@@ -1,4 +1,4 @@
-"""Q-learning update."""
+"""Q-learning update (modified to accept nested optimizer_kwargs and max_grad_norm)."""
 
 from __future__ import annotations
 
@@ -11,17 +11,37 @@ class QLearning:
     """Q-learning update."""
 
     def __init__(
-        self, model, gamma, optimizer=torch.optim.Adam, **optimizer_kwargs
+        self,
+        model,
+        gamma: float,
+        optimizer_class=torch.optim.Adam,
+        optimizer_kwargs: dict | None = None,
+        max_grad_norm: float | None = None,
     ) -> None:
-        """Initialize the Q-learning update."""
+        """Initialize the Q-learning update.
+
+        :param model: The Q-network to optimize.
+        :param gamma: Discount factor.
+        :param optimizer_class: Optimizer class (e.g. torch.optim.Adam).
+        :param optimizer_kwargs: Keyword args to pass into optimizer.
+        :param max_grad_norm: If provided, gradient norms will be clipped to this value.
+        """
         self.gamma = gamma
-        self.optimizer = optimizer(params=model.parameters(), **optimizer_kwargs)
+        self.max_grad_norm = max_grad_norm
+
+        if optimizer_kwargs is None:
+            optimizer_kwargs = {}
+        self.optimizer = optimizer_class(params=model.parameters(), **optimizer_kwargs)
 
     def apply_update(self, preds, targets):
         """Apply the Q-learning update."""
         self.optimizer.zero_grad()
         loss = F.mse_loss(preds, targets)
         loss.backward()
+        if self.max_grad_norm is not None:  # FIXME:Changed – apply gradient clipping
+            torch.nn.utils.clip_grad_norm_(
+                self.optimizer.param_groups[0]["params"], self.max_grad_norm
+            )
         self.optimizer.step()
         return {"Update/loss": loss.detach().numpy().item()}
 
@@ -53,10 +73,17 @@ class DoubleQLearning(QLearning):
     """Double Q-learning update."""
 
     def __init__(
-        self, model, gamma, optimizer=torch.optim.Adam, **optimizer_kwargs
+        self,
+        model,
+        gamma: float,
+        optimizer_class=torch.optim.Adam,  # inherits new signature
+        optimizer_kwargs: dict | None = None,  # inherits new signature
+        max_grad_norm: float | None = None,  # inherits new signature
     ) -> None:
         """Initialize the Double Q-learning update."""
-        super().__init__(model, gamma, optimizer, **optimizer_kwargs)
+        super().__init__(
+            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
+        )  # FIXME:Changed call
 
     def get_targets(self, batch, q_net, target_net=None):
         if target_net is None:
@@ -83,10 +110,17 @@ class ClippedDoubleQLearning(QLearning):
     """Clipped Double Q-learning update."""
 
     def __init__(
-        self, model, gamma, optimizer=torch.optim.Adam, **optimizer_kwargs
+        self,
+        model,
+        gamma: float,
+        optimizer_class=torch.optim.Adam,  # inherits new signature
+        optimizer_kwargs: dict | None = None,  # inherits new signature
+        max_grad_norm: float | None = None,  # inherits new signature
     ) -> None:
         """Initialize the Clipped Double Q-learning update."""
-        super().__init__(model, gamma, optimizer, **optimizer_kwargs)
+        super().__init__(
+            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
+        )  # FIXME:Changed call
 
     def get_targets(self, batch, q_net, target_net=None):
         if target_net is None:
@@ -117,14 +151,17 @@ class SPRQLearning(QLearning):
     def __init__(
         self,
         model,
-        gamma,
-        optimizer=torch.optim.Adam,
+        gamma: float,
+        optimizer_class=torch.optim.Adam,  # inherits new signature
+        optimizer_kwargs: dict | None = None,  # inherits new signature
+        max_grad_norm: float | None = None,  # inherits new signature
         spr_loss_weight=1,
         huber_delta=1,
-        **optimizer_kwargs,
     ) -> None:
         """Initialize the SPR Q-learning update."""
-        super().__init__(model, gamma, optimizer, **optimizer_kwargs)
+        super().__init__(
+            model, gamma, optimizer_class, optimizer_kwargs, max_grad_norm
+        )  # FIXME:Changed call
         self.spr_loss_weight = spr_loss_weight
         self.huber_delta = huber_delta
 
@@ -143,9 +180,9 @@ class SPRQLearning(QLearning):
         )
         q_preds = q_preds.gather(1, batch.actions)
         spr_targets = target_net.project(buffer.next_states)
-        spr_preds = spr_preds / np.linalg_norm(spr_preds, 2, -1, keepdims=True)
+        spr_preds = spr_preds / np.linalg.norm(spr_preds, 2, -1, keepdims=True)
         spr_targets = spr_targets.reshape(-1)
-        spr_targets = spr_targets / np.linalg_norm(spr_targets, 2, -1, keepdims=True)
+        spr_targets = spr_targets / np.linalg.norm(spr_targets, 2, -1, keepdims=True)
         return (q_preds.to(torch.float32), spr_preds.to(torch.float32)), (
             td_targets.to(torch.float32),
             spr_targets.to(torch.float32),
@@ -155,8 +192,8 @@ class SPRQLearning(QLearning):
         q_preds, spr_preds = preds
         td_targets, spr_targets = targets
         spr_loss = 0.5 * (spr_targets - spr_preds) ** 2
-        dqn_loss = np.abs(td_targets - q_preds)
-        dqn_loss = np.where(
+        dqn_loss = torch.abs(td_targets - q_preds)
+        dqn_loss = torch.where(
             dqn_loss <= self.huber_delta,
             0.5 * dqn_loss**2,
             0.5 * self.huber_delta**2
@@ -165,7 +202,11 @@ class SPRQLearning(QLearning):
         loss = dqn_loss + self.spr_loss_weight * spr_loss
         self.optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        if self.max_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(
+                self.optimizer.param_groups[0]["params"], self.max_grad_norm
+            )
+        self.optimizer.step()
         return {
             "Update/total_loss": loss.detach(),
             "Update/dqn_loss": dqn_loss.detach(),

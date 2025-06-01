@@ -57,6 +57,7 @@ class MightyDQNAgent(MightyAgent):
         use_target: bool = True,
         n_units: int = 8,
         soft_update_weight: float = 0.01,
+        target_update_freq: int | None = None,
         policy_class: str | DictConfig | type[MightyExplorationPolicy] | None = None,
         policy_kwargs: TypeKwargs | None = None,
         q_class: str | DictConfig | type[DQN] | None = None,
@@ -66,7 +67,6 @@ class MightyDQNAgent(MightyAgent):
         save_replay: bool = False,
         n_gradient_steps: int = 1,
     ):
-        # FIXME: EWRL: the arguments are not complete. Double check all classes.
         """DQN initialization.
 
         Creates all relevant class variables and calls agent-specific init function
@@ -99,6 +99,8 @@ class MightyDQNAgent(MightyAgent):
         self.n_units = n_units
         assert 0.0 <= soft_update_weight <= 1.0  # noqa: PLR2004
         self.soft_update_weight = soft_update_weight
+        self.target_update_freq = target_update_freq
+        self._target_update_counter = 0
 
         # Placeholder variables which are filled in self.initialize_agent
         self.q: DQN | None = None
@@ -220,15 +222,27 @@ class MightyDQNAgent(MightyAgent):
 
         # sync target model
         if self.q_target is not None:
-            for param, target_param in zip(
-                self.q.parameters(),  # type: ignore
-                self.q_target.parameters(),
-                strict=False,
-            ):
-                target_param.data.copy_(
-                    self.soft_update_weight * param.data
-                    + (1 - self.soft_update_weight) * target_param.data
-                )
+            # If a hard‐copy frequency is provided, use it
+            if self.target_update_freq is not None:
+                self._target_update_counter += 1
+                if self._target_update_counter >= self.target_update_freq:
+                    self.q_target.load_state_dict(self.q.state_dict())
+                    self._target_update_counter = 0
+            else:
+                # Otherwise, use soft updates if τ < 1.0, or hard copy every step if τ == 1.0
+                if self.soft_update_weight < 1.0:
+                    for param, target_param in zip(
+                        self.q.parameters(),  # type: ignore
+                        self.q_target.parameters(),
+                        strict=False,
+                    ):
+                        target_param.data.copy_(
+                            self.soft_update_weight * param.data
+                            + (1 - self.soft_update_weight) * target_param.data
+                        )
+                else:
+                    # τ == 1.0 and no frequency specified → hard copy every update
+                    self.q_target.load_state_dict(self.q.state_dict())
 
         return metrics_q
 

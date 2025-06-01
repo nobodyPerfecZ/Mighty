@@ -3,23 +3,8 @@ algorithm: DQN
 q_func: ???
 
 algorithm_kwargs:
-  # Hyperparameters
+  # Core architecture / model
   n_units: 128
-  epsilon: 0.2  # Controls epsilon-greedy action selection in policy.
-
-  replay_buffer_class:
-    _target_: mighty.mighty_replay.PrioritizedReplay #Using prioritized experience replay
-  replay_buffer_kwargs:
-    capacity: 1000000  # Maximum size of replay buffer.
-    alpha: 0.6
-
-  # Training
-  learning_rate: 3e-4
-  batch_size: 32  # Batch size for training.
-  gamma: 0.99  # The amount by which to discount future rewards.
-#  begin_updating_weights: 1  # Begin updating policy weights after this many observed transitions.
-  soft_update_weight: 0.1  # If we set :math:`\tau=1` we do a hard update. If we pick a smaller value, we do a smooth update.
-  td_update_class: mighty.mighty_update.QLearning #Simple Q-learning update instead of default DDQN
   q_kwargs:
     dueling: False
     feature_extractor_kwargs:
@@ -28,3 +13,48 @@ algorithm_kwargs:
       hidden_sizes: [32]
     head_kwargs:
       hidden_sizes: [32]
+
+  # Exploration (force ε=0.2)
+  epsilon: 0.2
+  policy_kwargs:
+    epsilon: 0.2
+
+  # Replay‐buffer settings
+  replay_buffer_class:
+    _target_: mighty.mighty_replay.PrioritizedReplay
+  replay_buffer_kwargs:
+    capacity: 1000000
+    alpha: 0.6
+
+  # Training hyperparameters
+  learning_rate: 3e-4
+  batch_size: 32
+  gamma: 0.99
+  learning_starts: 10000        # wait 10k transitions before training
+
+  # Target‐network / updating
+  use_target: True
+  soft_update_weight: 0.1
+  target_update_freq: null
+
+  # Choose plain Q‐learning instead of DDQN
+  td_update_class: mighty.mighty_update.QLearning
+
+  # ‣ IMPORTANT: explicitly configure the optimizer inside your TD updater
+  td_update_kwargs:
+    gamma: 0.99
+    # optimizer_class: torch.optim.Adam
+    optimizer_kwargs:
+      lr: 3e-4
+      eps: 1e-5
+    max_grad_norm: 10.0
+
+  # Checkpointing
+  save_replay: True
+  n_gradient_steps: 1
+
+  # Misc/Evaluation/Logging
+  log_wandb: False
+  wandb_kwargs:
+    project: "my_dqn_experiment"
+    name: "DQN-prioritized-replay"
