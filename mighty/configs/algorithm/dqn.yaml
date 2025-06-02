@@ -2,6 +2,9 @@
 algorithm: DQN
 q_func: ???
 
+# CartPole-v1 DQN configuration: num_steps: 5e4
+
+
 algorithm_kwargs:
   # Core architecture / model
   n_units: 256
