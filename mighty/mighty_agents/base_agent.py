@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import random
 from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict
@@ -25,6 +27,31 @@ from mighty.mighty_utils.migthy_types import CARLENV, DACENV, MIGHTYENV, retriev
 
 if TYPE_CHECKING:
     from mighty.mighty_utils.migthy_types import TypeKwargs
+
+
+def seed_everything(seed: int):
+    """Seed everything for reproducibility."""
+    # Python random
+    random.seed(seed)
+    # NumPy
+    np.random.seed(seed)
+    # PyTorch
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Torch deterministic/cudnn
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    # For hash-based things (sometimes relevant)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    # Extra: For Gymnasium environments (if you pass a seed to env.reset(seed=seed) you’re good)
+    # If you use action_space/obs_space sampling:
+    try:
+        import gymnasium as gym
+
+        gym.utils.seeding.np_random(seed)  # legacy, but doesn't hurt
+    except Exception:
+        pass
 
 
 def update_buffer(buffer, new_data):
@@ -126,6 +153,7 @@ class MightyAgent(ABC):
         if self.seed is not None:
             self.rng = np.random.default_rng(seed=seed)
             torch.manual_seed(seed)
+            seed_everything(seed)  # type: ignore
         else:
             self.rng = np.random.default_rng()
 
@@ -134,6 +162,7 @@ class MightyAgent(ABC):
             cls=replay_buffer_class,
             default_cls=MightyReplay,  # type: ignore
         )
+
         if replay_buffer_kwargs is None or len(replay_buffer_kwargs) == 0:
             if issubclass(replay_buffer_class, MightyReplay):
                 replay_buffer_kwargs = {  # type: ignore
@@ -439,7 +468,7 @@ class MightyAgent(ABC):
                 height=8,
                 x_min=0,
                 x_unit="steps",
-                y_min=0,
+                # y_min=0,
                 y_unit="reward",
                 lines=True,
             )
@@ -611,7 +640,6 @@ class MightyAgent(ABC):
                 steps_since_eval += len(action)
                 for _ in range(len(action)):
                     progress.advance(steps_task)
-
                 # Update agent
                 if (
                     len(self.buffer) >= self._batch_size  # type: ignore
