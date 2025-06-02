@@ -13,7 +13,7 @@ class SACModel(nn.Module):
         self,
         obs_size: int,
         action_size: int,
-        hidden_sizes: list[int] = [64, 64],
+        hidden_sizes: list[int] = [256, 256],
         activation: str = "relu",
         log_std_min: float = -20,
         log_std_max: float = 2,

@@ -34,6 +34,9 @@ class MightySACAgent(MightyAgent):
         # --- SAC hyperparameters ---
         gamma: float = 0.99,
         alpha: float = 0.2,
+        auto_alpha: bool = True,
+        target_entropy: Optional[float] = None,
+        alpha_lr: float = 3e-4,
         # --- Network architecture (optional override) ---
         hidden_sizes: Optional[List[int]] = None,
         activation: str = "relu",
@@ -72,6 +75,10 @@ class MightySACAgent(MightyAgent):
         self.activation = activation
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
+
+        self.auto_alpha = auto_alpha
+        self.target_entropy = target_entropy
+        self.alpha_lr = alpha_lr
 
         # Placeholders for model and updater
         self.model: SACModel | None = None
@@ -136,6 +143,9 @@ class MightySACAgent(MightyAgent):
             tau=self.tau,
             alpha=self.alpha,
             gamma=self.gamma,
+            auto_alpha=self.auto_alpha,
+            target_entropy=self.target_entropy,
+            alpha_lr=self.alpha_lr,
         )
 
     @property

@@ -17,7 +17,7 @@ algorithm_kwargs:
   batch_size:       256
   learning_starts:  5000
   update_every:     1
-  n_gradient_steps: 4
+  n_gradient_steps: 1
 
   # Learning rates
   policy_lr: 3e-4
@@ -26,6 +26,9 @@ algorithm_kwargs:
   # SAC hyperparameters
   gamma: 0.99
   alpha: 0.2
+  auto_alpha: True
+  target_entropy: -1
+  alpha_lr: 3e-4
 
   # Exploration wrapper
   policy_class: mighty.mighty_exploration.StochasticPolicy

@@ -154,7 +154,6 @@ class MightyPPOAgent(MightyAgent):
     def _initialize_agent(self) -> None:
         """Initialize PPO specific components."""
 
-        self.buffer_kwargs["buffer_size"] = self._batch_size  # type: ignore
         self.buffer_kwargs["obs_shape"] = self.env.single_observation_space.shape[0]  # type: ignore
 
         if self.env.single_action_space.__class__.__name__ == "Discrete":  # type: ignore
@@ -165,6 +164,7 @@ class MightyPPOAgent(MightyAgent):
             self.discrete_action = False
 
         self.buffer_kwargs["n_envs"] = self.env.num_envs  # type: ignore
+        self.buffer_kwargs["discrete_action"] = self.discrete_action  # type: ignore
 
         self.model = PPOModel(
             obs_shape=self.env.single_observation_space.shape[0],  # type: ignore
@@ -249,6 +249,10 @@ class MightyPPOAgent(MightyAgent):
         last_values = self.value_function(
             torch.as_tensor(update_kwargs["next_s"], dtype=torch.float32)
         ).detach()
+
+        # steps_recorded = self.buffer.pos
+        # total_trans = steps_recorded * self.buffer.n_envs
+        # print(f"[DEBUG] buffer.pos = {steps_recorded}, n_envs = {self.buffer.n_envs}, total = {total_trans}")
 
         self.buffer.compute_returns_and_advantage(last_values, update_kwargs["dones"])  # type: ignore
         return super().update(metrics, update_kwargs)  # type: ignore

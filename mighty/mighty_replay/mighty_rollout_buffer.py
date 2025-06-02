@@ -1,4 +1,4 @@
-"""Mighty rollout buffer."""
+# mighty_rollout_buffer.py
 
 from __future__ import annotations
 
@@ -10,45 +10,20 @@ from mighty.mighty_replay.buffer import MightyBuffer
 
 
 class MaxiBatch:
-    def __init__(self, minibatches):
-        """
-        Initialize a batch of rollout transitions.
-
-        :param minibatches: List of MiniBatch objects.
-        """
+    def __init__(self, minibatches: list[RolloutBatch]):
         self.minibatches = minibatches
 
     @property
-    def size(self):
-        """
-        Return the number of transitions in the batch.
+    def size(self) -> int:
+        return sum(len(mb.observations) for mb in self.minibatches)
 
-        :return: Number of transitions.
-        """
-        return sum(
-            [
-                len(self.minibatches[i].observations)
-                for i in range(len(self.minibatches))
-            ]
-        )
-
-    def __len__(self):
-        """
-        Return the number of transitions in the batch.
-
-        :return: Number of transitions.
-        """
+    def __len__(self) -> int:
         return self.size
 
     def __iter__(self):
-        """
-        Iterate over the minibatches in the batch.
-
-        :yield: Tuples of (observation, action, reward, advantage, return, episode_start, log_prob, value).
-        """
         yield from self.minibatches
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str):
         if name in [
             "observations",
             "actions",
@@ -59,11 +34,13 @@ class MaxiBatch:
             "log_probs",
             "values",
         ]:
-            batch_stack = torch.stack([getattr(mb, name) for mb in self.minibatches])
-            batch_stack = batch_stack.reshape(
-                (-1, *getattr(self.minibatches[0], name).squeeze().shape[1:])
-            )
-            return batch_stack
+            minibatches = object.__getattribute__(self, "minibatches")
+            if not minibatches:
+                return torch.tensor([])
+
+            stacked = torch.stack([getattr(mb, name) for mb in minibatches], dim=0)
+            feat_shape = getattr(minibatches[0], name).shape[1:]
+            return stacked.reshape(-1, *feat_shape)
         else:
             return object.__getattribute__(self, name)
 
@@ -71,83 +48,70 @@ class MaxiBatch:
 class RolloutBatch:
     def __init__(
         self,
-        observations,
-        actions,
-        rewards,
-        advantages,
-        returns,
-        episode_starts,
-        log_probs,
-        values,
+        observations: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+        advantages: np.ndarray,
+        returns: np.ndarray,
+        episode_starts: np.ndarray,
+        log_probs: np.ndarray,
+        values: np.ndarray,
         device: torch.device | str = "cpu",
     ):
-        """
-        Initialize a batch of rollout transitions, immediately moving everything to `device`.
-
-        :param observations: NumPy array with shape (n_steps, n_envs, *obs_shape)
-        :param actions:      NumPy array with shape (n_steps, n_envs, *action_shape)
-        :param rewards:      NumPy array with shape (n_steps, n_envs)
-        :param advantages:   NumPy array with shape (n_steps, n_envs)
-        :param returns:      NumPy array with shape (n_steps, n_envs)
-        :param episode_starts: NumPy array with shape (n_steps, n_envs)
-        :param log_probs:    NumPy array with shape (n_steps, n_envs)
-        :param values:       NumPy array with shape (n_steps, n_envs)
-        :param device:       Torch device (e.g. "cpu", "cuda:0")
-        """
         self.device = device
 
-        self.observations = (
-            torch.from_numpy(observations.astype(np.float32))
-            .unsqueeze(0)
-            .to(self.device)
-        )
-        self.actions = (
-            torch.from_numpy(actions.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
-        self.rewards = (
-            torch.from_numpy(rewards.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
-        self.advantages = (
-            torch.from_numpy(advantages.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
-        self.returns = (
-            torch.from_numpy(returns.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
-        self.episode_starts = (
-            torch.from_numpy(episode_starts.astype(np.float32))
-            .unsqueeze(0)
-            .to(self.device)
-        )
-        self.log_probs = (
-            torch.from_numpy(log_probs.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
-        self.values = (
-            torch.from_numpy(values.astype(np.float32)).unsqueeze(0).to(self.device)
-        )
+        obs_t = torch.from_numpy(observations.astype(np.float32))
+        act_t = torch.from_numpy(actions.astype(np.float32))
+        rew_t = torch.from_numpy(rewards.astype(np.float32))
+        adv_t = torch.from_numpy(advantages.astype(np.float32))
+        ret_t = torch.from_numpy(returns.astype(np.float32))
+        eps_t = torch.from_numpy(episode_starts.astype(np.float32))
+        logp_t = torch.from_numpy(log_probs.astype(np.float32))
+        val_t = torch.from_numpy(values.astype(np.float32))
+
+        # Promote obs from [n_envs, obs_dim] → [1, n_envs, obs_dim] if needed
+        if obs_t.dim() == 2:
+            obs_t = obs_t.unsqueeze(0)
+        elif obs_t.dim() < 2:
+            raise RuntimeError(
+                f"RolloutBatch: `observations` must be ≥2-D, got {obs_t.shape}"
+            )
+
+        def _promote_to_2d(x: torch.Tensor, name: str):
+            if x.dim() == 1:
+                return x.unsqueeze(0)
+            elif x.dim() == 2:
+                return x
+            else:
+                raise RuntimeError(
+                    f"RolloutBatch: `{name}` must be 1-D or 2-D, got {x.shape}"
+                )
+
+        act_t = _promote_to_2d(act_t, "actions")
+        rew_t = _promote_to_2d(rew_t, "rewards")
+        adv_t = _promote_to_2d(adv_t, "advantages")
+        ret_t = _promote_to_2d(ret_t, "returns")
+        eps_t = _promote_to_2d(eps_t, "episode_starts")
+        logp_t = _promote_to_2d(logp_t, "log_probs")
+        val_t = _promote_to_2d(val_t, "values")
+
+        self.observations = obs_t.to(self.device)
+        self.actions = act_t.to(self.device)
+        self.rewards = rew_t.to(self.device)
+        self.advantages = adv_t.to(self.device)
+        self.returns = ret_t.to(self.device)
+        self.episode_starts = eps_t.to(self.device)
+        self.log_probs = logp_t.to(self.device)
+        self.values = val_t.to(self.device)
 
     @property
-    def size(self):
-        """
-        Return the number of transitions in the batch.
+    def size(self) -> int:
+        return self.observations.shape[0]
 
-        :return: Number of transitions.
-        """
-        return len(self.observations)
-
-    def __len__(self):
-        """
-        Return the number of transitions in the batch.
-
-        :return: Number of transitions.
-        """
+    def __len__(self) -> int:
         return self.size
 
     def __iter__(self):
-        """
-        Iterate over the transitions in the batch.
-
-        :yield: Tuples of (observation, action, reward, advantage, return, episode_start, log_prob, value).
-        """
         yield from zip(
             self.observations,
             self.actions,
@@ -163,8 +127,7 @@ class RolloutBatch:
 
 class MightyRolloutBuffer(MightyBuffer):
     """
-    Rollout buffer used in on-policy algorithms like A2C/PPO.
-    Stores transitions and computes returns and advantages.
+    Pre-allocated rollout buffer (no repeated concat).
     """
 
     def __init__(
@@ -173,284 +136,357 @@ class MightyRolloutBuffer(MightyBuffer):
         obs_shape,
         act_dim,
         device: torch.device | str = "cpu",
-        gae_lambda: float = 1,
+        gae_lambda: float = 1.0,
         gamma: float = 0.99,
         n_envs: int = 1,
+        discrete_action: bool = False,
     ):
-        """
-        Initialize the rollout buffer.
-
-        :param buffer_size: Maximum number of transitions to store.
-        :param obs_shape: Shape of the observation space.
-        :param act_dim: Dimension of the action space.
-        :param device: Device to store tensors on.
-        :param gae_lambda: Lambda parameter for GAE.
-        :param gamma: Discount factor.
-        :param n_envs: Number of parallel environments.
-        """
-        self.buffer_size = buffer_size
+        super().__init__()
+        self.buffer_size = buffer_size  # maximum number of time-steps
         self.obs_shape = obs_shape
         self.act_dim = act_dim
         self.device = device
         self.gae_lambda = gae_lambda
         self.gamma = gamma
         self.n_envs = n_envs
-        self.reset()
+        self.discrete_action = discrete_action
+
+        # If obs_shape is an integer, convert to tuple
+        if isinstance(obs_shape, int):
+            obs_shape = (obs_shape,)
+        elif isinstance(obs_shape, tuple):
+            # nothing to do
+            pass
+        else:
+            raise RuntimeError(
+                f"obs_shape must be int or tuple[int,...], got {obs_shape!r}"
+            )
+
+        # print(f'Buffer shape: {buffer_size}, n_envs: {n_envs}, obs_shape: {obs_shape}, act_dim: {act_dim}, device: {device}')
+
+        # — Pre-allocate everything once on `device` —
+
+        self.observations = torch.zeros(
+            (buffer_size, n_envs, *obs_shape),
+            dtype=torch.float32,
+            device=device,  # shape = [buffer_size, n_envs, *obs_shape]
+        )
+
+        # actions might be scalar (e.g. discrete) or multi-dim; here we store as float32
+        if self.discrete_action:
+            # Discrete: a single integer‐per‐env per timestep → shape [buffer_size, n_envs]
+            self.actions = torch.zeros(
+                (buffer_size, n_envs),
+                dtype=torch.float32,  # still float32 so we can cast / compare later
+                device=device,
+            )
+        else:
+            # Continuous: an `act_dim`-vector per env per timestep → shape [buffer_size, n_envs, act_dim]
+            self.actions = torch.zeros(
+                (buffer_size, n_envs, act_dim),
+                dtype=torch.float32,
+                device=device,
+            )
+
+        self.rewards = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+        self.advantages = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+        self.returns = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+        self.episode_starts = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+        self.log_probs = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+        self.values = torch.zeros(
+            (buffer_size, n_envs), dtype=torch.float32, device=device
+        )
+
+        # `pos` tells us how many time-steps have been filled so far.
+        self.pos = 0
+        print("Buffer capacity =", self.observations.shape[0])
 
     def reset(self) -> None:
-        """
-        Reset the buffer by clearing all stored transitions.
-        """
-        self.observations = []
-        self.actions = []
-        self.rewards = []
-        self.returns = []
-        self.episode_starts = []
-        self.values = []
-        self.log_probs = []
-        self.advantages = []
+        # Just zero out pos; no need to re-allocate
         self.pos = 0
-        self.full = False
+
+    # def compute_returns_and_advantage(
+    #     self,
+    #     last_values: torch.Tensor,  # shape=[n_envs] or [n_envs,1]
+    #     dones: np.ndarray,          # shape=[n_envs]
+    # ) -> None:
+    #     if self.pos == 0:
+    #         return
+
+    #     # 1) last_values → 1-D tensor [n_envs]
+    #     lv = last_values.clone().to(self.device).reshape(-1)
+    #     # 2) dones → float tensor [n_envs]
+    #     dones_t = (
+    #         torch.from_numpy(dones.astype(np.float32))
+    #         .to(self.device)
+    #         .reshape(-1)
+    #     )
+
+    #     T = self.pos    # number of filled time-steps
+    #     N = self.n_envs
+
+    #     # Use only the slice [0:T] for each buffer field
+    #     rew_slice = self.rewards[:T]            # shape=[T, n_envs]
+    #     val_slice = self.values[:T]              # shape=[T, n_envs]
+    #     eps_slice = self.episode_starts[:T]      # shape=[T, n_envs]
+    #     adv_slice = self.advantages[:T]         # shape=[T, n_envs]
+
+    #     last_gae = torch.zeros(N, device=self.device)
+
+    #     for step in reversed(range(T)):
+    #         if step == T - 1:
+    #             next_non_term = 1.0 - dones_t     # [n_envs]
+    #             next_val = lv                     # [n_envs]
+    #         else:
+    #             next_non_term = 1.0 - eps_slice[step + 1]
+    #             next_val = val_slice[step + 1]
+
+    #         r_t = rew_slice[step]
+    #         v_t = val_slice[step]
+
+    #         delta = r_t + self.gamma * next_val * next_non_term - v_t
+    #         last_gae = delta + self.gamma * self.gae_lambda * next_non_term * last_gae
+    #         adv_slice[step] = last_gae
+
+    #     # Write advantages and returns back into the buffer
+    #     self.advantages[:T] = adv_slice
+    #     self.returns[:T] = adv_slice + val_slice
+
+    #     # with torch.no_grad():
+    #     #     ret_min, ret_max = self.returns.min().item(), self.returns.max().item()
+    #     #     adv_min, adv_max = self.advantages.min().item(), self.advantages.max().item()
+    #     #     print(f"[DEBUG - RETURN/ADV] returns ∈ [{ret_min:.1f}, {ret_max:.1f}];  adv ∈ [{adv_min:.3f}, {adv_max:.3f}]")
 
     def compute_returns_and_advantage(
-        self, last_values: torch.Tensor, dones: np.ndarray
+        self,
+        last_values: torch.Tensor,  # shape = [n_envs] or [n_envs, 1]
+        dones: np.ndarray,  # shape = [n_envs]
     ) -> None:
-        """
-        Compute returns and advantages using Generalized Advantage Estimation (GAE).
+        if self.pos == 0:
+            return
 
-        :param last_values: Value estimates for the last observation of each environment (shape: [n_envs]).
-        :param dones: Done flags for the last step of each environment (shape: [n_envs]).
-        """
+        # 1) Turn last_values into a 1‐D tensor of shape [n_envs]
+        lv = last_values.clone().to(self.device).reshape(-1)  # → [n_envs]
 
-        last_values = last_values.clone().cpu().squeeze(1)  # [n_envs]
-        last_gae_lam = 0  # [n_envs], will be broadcasted as needed
+        # 2) Turn the numpy dones (0/1) into float tensor on device, shape [n_envs]
+        dones_t = (
+            torch.from_numpy(dones.astype(np.float32)).to(self.device).reshape(-1)
+        )  # → [n_envs]
 
-        for step in reversed(
-            range(self.observations.shape[0])
-        ):  # step: int, loop over [num_steps]
-            if step == self.observations.shape[0] - 1:
-                # For the last step, use the dones and last_values provided
-                next_non_terminal = torch.FloatTensor(
-                    1.0 - dones.astype(np.float32)
-                )  # [n_envs]
-                next_values = last_values  # [n_envs]
+        T = self.pos  # number of filled “time‐steps” in buffer
+        N = self.n_envs  # number of parallel envs
+
+        # 3) Slice out exactly the first T entries along each field
+        #    Each of these has shape [T, n_envs]
+        rew_slice = self.rewards[:T]  # (T × n_envs)
+        val_slice = self.values[:T]  # (T × n_envs)
+        eps_slice = self.episode_starts[:T]  # (T × n_envs)  ← “episode_starts” flags
+        adv_slice = self.advantages[:T]  # (T × n_envs), but usually zero‐initialized
+
+        # 4) Initialize the last‐step GAE “accumulator” to zero for each env
+        last_gae = torch.zeros(N, device=self.device)  # [n_envs]
+
+        # 5) Walk backwards over time steps
+        for step in reversed(range(T)):
+            if step == T - 1:
+                # On the very last (most recent) buffer row:
+                #   • If done[i] == 1, that env actually terminated (pole fell)
+                #   • If done[i] == 0, that env was truncated (hit 500) or still “alive”
+                next_non_term = 1.0 - dones_t  # [n_envs], 0 if done, 1 otherwise
+                next_val = lv  # bootstrap from V(sₜ₊₁)
             else:
-                # For other steps, use episode_starts to determine if next state is terminal
-                next_non_terminal = 1.0 - self.episode_starts[step + 1]  # [n_envs]
-                next_values = self.values[step + 1]  # [n_envs]
+                # On intermediate steps, look at “episode_starts” for whether step+1 was a new episode
+                next_non_term = 1.0 - eps_slice[step + 1]  # [n_envs]
+                next_val = val_slice[step + 1]  # [n_envs]
 
-            # Compute the TD residual (delta) for GAE
-            # self.rewards[step]: [n_envs]
-            # next_values: [n_envs]
-            # next_non_terminal: [n_envs]
-            # self.values[step]: [n_envs]
-            delta = (
-                self.rewards[step]
-                + self.gamma * next_values * next_non_terminal
-                - self.values[step]
+            r_t = rew_slice[step]  # shape = [n_envs]
+            v_t = val_slice[step]  # shape = [n_envs]
+
+            # standard TD residual
+            delta = r_t + self.gamma * next_val * next_non_term - v_t  # [n_envs]
+
+            # recursive GAE
+            last_gae = (
+                delta + self.gamma * self.gae_lambda * next_non_term * last_gae
             )  # [n_envs]
 
-            # Recursive GAE computation
-            # last_gae_lam: [n_envs]
-            last_gae_lam = (
-                delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
-            )  # [n_envs]
+            # store into advantage‐buffer
+            adv_slice[step] = last_gae
 
-            # Store the computed advantage for this step
-            self.advantages[step] = last_gae_lam  # [n_envs]
+        # 6) write the final advantages & returns back into the buffer
+        self.advantages[:T] = adv_slice
+        self.returns[:T] = adv_slice + val_slice
 
-        # Compute returns as sum of advantages and values
-        # self.advantages: [num_steps, n_envs], self.values: [num_steps, n_envs]
-        self.returns = self.advantages + self.values  # [num_steps, n_envs]
+        # with torch.no_grad():
+        #     ret_min, ret_max = self.returns[:T].min().item(), self.returns[:T].max().item()
+        #     adv_min, adv_max = self.advantages[:T].min().item(), self.advantages[:T].max().item()
+        #     print(f"[GAE] returns ∈ [{ret_min:.1f}, {ret_max:.1f}]; adv ∈ [{adv_min:.3f}, {adv_max:.3f}]")
 
-    def add(self, rollout_batch: RolloutBatch, _):
+    def add(self, rollout_batch: RolloutBatch, _=None):
         """
-        Add a batch of transitions to the buffer.
-
-        :param rollout_batch: RolloutBatch containing transitions to add.
-        :param _: Unused argument (for compatibility).
+        In-place write into a pre-allocated tensor. Does 2-D→3-D promotion if needed.
         """
+        # pull new data onto device
+        rb_obs = rollout_batch.observations.to(
+            self.device
+        )  # [n_steps, n_envs, *obs_shape]
+        rb_acts = rollout_batch.actions.to(self.device)  # [n_steps, n_envs]
+        rb_rews = rollout_batch.rewards.to(self.device)  # [n_steps, n_envs]
+        rb_advs = rollout_batch.advantages.to(self.device)  # [n_steps, n_envs]
+        rb_rets = rollout_batch.returns.to(self.device)  # [n_steps, n_envs]
+        rb_eps = rollout_batch.episode_starts.to(self.device)  # [n_steps, n_envs]
+        rb_logp = rollout_batch.log_probs.to(self.device)  # [n_steps, n_envs]
+        rb_vals = rollout_batch.values.to(self.device)  # [n_steps, n_envs]
 
-        # Move each field in rollout_batch onto self.device (if it isn’t already).
-        rb_obs = rollout_batch.observations.to(self.device)
-        rb_acts = rollout_batch.actions.to(self.device)
-        rb_rews = rollout_batch.rewards.to(self.device)
-        rb_advs = rollout_batch.advantages.to(self.device)
-        rb_rets = rollout_batch.returns.to(self.device)
-        rb_eps = rollout_batch.episode_starts.to(self.device)
-        rb_logp = rollout_batch.log_probs.to(self.device)
-        rb_vals = rollout_batch.values.to(self.device)
+        # Promote dims if necessary (same logic as before)
+        if rb_obs.dim() == 2:
+            rb_obs = rb_obs.unsqueeze(0)
+        if rb_acts.dim() == 1:
+            rb_acts = rb_acts.unsqueeze(0)
+        if rb_rews.dim() == 1:
+            rb_rews = rb_rews.unsqueeze(0)
+        if rb_advs.dim() == 1:
+            rb_advs = rb_advs.unsqueeze(0)
+        if rb_rets.dim() == 1:
+            rb_rets = rb_rets.unsqueeze(0)
+        if rb_eps.dim() == 1:
+            rb_eps = rb_eps.unsqueeze(0)
+        if rb_logp.dim() == 1:
+            rb_logp = rb_logp.unsqueeze(0)
+        if rb_vals.dim() == 1:
+            rb_vals = rb_vals.unsqueeze(0)
 
-        # If buffer was empty (first insertion), just assign:
-        if not isinstance(self.observations, torch.Tensor):
-            self.observations = rb_obs  # shape = (1, T, n_envs, *obs_shape)
-            self.actions = rb_acts  # shape = (1, T, n_envs, *act_shape)
-            self.rewards = rb_rews  # shape = (1, T, n_envs)
-            self.advantages = rb_advs  # shape = (1, T, n_envs)
-            self.returns = rb_rets  # shape = (1, T, n_envs)
-            self.episode_starts = rb_eps  # shape = (1, T, n_envs)
-            self.log_probs = rb_logp  # shape = (1, T, n_envs)
-            self.values = rb_vals  # shape = (1, T, n_envs)
+        n_steps = rb_obs.shape[0]  # usually 1, but could be >1
+        T = self.buffer_size
 
-        else:
-            # Concatenate along dim=1 (time dimension)
-            self.observations = torch.cat((self.observations, rb_obs), dim=1)
-            self.actions = torch.cat((self.actions, rb_acts), dim=1)
-            self.rewards = torch.cat((self.rewards, rb_rews), dim=1)
-            self.advantages = torch.cat((self.advantages, rb_advs), dim=1)
-            self.returns = torch.cat((self.returns, rb_rets), dim=1)
-            self.episode_starts = torch.cat((self.episode_starts, rb_eps), dim=1)
-            self.log_probs = torch.cat((self.log_probs, rb_logp), dim=1)
-            self.values = torch.cat((self.values, rb_vals), dim=1)
+        if self.pos + n_steps > T:
+            raise RuntimeError(
+                f"Buffer overflow: pos={self.pos}, trying to add {n_steps} steps but buffer_size={T}"
+            )
 
-    # def sample(self, batch_size: int):
-    #     """
-    #     Sample mini-batches of transitions from the buffer.
+        # In-place copy into the pre-allocated tensor
+        self.observations[self.pos : self.pos + n_steps] = rb_obs
+        self.actions[self.pos : self.pos + n_steps] = rb_acts
+        self.rewards[self.pos : self.pos + n_steps] = rb_rews
+        self.advantages[self.pos : self.pos + n_steps] = rb_advs
+        self.returns[self.pos : self.pos + n_steps] = rb_rets
+        self.episode_starts[self.pos : self.pos + n_steps] = rb_eps
+        self.log_probs[self.pos : self.pos + n_steps] = rb_logp.T  # FIXME: Hack for now
+        self.values[self.pos : self.pos + n_steps] = rb_vals
 
-    #     :param batch_size: Number of transitions per mini-batch.
-    #     :return: List of RolloutBatch samples.
-    #     """
-    #
-    #     hangover = len(self.observations) % batch_size
-    #     # import pdb; pdb.set_trace()
-    #     indices = np.random.permutation(len(self.observations))
-    #     indices = (
-    #         indices[:-hangover].reshape(-1, batch_size).tolist()
-    #         + indices[-hangover:].tolist()
-    #     )
-    #     samples = []
-    #     for ind in indices:
-    #         samples.append(self._get_samples(ind))
+        self.pos += n_steps
 
-    #     return MaxiBatch(samples)
-
-    # def sample(self, batch_size: int):
-    #     """
-    #     Sample mini‐batches of exactly `batch_size` transitions,
-    #     dropping any leftover indices so all batches have equal size.
-    #     """
-    #     total = len(self.observations)  # total # of stored transitions
-    #     # randomly permute indices
-    #     perm = np.random.permutation(total)
-    #     # compute how many full batches we can make
-    #     n_full = total // batch_size
-    #     if n_full == 0:
-    #         # not enough samples for even one full batch
-    #         return MaxiBatch([])
-
-    #     # keep only the first n_full * batch_size indices
-    #     perm = perm[: n_full * batch_size]
-    #     # reshape into (n_full, batch_size)
-    #     perm = perm.reshape(n_full, batch_size)
-
-    #     samples = []
-    #     for batch_inds in perm:
-    #         samples.append(self._get_samples(batch_inds))
-
-    #     import pdb; pdb.set_trace()
-
-    #     return MaxiBatch(samples)
-
-    def sample(self, batch_size: int):
+    def sample(self, batch_size: int) -> MaxiBatch:
         """
-        Sample minibatches of exactly `batch_size` transitions
-        from a flattened (T * n_envs)-long buffer.
+        1) Flatten only the filled portion [0:self.pos] of each pre-allocated tensor.
+        2) Shuffle & slice into minibatches of size `batch_size`.
         """
-        # self.observations: shape = (T, n_envs, *obs_shape)
-        num_steps, n_envs = self.observations.shape[0], self.observations.shape[1]
-        total = num_steps * n_envs
-        if total < batch_size:
-            # Not enough individual transitions to form even one full minibatch
+        if self.pos == 0:
             return MaxiBatch([])
 
-        # ―― 1) Flatten all tensors from shape (T, n_envs, …) → (T*n_envs, …):
-        obs_flat = self.observations.reshape(total, *self.observations.shape[2:])
-        act_flat = self.actions.reshape(total, *self.actions.shape[2:])
-        rew_flat = self.rewards.reshape(total, *self.rewards.shape[2:])
-        adv_flat = self.advantages.reshape(total, *self.advantages.shape[2:])
-        ret_flat = self.returns.reshape(total, *self.returns.shape[2:])
-        epstart_flat = self.episode_starts.reshape(
-            total, *self.episode_starts.shape[2:]
-        )
-        logp_flat = self.log_probs.reshape(total, *self.log_probs.shape[2:])
-        val_flat = self.values.reshape(total, *self.values.shape[2:])
+        T = self.pos  # actual filled length
+        # N = self.n_envs
 
-        # ―― 2) Randomly permute the “total” indices, keep only full‐batch multiples:
+        # Flatten [T, n_envs, ...] → [T*N, ...], or [T, n_envs] → [T*N]
+        def _flatten(t: torch.Tensor) -> torch.Tensor:
+            # First slice to only the filled portion
+            t_slice = t[:T]
+            shape = t_slice.shape
+            # If t_slice has ≥2 dims, collapse first two:
+            if len(shape) >= 2:
+                return t_slice.reshape(shape[0] * shape[1], *shape[2:])
+            else:
+                return t_slice.reshape(-1)
+
+        # Now call _flatten on each field (after moving to CPU)
+        obs_flat = _flatten(self.observations.cpu())
+        acts_flat = _flatten(self.actions.cpu())
+        rews_flat = _flatten(self.rewards.cpu())
+        advs_flat = _flatten(self.advantages.cpu())
+        rets_flat = _flatten(self.returns.cpu())
+        eps_flat = _flatten(self.episode_starts.cpu())
+        logps_flat = _flatten(self.log_probs.cpu())
+        vals_flat = _flatten(self.values.cpu())
+
+        # Check that every flattened tensor has the same length
+        lengths = {
+            "obs": obs_flat.shape[0],
+            "acts": acts_flat.shape[0],
+            "rews": rews_flat.shape[0],
+            "advs": advs_flat.shape[0],
+            "rets": rets_flat.shape[0],
+            "eps": eps_flat.shape[0],
+            "logps": logps_flat.shape[0],
+            "vals": vals_flat.shape[0],
+        }
+        unique_lengths = set(lengths.values())
+        if len(unique_lengths) != 1:
+            print("=== Buffer shapes before flatten ===")
+            print(f"  observations:   {self.observations[:T].shape}")
+            print(f"  actions:        {self.actions[:T].shape}")
+            print(f"  rewards:        {self.rewards[:T].shape}")
+            print(f"  advantages:     {self.advantages[:T].shape}")
+            print(f"  returns:        {self.returns[:T].shape}")
+            print(f"  episode_starts: {self.episode_starts[:T].shape}")
+            print(f"  log_probs:      {self.log_probs[:T].shape}")
+            print(f"  values:         {self.values[:T].shape}")
+            print("→ After flatten, lengths were:", lengths)
+            raise RuntimeError(
+                "Buffer fields have mismatched flattened lengths: "
+                + ", ".join(f"{k}={v}" for k, v in lengths.items())
+            )
+
+        total = unique_lengths.pop()
+        if total < batch_size:
+            return MaxiBatch([])
+
         perm = np.random.permutation(total)
         n_full = total // batch_size
         perm = perm[: n_full * batch_size]
         perm = perm.reshape(n_full, batch_size)
 
-        # ―― 3) Build one RolloutBatch per row of indices:
-        samples = []
-        for batch_inds in perm:
-            obs_batch = obs_flat[batch_inds].numpy()  # shape = (batch_size, *obs_shape)
-            act_batch = act_flat[
-                batch_inds
-            ].numpy()  # shape = (batch_size, *action_shape)
-            rew_batch = rew_flat[batch_inds].numpy()  # etc.
-            adv_batch = adv_flat[batch_inds].numpy()
-            ret_batch = ret_flat[batch_inds].numpy()
-            epstart_batch = epstart_flat[batch_inds].numpy()
-            logp_batch = logp_flat[batch_inds].numpy()
-            val_batch = val_flat[batch_inds].numpy()
+        mini_batches: list[RolloutBatch] = []
+        for inds in perm:
+            obs_b = obs_flat[inds].numpy()
+            acts_b = acts_flat[inds].numpy()
+            rews_b = rews_flat[inds].numpy()
+            advs_b = advs_flat[inds].numpy()
+            rets_b = rets_flat[inds].numpy()
+            eps_b = eps_flat[inds].numpy()
+            logps_b = logps_flat[inds].numpy()
+            vals_b = vals_flat[inds].numpy()
 
-            samples.append(
+            mini_batches.append(
                 RolloutBatch(
-                    obs_batch,
-                    act_batch,
-                    rew_batch,
-                    adv_batch,
-                    ret_batch,
-                    epstart_batch,
-                    logp_batch,
-                    val_batch,
+                    observations=obs_b,
+                    actions=acts_b,
+                    rewards=rews_b,
+                    advantages=advs_b,
+                    returns=rets_b,
+                    episode_starts=eps_b,
+                    log_probs=logps_b,
+                    values=vals_b,
                 )
             )
 
-        return MaxiBatch(samples)
+        return MaxiBatch(mini_batches)
 
-    def _get_samples(self, batch_inds: np.ndarray):
-        """
-        Retrieve a batch of samples given indices.
+    def __len__(self) -> int:
+        return self.pos * self.n_envs
 
-        :param batch_inds: Indices of transitions to sample.
-        :return: RolloutBatch containing the sampled transitions.
-        """
-        data = (
-            self.observations[batch_inds].numpy(),
-            self.actions[batch_inds].numpy(),
-            self.rewards[batch_inds].numpy(),
-            self.advantages[batch_inds].numpy(),
-            self.returns[batch_inds].numpy(),
-            self.episode_starts[batch_inds].numpy(),
-            self.log_probs[batch_inds].numpy(),
-            self.values[batch_inds].numpy(),
-        )
+    def __bool__(self) -> bool:
+        return self.pos > 0
 
-        return RolloutBatch(*data)
-
-    def __len__(self):
-        """
-        Return the total number of transitions in the buffer.
-
-        :return: Number of transitions.
-        """
-        return len(self.observations) * self.n_envs
-
-    def __bool__(self):
-        """
-        Return whether the buffer contains any transitions.
-
-        :return: True if buffer is not empty, False otherwise.
-        """
-        return bool(self.observations)
-
-    def save(self, filename="buffer.pkl"):
-        """
-        Save the buffer to a file.
-
-        :param filename: Path to the file where the buffer will be saved.
-        """
+    def save(self, filename="buffer.pkl") -> None:
         with open(filename, "wb") as f:
             pickle.dump(self, f)

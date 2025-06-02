@@ -3,40 +3,41 @@ algorithm: PPO
 
 algorithm_kwargs:
   # Hyperparameters
-  n_policy_units: 128
-  n_critic_units: 128
+  n_policy_units: 64
+  n_critic_units: 64
   soft_update_weight: 0.01
 
   rollout_buffer_class:
     _target_: mighty.mighty_replay.MightyRolloutBuffer  # Using rollout buffer
   rollout_buffer_kwargs:
-    buffer_size: 8192  # Size of the rollout buffer.
+    buffer_size: 16  # Size of the rollout buffer.
     gamma: 0.99  # Discount factor for future rewards.
     gae_lambda: 0.95  # GAE lambda.
     obs_shape: ???  # Placeholder for observation shape
     act_dim: ???  # Placeholder for action dimension
     n_envs: ???
+    discrete_action: ???  # Placeholder for discrete action flag
     
 
   # Training
   learning_rate:  3e-4
-  batch_size: 8192  # Batch size for training.
-  gamma: 0.99  # The amount by which to discount future rewards.
-  ppo_clip: 0.2  # Clipping parameter for PPO.
-  value_loss_coef: 0.5  # Coefficient for value loss.
-  entropy_coef: 0.01  # Coefficient for entropy loss.
-  max_grad_norm: 0.5  # Maximum value for gradient clipping.
+  batch_size: 1024        # Batch size for training.
+  gamma: 0.99             # The amount by which to discount future rewards.
+  ppo_clip: 0.2          # Clipping parameter for PPO.
+  value_loss_coef: 0.5    # Coefficient for value loss.
+  entropy_coef: 0.01      # Coefficient for entropy loss.
+  max_grad_norm: 0.5      # Maximum value for gradient clipping.
   
 
-  hidden_sizes: [64, 64]
+  hidden_sizes: [64]
   activation: 'tanh'
 
-  n_epochs: 64
-  minibatch_size: 4
+  n_epochs: 4
+  minibatch_size: 512
   kl_target: 0.01
   use_value_clip: True
   value_clip_eps: 0.2
 
   policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
   policy_kwargs:
-    entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
+    entropy_coefficient: 0.02  # Coefficient for entropy-based exploration.

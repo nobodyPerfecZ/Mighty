@@ -15,10 +15,12 @@ class SACUpdate:
         model: SACModel,
         policy_lr: float = 0.001,
         q_lr: float = 0.001,
-        value_lr: float = 0.001,
         tau: float = 0.005,
         alpha: float = 0.2,
         gamma: float = 0.99,
+        target_entropy: float = None,  # <--- Add this
+        auto_alpha: bool = True,  # <--- Add this
+        alpha_lr: float = 3e-4,  # <--- Add this
     ):
         """
         Initialize the SAC update mechanism.
@@ -40,6 +42,20 @@ class SACUpdate:
         self.alpha = alpha
         self.gamma = gamma
         self.tau = tau
+        self.auto_alpha = auto_alpha
+        self.action_dim = self.model.action_size
+
+        if self.auto_alpha:
+            # log_alpha is a torch Parameter so it will be optimized
+            self.log_alpha = torch.nn.Parameter(torch.zeros(1, requires_grad=True))
+            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=alpha_lr)
+            # Default: -action_dim, but can override
+            if target_entropy is None:
+                self.target_entropy = -float(self.action_dim)
+            else:
+                self.target_entropy = float(target_entropy)
+        else:
+            self.alpha = 0.2
 
     def calculate_td_error(self, transition: TransitionBatch) -> Tuple:
         """Calculate the TD error for a given transition.
@@ -63,11 +79,12 @@ class SACUpdate:
             # target Q from target networks
             q1_t = self.model.target_q_net1(sa_next)
             q2_t = self.model.target_q_net2(sa_next)
+            alpha = self.log_alpha.exp() if self.auto_alpha else self.alpha
             q_target = torch.as_tensor(
                 transition.rewards, dtype=torch.float32
             ).unsqueeze(-1) + (
                 1 - torch.as_tensor(transition.dones, dtype=torch.float32).unsqueeze(-1)
-            ) * self.gamma * (torch.min(q1_t, q2_t) - self.alpha * logp_next)
+            ) * self.gamma * (torch.min(q1_t, q2_t) - alpha * logp_next)
         # current Q estimates
         sa = torch.cat(
             [
@@ -123,6 +140,10 @@ class SACUpdate:
         q1_pi = self.model.q_net1(sa_pi)
         q2_pi = self.model.q_net2(sa_pi)
         q_pi = torch.min(q1_pi, q2_pi)
+
+        if self.auto_alpha:
+            self.alpha = self.log_alpha.exp()
+
         policy_loss = (self.alpha * logp - q_pi).mean()
 
         loss = q_loss + policy_loss
@@ -135,6 +156,20 @@ class SACUpdate:
 
         for opt in (self.q_optimizer1, self.q_optimizer2, self.policy_optimizer):
             opt.step()
+
+        # --- Entropy coefficient (alpha) update ---
+        if self.auto_alpha:
+            # Update alpha to adjust entropy toward target
+            alpha_loss = -(
+                self.log_alpha * (logp.detach() + self.target_entropy)
+            ).mean()
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+            # alpha_value = self.log_alpha.exp().item()
+        else:
+            alpha_loss = 0.0
+            # alpha_value = self.alpha
 
         # --- Soft update targets ---
         polyak_update(
