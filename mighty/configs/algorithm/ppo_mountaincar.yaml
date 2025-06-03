@@ -45,7 +45,7 @@ algorithm_kwargs:
   normalize_obs: True
 
   # Misc/Evaluation/Logging
-  log_wandb: True
+  log_wandb: False
   wandb_kwargs:
     name: seed_${seed}
     entity: "automl-accounts-leibniz-universit-t-hannover"

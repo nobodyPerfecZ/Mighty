@@ -3,16 +3,16 @@ algorithm: PPO
 
 algorithm_kwargs:
   # Hyperparameters
-  n_policy_units: 64
-  n_critic_units: 64
+  n_policy_units: 128
+  n_critic_units: 128
   soft_update_weight: 0.01
 
   rollout_buffer_class:
     _target_: mighty.mighty_replay.MightyRolloutBuffer  # Using rollout buffer
   rollout_buffer_kwargs:
-    buffer_size: 1024  # Size of the rollout buffer.
-    gamma: 0.9  # Discount factor for future rewards.
-    gae_lambda: 0.95  # GAE lambda.
+    buffer_size: 1024
+    gamma: 0.9
+    gae_lambda: 0.95
     obs_shape: ???  # Placeholder for observation shape
     act_dim: ???  # Placeholder for action dimension
     n_envs: ???
@@ -20,32 +20,27 @@ algorithm_kwargs:
     
 
   # Training
-  learning_rate:  1e-3
-  batch_size: 1024        # Batch size for training.
-  gamma: 0.9             # The amount by which to discount future rewards.
-  ppo_clip: 0.2          # Clipping parameter for PPO.
-  value_loss_coef: 0.5    # Coefficient for value loss.
-  entropy_coef: 0.0      # Coefficient for entropy loss.
-  max_grad_norm: 0.5      # Maximum value for gradient clipping.
-  
-
-  hidden_sizes: [64]
-  activation: 'tanh'
-
-  n_epochs: 20
-  minibatch_size: 1024
-  kl_target: 0.01
+  learning_rate:    3e-4
+  batch_size:       256     # one slice = 256 transitions
+  minibatch_size:   256     # must match batch_size
+  n_epochs:         10      # 4096 / 256 = 16 minibatches  → 16 × 10 = 160 grad steps
+  ppo_clip:         0.2
   use_value_clip: True
   value_clip_eps: 0.2
+  kl_target: 0.01
+  
+  hidden_sizes: [128]
+  activation: 'tanh'
+
 
   policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
   policy_kwargs:
-    entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
+    entropy_coefficient: 0.01  # Coefficient for entropy-based exploration.
 
   normalize_obs: True
 
   # Misc/Evaluation/Logging
-  log_wandb: True
+  log_wandb: False
   wandb_kwargs:
     name: seed_${seed}
     entity: "automl-accounts-leibniz-universit-t-hannover"

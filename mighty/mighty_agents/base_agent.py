@@ -28,32 +28,56 @@ from mighty.mighty_utils.migthy_types import CARLENV, DACENV, MIGHTYENV, retriev
 if TYPE_CHECKING:
     from mighty.mighty_utils.migthy_types import TypeKwargs
 
+import gymnasium as gym
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
 
 
-def seed_everything(seed: int):
-    """Seed everything for reproducibility."""
-    # Python random
+def seed_everything(seed: int, env: gym.Env | None = None):
+    """
+    Seed Python, NumPy, Torch (including cuDNN), plus Gym (action_space, observation_space,
+    and the environment's own RNG). If `env` is vectorized (has `env.envs`), we dig into each
+    sub-env. Always call this before ANY network-building or RNG usage.
+    """
+    # 1) Python/NumPy/Torch/Hash
     random.seed(seed)
-    # NumPy
     np.random.seed(seed)
-    # PyTorch
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    # Torch deterministic/cudnn
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    # For hash-based things (sometimes relevant)
+    torch.use_deterministic_algorithms(True)  # enforce strictly deterministic ops
     os.environ["PYTHONHASHSEED"] = str(seed)
-    # Extra: For Gymnasium environments (if you pass a seed to env.reset(seed=seed) you’re good)
-    # If you use action_space/obs_space sampling:
-    try:
-        import gymnasium as gym
 
-        gym.utils.seeding.np_random(seed)  # legacy, but doesn't hurt
-    except Exception:
-        pass
+    # 2) Gym environment seeding
+    if env is not None:
+        # If the env is wrapped, try to unwrap to the core
+        try:
+            core_env = env.unwrapped
+            core_env.seed(seed)
+        except Exception:
+            pass
+
+        # If vectorized (e.g. SyncVectorEnv), seed each sub‐env separately
+        if hasattr(env, "envs") and isinstance(env.envs, list):
+            sub_seeds = [seed for _ in range(len(env.envs))]
+            for sub_seed, subenv in zip(sub_seeds, env.envs):
+                subenv.action_space.seed(sub_seed)
+                subenv.observation_space.seed(sub_seed)
+                try:
+                    subenv.unwrapped.seed(sub_seed)
+                except Exception:
+                    pass
+            # Reset the vectorized env with explicit seeds
+            env.reset(seed=sub_seeds)
+        else:
+            # Single environment
+            env.action_space.seed(seed)
+            env.observation_space.seed(seed)
+            try:
+                env.unwrapped.seed(seed)
+            except Exception:
+                pass
+            env.reset(seed=seed)
 
 
 def update_buffer(buffer, new_data):
@@ -155,11 +179,27 @@ class MightyAgent(ABC):
 
         self.seed = seed
         if self.seed is not None:
-            self.rng = np.random.default_rng(seed=seed)
+            seed_everything(self.seed, env=None)  # type: ignore
+            # Re-seed Python/NumPy/Torch here again.
+            random.seed(seed)
+            np.random.seed(seed)
             torch.manual_seed(seed)
-            seed_everything(seed)  # type: ignore
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+            os.environ["PYTHONHASHSEED"] = str(seed)
+
+            # Also seed any RNGs you will use later (e.g. for buffer / policy):
+            self.rng = np.random.default_rng(seed)  # for any numpy-based sampling
+            # If you ever use torch.Generator for sampling actions, you could do:
+            self.torch_gen = torch.Generator().manual_seed(seed)
+
+            # If you use Python’s random inside your policy, call random.seed(seed)
+            random.seed(seed)
+
         else:
             self.rng = np.random.default_rng()
+            self.seed = 0
 
         # Replay Buffer
         replay_buffer_class = retrieve_class(
@@ -191,10 +231,14 @@ class MightyAgent(ABC):
             if eval_env is not None:
                 eval_env = NormalizeReward(eval_env)
 
+        # self.env = SeedWrapper(env=env,seed=self.seed)
         self.env = env
         if eval_env is None:
+            # self.eval_env = SeedWrapper(env=env,seed=self.seed)
             self.eval_env = self.env
+
         else:
+            # self.eval_env = SeedWrapper(env=eval_env,seed=self.seed)
             self.eval_env = eval_env
 
         self.render_progress = render_progress
@@ -265,6 +309,9 @@ class MightyAgent(ABC):
         self.initialize_agent()
         self.steps = 0
 
+        seed_everything(self.seed, self.env)  # type: ignore
+        seed_everything(self.seed, self.eval_env)  # type: ignore
+
     def _initialize_agent(self) -> None:
         """Agent/algorithm specific initializations."""
         raise NotImplementedError
@@ -286,7 +333,7 @@ class MightyAgent(ABC):
         if isinstance(self.buffer_class, type) and issubclass(
             self.buffer_class, PrioritizedReplay
         ):
-            # 1) Get observation‐space shape
+            # 1) Get observation-space shape
             try:
                 obs_space = self.env.single_observation_space
                 obs_shape = tuple(obs_space.shape)
@@ -295,7 +342,7 @@ class MightyAgent(ABC):
                 first_obs, _ = self.env.reset(seed=self.seed)
                 obs_shape = tuple(np.array(first_obs).shape)
 
-            # 2) Get action‐space shape (if discrete, .n is number of actions)
+            # 2) Get action-space shape (if discrete, .n is number of actions)
             action_space = self.env.single_action_space
             if hasattr(action_space, "n"):
                 # Discrete action space → action_shape = () (scalar), but Q-net will expect a single integer

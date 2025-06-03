@@ -29,6 +29,7 @@ class TestMightyAgent:
         output_dir = Path("test_base_agent")
         output_dir.mkdir(parents=True, exist_ok=True)
         agent = MightyDQNAgent(output_dir, env)
+
         agent.make_checkpoint_dir(1)
         assert Path(agent.checkpoint_dir).exists()
         clean(output_dir)

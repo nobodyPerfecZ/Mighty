@@ -278,6 +278,12 @@ class MightyPPOAgent(MightyAgent):
             .reshape((curr_s.shape[0],))
         )
 
+        latents = (
+            np.arctanh(np.clip(action, -0.999, 0.999))
+            if getattr(self.policy, "continuous_action", False)
+            else None
+        )
+
         rollout_batch = RolloutBatch(
             observations=curr_s,
             actions=action,
@@ -287,6 +293,7 @@ class MightyPPOAgent(MightyAgent):
             episode_starts=dones,
             log_probs=log_prob,
             values=values,
+            latents=latents,
         )
 
         self.buffer.add(rollout_batch, metrics)  # type: ignore

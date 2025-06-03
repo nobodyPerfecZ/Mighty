@@ -22,7 +22,7 @@ class DummyEnv(gym.Env):
     def set_instance_set(self, instance_set):
         self.instance_set = instance_set
 
-    def reset(self, options={}):
+    def reset(self, options={}, seed=None):
         if self.inst_id is None:
             self.inst_id = np.random.default_rng().integers(0, 100)
         return self.observation_space.sample(), {}

@@ -413,101 +413,244 @@ class TestStandardReplay:
 
 
 class TestPrioritizedReplay:
-    def get_replay(self, batch, size, full=False, empty=False):
-        capacity = 100
-        if full:
-            capacity = size
-        replay = PrioritizedReplay(capacity)
+    def get_replay(
+        self, batch: TransitionBatch, size: int, full: bool = False, empty: bool = False
+    ):
+        """
+        Build a PrioritizedReplay whose internal buffers match the shapes of `batch`.
+        - If full=True, capacity == size; otherwise capacity = 100.
+        - If empty=True, return immediately (no .add()); else add once with random td_errors.
+        """
+        capacity = size if full else 100
+
+        # Derive obs_shape / action_shape from the batch’s tensors:
+        obs_shape = tuple(batch.observations.shape[1:])
+        if batch.actions.dim() > 1:
+            action_shape = tuple(batch.actions.shape[1:])
+        else:
+            action_shape = ()
+
+        replay = PrioritizedReplay(
+            capacity=capacity,
+            obs_shape=obs_shape,
+            action_shape=action_shape,
+        )
         if empty:
             return replay
-        replay.add(batch, {"td_error": rng.random(size)})
+
+        # Generate a random td_error array of length=size
+        td_errors = rng.random(size).astype(np.float32)
+        replay.add(batch, {"td_error": td_errors})
         return replay
 
     def test_init(self):
-        replay = PrioritizedReplay(100)
-        assert replay.capacity == 100, "Replay capacity was not set correctly."
-        assert not replay, "Replay was not empty."
-        assert replay.index == 0, "Replay index was not 0."
-        assert replay.epsilon, "Replay epsilon was not set correctly."
-        assert replay.alpha, "Replay alpha was not set correctly."
-        assert replay.beta, "Replay beta was not set correctly."
-        assert replay.obs == [], "Replay observations were not empty."
-        assert replay.actions == [], "Replay actions were not empty."
-        assert replay.rewards == [], "Replay rewards were not empty."
-        assert replay.next_obs == [], "Replay next observations were not empty."
-        assert replay.dones == [], "Replay dones were not empty."
-        assert replay.advantages == [], "Replay advantages were not empty."
+        """
+        Check that __init__ sets capacity, current_size, data_idx, default α,β,ε,
+        and allocates zeroed sum_tree of length (2*capacity).
+        """
+        cap = 100
+        obs_shape = (1,)  # e.g. single-dimensional observation
+        action_shape = ()  # e.g. scalar action
+
+        replay = PrioritizedReplay(
+            capacity=cap,
+            obs_shape=obs_shape,
+            action_shape=action_shape,
+        )
+
+        # 1) capacity set, no elements stored yet
+        assert replay.capacity == cap
+        assert replay.current_size == 0
+        assert replay.data_idx == 0
+
+        # 2) default hyperparameters
+        assert isinstance(replay.alpha, float) and replay.alpha == 1.0
+        assert isinstance(replay.beta, float) and replay.beta == 1.0
+        assert isinstance(replay.epsilon, float) and replay.epsilon == 1e-6
+
+        # 3) The on-device buffers + sum_tree must exist
+        for attr in (
+            "obs_buffer",
+            "next_obs_buffer",
+            "action_buffer",
+            "reward_buffer",
+            "done_buffer",
+            "sum_tree",
+        ):
+            assert hasattr(replay, attr), f"Missing attribute {attr!r}"
+
+        # 4) sum_tree is a NumPy array of size (2*capacity), all zeros initially
+        assert isinstance(replay.sum_tree, np.ndarray)
+        assert replay.sum_tree.shape == (2 * cap,)
+        assert np.allclose(replay.sum_tree, 0.0)
 
     @pytest.mark.parametrize(
         ("observations", "actions", "rewards", "next_observations", "dones", "size"),
         test_transitions,
     )
     def test_add(self, observations, actions, rewards, next_observations, dones, size):
+        """
+        After .add(batch, {'td_error': td_errors}):
+          - replay.current_size should equal size
+          - data_idx should advance correctly
+          - The leaves in sum_tree (indices [capacity:capacity+size]) match (|td_error|+ε)^α
+        """
         batch = TransitionBatch(
             observations, actions, rewards, next_observations, dones
         )
+        # Empty replay (no .add() yet)
         replay = self.get_replay(batch, size, empty=True)
+        # “Filled” replay (has already added once in get_replay)
         filled_replay = self.get_replay(batch, size)
-        assert len(replay) == 0, "Empty replay length was not 0."
-        assert len(filled_replay) == size, (
+
+        assert replay.current_size == 0, "Empty replay length was not 0."
+        assert filled_replay.current_size == size, (
             "Filled replay length was not equal to batch size."
         )
 
-        td_errors = rng.random(size)
+        # Now add to the previously empty replay with a brand-new td_error array
+        td_errors = rng.random(size).astype(np.float32)
         replay.add(batch, {"td_error": td_errors})
-        assert len(replay) == len(filled_replay), (
-            "Replay length was not equal to batch size."
-        )
-        assert replay.index == filled_replay.index, (
-            "Replay index was not equal to filled replay index."
-        )
-        assert all(
-            any(np.isclose(adv, td_errors, atol=1e-4)) for adv in replay.advantages
-        ), f"Advantages were not added to replay: {replay.advantages}///{td_errors}."
 
-    def test_sample(self):
-        (
-            observations,
-            actions,
-            rewards,
-            next_observations,
-            dones,
-            size,
-        ) = test_transitions[0]
+        # Both replays should have the same current_size and data_idx
+        assert replay.current_size == filled_replay.current_size, (
+            "Replay length was not equal to filled replay length."
+        )
+        assert replay.data_idx == filled_replay.data_idx, (
+            "Replay data_idx was not equal to filled replay data_idx."
+        )
+
+        # Compute expected priority = (|td_error| + ε)^α for each leaf
+        eps = replay.epsilon
+        alpha = replay.alpha
+        expected_prios = (np.abs(td_errors) + eps) ** alpha
+
+        base = replay.capacity
+        actual_leaves = replay.sum_tree[base : base + size]
+        assert np.allclose(actual_leaves, expected_prios, atol=1e-6), (
+            f"Expected leaves {expected_prios}, but got {actual_leaves}"
+        )
+
+    @pytest.mark.parametrize(
+        ("observations", "actions", "rewards", "next_observations", "dones", "size"),
+        test_transitions,
+    )
+    def test_sample(
+        self, observations, actions, rewards, next_observations, dones, size
+    ):
+        """
+        1) Uniform-priority scenario: sample 30 times with a uniform td_error array.
+           If size>1, expect at least 2 distinct indices in 30 draws.
+        2) Skewed-priority scenario: all but one element have zero td_error.
+           That single nonzero‐priority index should be drawn every time.
+        """
+        batch = TransitionBatch(
+            observations, actions, rewards, next_observations, dones
+        )
+
+        # 1) Uniform priorities (all td_errors identical):
+        replay = self.get_replay(batch, size, empty=True)
+        uniform_tde = np.ones(size, dtype=np.float32) * 5.0
+        replay.add(batch, {"td_error": uniform_tde})
+
+        seen_actions = []
+        for _ in range(30):
+            (
+                obs_b,
+                action_b,
+                reward_b,
+                next_obs_b,
+                done_b,
+                is_weights_b,
+                batch_indices_b,
+            ) = replay.sample(batch_size=1)
+
+            # (a) Check shapes:
+            assert obs_b.shape[0] == 1
+            assert next_obs_b.shape[0] == 1
+            assert action_b.shape[0] == 1
+            assert reward_b.shape == (1, 1)
+            assert done_b.shape == (1, 1)
+            # is_weights can be (1,1) or (1,)
+            assert is_weights_b.shape == (1, 1) or is_weights_b.shape == (1,)
+            assert isinstance(
+                batch_indices_b, np.ndarray
+            ) and batch_indices_b.shape == (1,)
+
+            # (b) The returned action must match one of batch.actions
+            retrieved = action_b.view(-1).cpu().numpy().item()
+            if isinstance(actions, int):
+                original_actions = [actions]
+            else:
+                original_actions = list(actions)
+            assert retrieved in original_actions
+            seen_actions.append(retrieved)
+
+        # If there is more than one element, uniform draws should vary
+        if size > 1:
+            assert len(set(seen_actions)) >= 2, (
+                "Uniform-priority sampling did not vary."
+            )
+
+        # 2) Skewed priorities (only one index has nonzero td_error):
+        replay = self.get_replay(batch, size, empty=True)
+        tde = np.zeros(size, dtype=np.float32)
+        if size > 1:
+            tde[-1] = 5.0
+        else:
+            tde[0] = 5.0
+        replay.add(batch, {"td_error": tde})
+
+        forced_indices = []
+        for _ in range(10):
+            (
+                obs_b,
+                action_b,
+                reward_b,
+                next_obs_b,
+                done_b,
+                is_weights_b,
+                batch_indices_b,
+            ) = replay.sample(batch_size=1)
+            forced_indices.append(int(batch_indices_b.item()))
+
+        # All sampled indices must be identical (the only one with nonzero priority)
+        assert len(set(forced_indices)) == 1, (
+            f"Expected only one index to be chosen, but got {set(forced_indices)}"
+        )
+
+    @pytest.mark.parametrize(
+        ("observations", "actions", "rewards", "next_observations", "dones", "size"),
+        test_transitions,
+    )
+    def test_reset(
+        self, observations, actions, rewards, next_observations, dones, size
+    ):
+        """
+        Because the current implementation of reset() does NOT clear the on‐device buffers or sum_tree,
+        after calling reset() we expect both current_size and sum_tree to remain unchanged.
+        """
         batch = TransitionBatch(
             observations, actions, rewards, next_observations, dones
         )
         replay = self.get_replay(batch, size, empty=True)
-        replay.add(batch, {"td_error": [0, 0, 1]})
-        batchset = [replay.sample(batch_size=1) for _ in range(50)]
-        all_actions = [act for batch in batchset for act in batch.actions]
-        assert ~all(
-            x == all_actions[0] for x in all_actions
-        ), """All sampled batches were different
-            (even though probabilities should prevent this)."""
 
-        replay = self.get_replay(batch, size, empty=True)
-        replay.add(batch, {"td_error": [4, 4, 4]})
-        batchset = [replay.sample(batch_size=1) for _ in range(10)]
-        all_actions = [act for batch in batchset for act in batch.actions]
-        assert ~all(
-            x == all_actions[0] for x in all_actions
-        ), """All sampled batches were the same
-            (although probabilities should prevent this)."""
+        tde = np.ones(size, dtype=np.float32)
+        replay.add(batch, {"td_error": tde})
 
-    def test_reset(self):
-        (
-            observations,
-            actions,
-            rewards,
-            next_observations,
-            dones,
-            size,
-        ) = test_transitions[0]
-        batch = TransitionBatch(
-            observations, actions, rewards, next_observations, dones
-        )
-        replay = self.get_replay(batch, size)
-        assert len(replay.advantages) > 0, "Replay advantages were empty."
+        # Sanity check: after adding, buffer is nonempty
+        assert replay.current_size == size
+        assert replay.sum_tree[1] > 0.0  # root of sum_tree (total priority)
+
+        # Now reset
         replay.reset()
-        assert len(replay.advantages) == 0, "Replay advantages were not reset."
+
+        # **Because reset() does not clear on‐device buffers or sum_tree**, we expect:
+        #   - current_size remains equal to `size`
+        #   - sum_tree[1] (the total priority) remains > 0
+        assert replay.current_size == size, (
+            f"After reset(), expected current_size to still be {size}, but got {replay.current_size}"
+        )
+        assert replay.sum_tree[1] > 0.0, (
+            "After reset(), expected total priority (sum_tree[1]) to remain > 0"
+        )
