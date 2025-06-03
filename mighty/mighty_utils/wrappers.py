@@ -164,7 +164,7 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
 
     @property
     def inst_ids(self):
-        return self.env.context_id
+        return self.env.context_selector.context_id
 
     @property
     def instances(self):
@@ -177,10 +177,12 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
     @inst_ids.setter
     def inst_ids(self, inst_id):
         self.env.context_id = inst_id
+        self.env._update_context()
 
     @instances.setter
     def instances(self, instance):
         self.env.context = instance
+        self.env._update_context()
 
     @instance_set.setter
     def instance_set(self, instance_set):

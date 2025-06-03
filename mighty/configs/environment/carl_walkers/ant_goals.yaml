@@ -2,7 +2,7 @@
 
 num_steps: 25e6
 env: CARLBraxAnt
-env_wrappers: [ mighty.mighty_utils.wrappers.FlattenVecObs]
+env_wrappers: [mighty.mighty_utils.wrappers.FlattenVecObs]
 # For CARL, batch size should be one and num_envs should control parallel envs
 num_envs: 256
 

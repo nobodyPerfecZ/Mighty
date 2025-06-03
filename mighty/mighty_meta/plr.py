@@ -215,7 +215,7 @@ class PrioritizedLevelReplay(MightyMetaComponent):
         :param metrics: Current metrics dict
         :return:
         """
-        instance_ids = metrics["env"].inst_ids
+        instance_ids = metrics["env"].instance_id_list
         episode_reward = metrics["episode_reward"]
         rollout_values = metrics["rollout_values"]
         rollout_logits = [None] * len(instance_ids)
@@ -224,7 +224,7 @@ class PrioritizedLevelReplay(MightyMetaComponent):
 
         if self.all_instances is None:
             self.all_instances = metrics["env"].instance_id_list
-            self.num_instances = len(metrics["env"].inst_ids)
+            self.num_instances = len(self.all_instances)
             for i in self.all_instances:
                 if i not in self.instance_scores:
                     self.instance_scores[i] = 0

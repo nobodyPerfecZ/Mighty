@@ -778,6 +778,12 @@ class MightyAgent(ABC):
                     for k in self.meta_modules:
                         self.meta_modules[k].post_episode(metrics)
 
+                    if "rollout_values" in metrics:
+                        del metrics["rollout_values"]
+
+                    if "rollout_logits" in metrics:
+                        del metrics["rollout_logits"]
+
                     # Meta Module hooks
                     for k in self.meta_modules:
                         self.meta_modules[k].pre_episode(metrics)

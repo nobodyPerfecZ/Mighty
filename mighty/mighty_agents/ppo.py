@@ -259,6 +259,13 @@ class MightyPPOAgent(MightyAgent):
         # print(f"[DEBUG] buffer.pos = {steps_recorded}, n_envs = {self.buffer.n_envs}, total = {total_trans}")
 
         self.buffer.compute_returns_and_advantage(last_values, update_kwargs["dones"])  # type: ignore
+        if "rollout_values" in metrics:
+            del metrics["rollout_values"]
+            metrics["rollout_values"] = []
+
+        if "rollout_logits" in metrics:
+            del metrics["rollout_logits"]
+            metrics["rollout_logits"] = []
         return super().update(metrics, update_kwargs)  # type: ignore
 
     def process_transition(  # type: ignore
@@ -297,6 +304,15 @@ class MightyPPOAgent(MightyAgent):
         )
 
         self.buffer.add(rollout_batch, metrics)  # type: ignore
+
+        if not "rollout_values" in metrics:
+            metrics["rollout_values"] = np.array([])
+
+        if not "rollout_logits" in metrics:
+            metrics["rollout_logits"] = np.array([])
+
+        metrics["rollout_values"] = np.append(metrics["rollout_values"], values)
+        metrics["rollout_logits"] = np.append(metrics["rollout_logits"], values)
 
         return metrics  # type: ignore
 
