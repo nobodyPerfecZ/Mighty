@@ -2,12 +2,14 @@
 
 num_steps: 25e6
 env: CARLBraxAnt
-env_wrappers: [mighty.mighty_utils.wrappers.FlattenVecObs]
+env_wrappers: [ mighty.mighty_utils.wrappers.FlattenVecObs]
+# For CARL, batch size should be one and num_envs should control parallel envs
+num_envs: 256
 
 env_kwargs:
   context_sample_seed: 0
   evaluation_context_sample_seed: 1
   num_contexts: 10
   num_evaluation_contexts: 10
-  context_feature_args: {"target_distance": [normal, 9.8, 1.0, -100.0, 100.0], "target_direction": [categorical, [1,2,3,4]]}
-  batch_size: 256
+  context_feature_args: {"target_distance": [normal, 9.8, 1.0, -100.0, 100.0], "target_direction": [categorical, [1, 2, 3, 4]]}
+  batch_size: 1

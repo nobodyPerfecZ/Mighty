@@ -39,11 +39,11 @@ class FlattenVecObs(gym.Wrapper):
             self.env.single_observation_space
         )
 
-    def reset(self, options=None):
+    def reset(self, seed=None, options=None):
         """Reset the environment and return the initial observation."""
         if options is None:
             options = {}
-        obs, info = self.env.reset(options=options)
+        obs, info = self.env.reset(seed=seed, options=options)
         obs = np.array(
             list(
                 map(partial(gym.spaces.flatten, self.og_single_observation_space), obs)
@@ -55,7 +55,7 @@ class FlattenVecObs(gym.Wrapper):
         """Take a step in the environment."""
         obs, reward, te, tr, info = self.env.step(action)
         obs = np.array(
-            list(map(partial(gym.spaces.flatten, self.single_observation_space), obs))
+            list(map(partial(gym.spaces.flatten, self.og_single_observation_space), obs))
         )
         return obs, reward, te, tr, info
 
@@ -130,7 +130,7 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
         if hasattr(env, "num_envs"):
             self.num_envs = env.num_envs
             self.single_action_space = env.single_action_space
-            self.single_observation_space = env.single_wobservation_space
+            self.single_observation_space = env.observation_space
         else:
             self.num_envs = 1
             self.single_action_space = env.action_space
@@ -146,7 +146,7 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
 
     def reset(self, **kwargs):
         if self.num_envs > 1:
-            return self.env.reset()
+            return self.env.reset(**kwargs)
         else:
             obs, info = self.env.reset(**kwargs)
             return np.array([obs]), np.array([info])
@@ -155,12 +155,8 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
         if self.num_envs > 1:
             return self.env.step(actions)
         else:
-            print(f"Full action space: {self.env.action_space}")
-            print(f"Single action space: {self.single_action_space}")
-            print(f"All actions: {actions}")
-            print(f"First action: {actions[0]}")
-            obs, info = self.env.step(actions[0])
-            return np.array([obs]), np.array([info])
+            obs, reward, te, tr, info = self.env.step(actions[0])
+            return np.array([obs]), np.array([reward]), np.array([te]), np.array([tr]), np.array([info])
 
     @property
     def instance_id_list(self):
