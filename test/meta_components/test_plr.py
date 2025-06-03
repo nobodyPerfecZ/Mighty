@@ -18,6 +18,9 @@ class EnvSim:
         self.instance_id_list = np.arange(10)
         self.action_space = gym.spaces.Discrete(2)
 
+    def set_inst_id(self, inst_id):
+        self.inst_ids = inst_id
+
 
 DUMMY_METRICS = [
     {
@@ -92,7 +95,7 @@ class TestPLR:
         metrics = {"env": EnvSim(1)}
         plr.get_instance(metrics=metrics)
         assert metrics["env"].inst_ids is not None, "Instance should not be None."
-        assert metrics["env"].inst_ids[0] in plr.instance_scores.keys(), (
+        assert metrics["env"].inst_ids in plr.instance_scores.keys(), (
             "Instance should be in instance scores."
         )
         assert plr.all_instances is not None, "All instances should be initialized."
@@ -105,7 +108,7 @@ class TestPLR:
         metrics = {"env": EnvSim(10)}
         original_instance = 10
         plr.get_instance(metrics=metrics)
-        assert original_instance != metrics["env"].inst_ids[0], (
+        assert original_instance != metrics["env"].inst_ids, (
             "Instance should be changed."
         )
         assert plr.index == index + 1, "Index should be incremented by 1."
@@ -164,8 +167,8 @@ class TestPLR:
                 )
 
             if score_func == "random":
-                assert plr.instance_scores[metrics["env"].inst_ids[0]] == 1, (
-                    "Random score should be 1."
+                assert plr.instance_scores[0] == 1.0, (
+                    f"Random score should be 1. Scores were: {plr.instance_scores}"
                 )
 
     @pytest.mark.parametrize("metrics", DUMMY_METRICS)

@@ -74,7 +74,7 @@ class SPaCE(MightyMetaComponent):
             self.instance_set = self.all_instances[np.argsort(improvement)[::-1]][
                 : self.current_instance_set_size
             ]
-        env.instance_set = self.instance_set
+        env.set_instance_set(self.instance_set)
 
     def get_evals(self, env, vf):
         """Get values for s_0 of all instances.
@@ -86,7 +86,7 @@ class SPaCE(MightyMetaComponent):
         values = []
         for i in self.all_instances:
             state, _ = env.reset()
-            env.inst_ids = [i]
+            env.set_inst_id(i)
             v = vf(torch.tensor(state)).squeeze().detach().numpy()
             # If we're dealing with a q function, we transform to value here
             if isinstance(v[0], np.ndarray):

@@ -87,7 +87,9 @@ class PrioritizedLevelReplay(MightyMetaComponent):
                 instances.append(self._sample_replay_level())
             else:
                 instances.append(self._sample_unseen_level())
-        metrics["env"].inst_ids = instances
+        if len(instances) == 1:
+            instances = instances[0]
+        metrics["env"].set_inst_id(instances)
 
     def _sample_replay_level(self):
         """Get already seen level.
@@ -224,7 +226,11 @@ class PrioritizedLevelReplay(MightyMetaComponent):
 
         if self.all_instances is None:
             self.all_instances = metrics["env"].instance_id_list
-            self.num_instances = len(self.all_instances)
+            num_instances = metrics["env"].inst_ids
+            if isinstance(num_instances, list) or isinstance(num_instances, np.ndarray):
+                self.num_instances = len(num_instances)
+            else:
+                self.num_instances = 1
             for i in self.all_instances:
                 if i not in self.instance_scores:
                     self.instance_scores[i] = 0

@@ -91,10 +91,9 @@ class TestEnvCreation:
                     "friction": ["uniform-float", 0, 10],
                     "gravity": ["uniform-int", -5, 5],
                 },
-                "batch_size": 256,
             },
             "env_wrappers": [],
-            "num_envs": 1,
+            "num_envs": 256,
             "n_episodes_eval": 1,
         }
     )
