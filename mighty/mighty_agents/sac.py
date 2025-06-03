@@ -54,6 +54,8 @@ class MightySACAgent(MightyAgent):
             Union[str, DictConfig, Type[MightyExplorationPolicy]]
         ] = None,
         policy_kwargs: Optional[Dict] = None,
+        normalize_obs: bool = False,  # ← NEW
+        normalize_reward: bool = False,  # ← NEW (optional)
     ):
         """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
         # Map PPO-style units to hidden_sizes if not provided
@@ -103,6 +105,8 @@ class MightySACAgent(MightyAgent):
             replay_buffer_kwargs=replay_buffer_kwargs,
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
+            normalize_obs=normalize_obs,
+            normalize_reward=normalize_reward,
         )
 
         # Initialize loss buffer for logging

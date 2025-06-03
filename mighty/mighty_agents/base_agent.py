@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
 from omegaconf import DictConfig
 from rich import print
 from rich.layout import Layout
@@ -21,12 +20,15 @@ from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingC
 from rich.table import Table
 from uniplot import plot_to_string
 
+import wandb
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer, PrioritizedReplay
 from mighty.mighty_utils.migthy_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
     from mighty.mighty_utils.migthy_types import TypeKwargs
+
+from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
 
 
 def seed_everything(seed: int):
@@ -112,6 +114,8 @@ class MightyAgent(ABC):
         meta_methods: list[str | type] | None = None,
         meta_kwargs: list[TypeKwargs] | None = None,
         verbose: bool = True,
+        normalize_obs: bool = False,  # ← NEW
+        normalize_reward: bool = False,  # ← NEW (optional)
     ):
         """Base agent initialization.
 
@@ -176,6 +180,16 @@ class MightyAgent(ABC):
 
         self.output_dir = output_dir
         self.verbose = verbose
+
+        if normalize_obs:
+            env = NormalizeObservation(env)
+            if eval_env is not None:
+                eval_env = NormalizeObservation(eval_env)
+
+        if normalize_reward:
+            env = NormalizeReward(env)
+            if eval_env is not None:
+                eval_env = NormalizeReward(eval_env)
 
         self.env = env
         if eval_env is None:

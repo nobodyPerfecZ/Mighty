@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
-import wandb
 from omegaconf import DictConfig
 
+import wandb
 from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
 from mighty.mighty_exploration import MightyExplorationPolicy, StochasticPolicy
 from mighty.mighty_models.ppo import PPOModel
@@ -61,6 +61,8 @@ class MightyPPOAgent(MightyAgent):
         use_value_clip: bool = True,
         value_clip_eps: float = 0.2,
         total_timesteps: int = 1_000_000,
+        normalize_obs: bool = False,  # ← NEW
+        normalize_reward: bool = False,  # ← NEW (optional)
     ):
         """Initialize the PPO agent.
 
@@ -138,6 +140,8 @@ class MightyPPOAgent(MightyAgent):
             replay_buffer_kwargs=rollout_buffer_kwargs,
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
+            normalize_obs=normalize_obs,
+            normalize_reward=normalize_reward,
         )
 
         self.loss_buffer = {

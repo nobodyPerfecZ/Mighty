@@ -18,7 +18,7 @@ experiment_name: mighty_experiment
 algorithm_kwargs: {}
 
 # Training
-eval_every_n_steps: 1e4  # After how many steps to evaluate.
+eval_every_n_steps: 5e3  # After how many steps to evaluate.
 n_episodes_eval: 10
 checkpoint: null  # Path to load model checkpoint
 save_model_every_n_steps: 5e5
@@ -28,3 +28,5 @@ hydra:
     dir: ${output_dir}/${experiment_name}_${seed}
   sweep:
     dir: ${output_dir}/${experiment_name}_${seed}
+
+

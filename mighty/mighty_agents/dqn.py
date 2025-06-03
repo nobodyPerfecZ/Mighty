@@ -66,6 +66,8 @@ class MightyDQNAgent(MightyAgent):
         td_update_kwargs: TypeKwargs | None = None,
         save_replay: bool = False,
         n_gradient_steps: int = 1,
+        normalize_obs: bool = False,
+        normalize_reward: bool = False,
     ):
         """DQN initialization.
 
@@ -148,6 +150,8 @@ class MightyDQNAgent(MightyAgent):
             replay_buffer_kwargs=replay_buffer_kwargs,
             meta_methods=meta_methods,
             meta_kwargs=meta_kwargs,
+            normalize_obs=normalize_obs,
+            normalize_reward=normalize_reward,
         )
 
         self.loss_buffer = {
