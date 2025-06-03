@@ -198,7 +198,7 @@ class PPOUpdate:
             mean_kl = torch.mean(torch.stack(epoch_kls))
             epoch_counts += 1
 
-            print(f"[PPO] Epoch {epoch}: KL={mean_kl:.6f}, target={self.kl_target:.6f}")
+            # print(f"[PPO] Epoch {epoch}: KL={mean_kl:.6f}, target={self.kl_target:.6f}")
 
             # Adaptive learning rate management
             if self.adaptive_lr:

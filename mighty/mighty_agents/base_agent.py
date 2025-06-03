@@ -278,7 +278,7 @@ class MightyAgent(ABC):
                 obs_shape = tuple(obs_space.shape)
             except Exception:
                 # Fallback: call env.reset() once and infer shape from returned numpy/torch array
-                first_obs, _ = self.env.reset()
+                first_obs, _ = self.env.reset(seed=self.seed)
                 obs_shape = tuple(np.array(first_obs).shape)
 
             # 2) Get action‐space shape (if discrete, .n is number of actions)
@@ -558,7 +558,7 @@ class MightyAgent(ABC):
             }
 
             # Reset env and initialize reward sum
-            curr_s, _ = self.env.reset()  # type: ignore
+            curr_s, _ = self.env.reset(seed=self.seed)  # type: ignore
             if len(curr_s.squeeze().shape) == 0:
                 episode_reward = [0]
             else:
@@ -755,7 +755,7 @@ class MightyAgent(ABC):
         if eval_env is None:
             eval_env = self.eval_env
 
-        state, _ = eval_env.reset(options=options)  # type: ignore
+        state, _ = eval_env.reset(options=options, seed=self.seed)  # type: ignore
         rewards = np.zeros(eval_env.num_envs)  # type: ignore
         steps = np.zeros(eval_env.num_envs)  # type: ignore
         mask = np.zeros(eval_env.num_envs)  # type: ignore

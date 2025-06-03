@@ -3,7 +3,7 @@ defaults:
   - override /hydra/launcher: submitit_slurm
 
 cluster:
-  queue: ai  # partition
+  queue: ai,tnt  # partition
 
 hydra:
   launcher:

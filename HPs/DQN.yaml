@@ -1,7 +1,4 @@
-# @package _global_
-algorithm: DQN
-q_func: ???
-
+# CartPole-v1 DQN configuration: num_steps: 5e4 num_envs: 64
 algorithm_kwargs:
   # Core architecture / model
   n_units: 256

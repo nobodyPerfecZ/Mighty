@@ -1,6 +1,4 @@
-# @package _global_
-algorithm: PPO
-
+# CartPole-v1 PPO configuration: num_steps: 1e5 num_envs: 8
 algorithm_kwargs:
   # Hyperparameters
   n_policy_units: 64
