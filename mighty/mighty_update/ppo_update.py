@@ -97,7 +97,7 @@ class PPOUpdate:
         adv_mean, adv_std = flat_adv.mean(), flat_adv.std() + 1e-8
 
         metrics, mb_updates = (
-            {   
+            {
                 "policy_loss": 0.0,
                 "value_loss": 0.0,
                 "entropy": 0.0,

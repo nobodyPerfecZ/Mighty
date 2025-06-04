@@ -305,10 +305,10 @@ class MightyPPOAgent(MightyAgent):
 
         self.buffer.add(rollout_batch, metrics)  # type: ignore
 
-        if not "rollout_values" in metrics:
+        if "rollout_values" not in metrics:
             metrics["rollout_values"] = np.array([])
 
-        if not "rollout_logits" in metrics:
+        if "rollout_logits" not in metrics:
             metrics["rollout_logits"] = np.array([])
 
         metrics["rollout_values"] = np.append(metrics["rollout_values"], values)

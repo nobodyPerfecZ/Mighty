@@ -1,0 +1,50 @@
+defaults:
+  - _self_
+  - algorithm: sac_mujoco
+  - environment: gymnasium/pendulum
+  - search_space: sac_rs
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+  - override hydra/help: mighty_help
+  - override hydra/sweeper: HyperSMAC        # use Hypersweeper’s RandomSearch
+
+runner: standard
+debug: false
+seed: 0
+output_dir: sweep_smac
+wandb_project: null
+tensorboard_file: null
+experiment_name: ppo_smac
+
+budget: 200000  # Budget for the hyperparameter search
+
+algorithm_kwargs: {}
+
+# Training
+eval_every_n_steps: 1e4  # After how many steps to evaluate.
+n_episodes_eval: 10
+checkpoint: null  # Path to load model checkpoint
+save_model_every_n_steps: 5e5
+
+hydra:
+  sweeper:
+    n_trials: 10
+    budget_variable: budget
+    sweeper_kwargs:
+      seeds: [0]
+      optimizer_kwargs:
+        smac_facade: 
+          _target_: smac.facade.blackbox_facade.BlackBoxFacade
+          _partial_: true
+          logging_level: 20  # 10 DEBUG, 20 INFO
+        scenario:
+          seed: 42
+          n_trials: ${hydra.sweeper.n_trials}
+          deterministic: true
+          n_workers: 4
+          output_directory: ${hydra.sweep.dir}
+    search_space: ${search_space}
+  run:
+    dir: ./tmp/branin_smac/
+  sweep:
+    dir: ./tmp/branin_smac/

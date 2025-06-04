@@ -149,7 +149,6 @@ def make_carl_env(
         contexts = {0: env_class.get_default_context()}
         eval_contexts = {0: env_class.get_default_context()}
 
-
     del env_kwargs["num_contexts"]
     del env_kwargs["num_evaluation_contexts"]
     del env_kwargs["context_feature_args"]

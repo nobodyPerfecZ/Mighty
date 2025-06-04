@@ -55,7 +55,9 @@ class FlattenVecObs(gym.Wrapper):
         """Take a step in the environment."""
         obs, reward, te, tr, info = self.env.step(action)
         obs = np.array(
-            list(map(partial(gym.spaces.flatten, self.og_single_observation_space), obs))
+            list(
+                map(partial(gym.spaces.flatten, self.og_single_observation_space), obs)
+            )
         )
         return obs, reward, te, tr, info
 
@@ -156,7 +158,13 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
             return self.env.step(actions)
         else:
             obs, reward, te, tr, info = self.env.step(actions[0])
-            return np.array([obs]), np.array([reward]), np.array([te]), np.array([tr]), np.array([info])
+            return (
+                np.array([obs]),
+                np.array([reward]),
+                np.array([te]),
+                np.array([tr]),
+                np.array([info]),
+            )
 
     @property
     def instance_id_list(self):
