@@ -55,12 +55,3 @@ algorithm_kwargs:
   # Checkpointing
   save_replay: False
   n_gradient_steps: 8
-
-  # Misc/Evaluation/Logging
-  log_wandb: True
-  wandb_kwargs:
-    name: seed_${seed}
-    entity: "automl-accounts-leibniz-universit-t-hannover"
-    group: combo_${algorithm}_${env}
-    project: "Mighty"
-    mode: 'online'

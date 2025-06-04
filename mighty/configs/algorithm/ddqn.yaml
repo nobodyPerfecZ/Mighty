@@ -61,9 +61,3 @@ algorithm_kwargs:
   # Checkpointing
   save_replay: False
   n_gradient_steps: 1
-
-  # Misc/Evaluation/Logging
-  log_wandb: False
-  wandb_kwargs:
-    project: "my_dqn_experiment"
-    name: "DQN-cartpole"

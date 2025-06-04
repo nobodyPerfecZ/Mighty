@@ -41,12 +41,3 @@ algorithm_kwargs:
   policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
   policy_kwargs:
     entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
-
-  # Misc/Evaluation/Logging
-  log_wandb: False
-  wandb_kwargs:
-    name: seed_${seed}
-    entity: "automl-accounts-leibniz-universit-t-hannover"
-    group: combo_${algorithm}_${env}
-    project: "Mighty"
-    mode: 'online'

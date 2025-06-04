@@ -36,11 +36,3 @@ algorithm_kwargs:
   policy_kwargs:
     entropy_coefficient: 0.2
     discrete: False
-
-  log_wandb: True
-  wandb_kwargs:
-    name: seed_${seed}
-    entity: "automl-accounts-leibniz-universit-t-hannover"
-    group: combo_${algorithm}_${env}
-    project: "Mighty"
-    mode: 'online'

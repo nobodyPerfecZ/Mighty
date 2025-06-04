@@ -38,12 +38,3 @@ algorithm_kwargs:
     entropy_coefficient: 0.01  # Coefficient for entropy-based exploration.
 
   normalize_obs: True
-
-  # Misc/Evaluation/Logging
-  log_wandb: False
-  wandb_kwargs:
-    name: seed_${seed}
-    entity: "automl-accounts-leibniz-universit-t-hannover"
-    group: combo_${algorithm}_${env}
-    project: "Mighty"
-    mode: 'online'
