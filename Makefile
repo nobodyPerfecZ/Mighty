@@ -22,9 +22,9 @@ help:
 	@echo "* docs-deploy      to push the latest doc version to gh-pages"
 	@echo "* publish          to help publish the current branch to pypi"
 
-PYTHON ?= python
+PYTHON ?= .venv/bin/python
 CYTHON ?= cython
-PYTEST ?= uv run pytest
+PYTEST ?= $(PYTHON) -m pytest
 CTAGS ?= ctags
 PIP ?= uv pip
 MAKE ?= make
@@ -39,11 +39,11 @@ DOCDIR := ${CURDIR}/docs
 INDEX_HTML := file://${DOCDIR}/html/build/index.html
 
 install-dev:
-	$(PIP) install -e ".[dev,carl,docs,pufferlib,dacbench]"
+	$(PIP) install -e ".[dev,docs,pufferlib,dacbench]"
+	$(PIP) install carl_bench==1.1.1 brax==0.12.1
 
 install:
 	$(PIP) install -e ".[examples]"
-
 
 # pydocstyle does not have easy ignore rules, instead, we include as they are covered
 check: 
@@ -63,7 +63,7 @@ typing:
 	$(MYPY) mighty
 
 test:
-	$(PYTEST) -v --cov=mighty test --durations=20 --cov-report html
+	$(PYTEST) -v --disable-pytest-warnings --cov=mighty test --durations=20 --cov-report html
 
 clean-doc:
 	rm -rf site
