@@ -57,7 +57,7 @@ jobs:
         echo "::set-output name=BEFORE::$(git status --porcelain -b)"
 
     - name: Tests
-      run: make test
+      run: python -m pytest -v --disable-pytest-warnings --cov=mighty test --durations=20 --cov-report html
 
     - name: Check for files left behind by test
       run: |
