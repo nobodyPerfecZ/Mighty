@@ -155,8 +155,26 @@ def make_carl_env(
     del env_kwargs["context_sample_seed"]
     del env_kwargs["evaluation_context_sample_seed"]
 
-    env = env_class(contexts=contexts, **env_kwargs)
     eval_env = env_class(contexts=eval_contexts, **env_kwargs)
+
+    if "context_selector" in env_kwargs:
+        if (
+            isinstance(env_kwargs["context_selector"], str)
+            or env_kwargs["context_selector"] is None
+        ):
+            if env_kwargs["context_selector"] == "random":
+                env_kwargs["context_selector"] = carl.context.selection.RandomSelector(
+                    contexts=contexts
+                )
+            elif (
+                env_kwargs["context_selector"] == "static"
+                or env_kwargs["context_selector"] is None
+            ):
+                env_kwargs["context_selector"] = carl.context.selection.StaticSelector(
+                    contexts=contexts
+                )
+
+    env = env_class(contexts=contexts, **env_kwargs)
 
     env = CARLVectorEnvSimulator(env)
     eval_env = partial(CARLVectorEnvSimulator, eval_env)

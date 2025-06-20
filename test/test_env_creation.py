@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 
 import carl
+import carl.context
 import gymnasium as gym
 from dacbench import benchmarks
 from omegaconf import OmegaConf
@@ -91,6 +92,7 @@ class TestEnvCreation:
                     "friction": ["uniform-float", 0, 10],
                     "gravity": ["uniform-int", -5, 5],
                 },
+                "context_selector": None,
             },
             "env_wrappers": [],
             "num_envs": 256,
@@ -415,6 +417,17 @@ class TestEnvCreation:
         assert all(
             [eval_contexts[i]["gravity"] >= -5 for i in range(len(eval_contexts))]
         ), "Eval contexts lie above lower bound for gravity."
+        assert isinstance(
+            env.envs[0].context_selector, carl.context.selection.StaticSelector
+        ), (
+            f"Context selector should be switched to a StaticSelector based on keyword but is {type(env.envs[0].context_selector)}."
+        )
+        assert isinstance(
+            eval_env().envs[0].context_selector,
+            carl.context.selection.RoundRobinSelector,
+        ), (
+            f"Eval env context selector should stay round robin but is {type(eval_env().envs[0].context_selector)}."
+        )
 
     def test_make_procgen_env(self):
         """Test env creation with make_procgen_env."""
