@@ -18,9 +18,9 @@ class SACUpdate:
         tau: float = 0.005,
         alpha: float = 0.2,
         gamma: float = 0.99,
-        target_entropy: float = None,  # <--- Add this
-        auto_alpha: bool = True,  # <--- Add this
-        alpha_lr: float = 3e-4,  # <--- Add this
+        target_entropy: float = None,  
+        auto_alpha: bool = True,  
+        alpha_lr: float = 3e-4,
     ):
         """
         Initialize the SAC update mechanism.
@@ -55,7 +55,7 @@ class SACUpdate:
             else:
                 self.target_entropy = float(target_entropy)
         else:
-            self.alpha = 0.2
+            self.alpha = alpha 
 
     def calculate_td_error(self, transition: TransitionBatch) -> Tuple:
         """Calculate the TD error for a given transition.

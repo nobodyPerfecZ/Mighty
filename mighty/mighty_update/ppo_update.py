@@ -105,10 +105,9 @@ class PPOUpdate:
             0,
         )
 
-        # ───────────────────────── main PPO loop ────────────────────────────
+        # ───────────────────────── main PPO loop ────────────────────────────        
         for epoch in range(self.n_epochs):
             epoch_kls = []
-
             for i, mb in enumerate(batch.minibatches):
                 adv = ((mb.advantages - adv_mean) / adv_std).detach()
 
@@ -186,7 +185,12 @@ class PPOUpdate:
                 mb_updates += 1
 
             # ───────── epoch end: LR adaptation, early stop, logging ─────────
-            mean_kl = torch.stack(epoch_kls).mean()
+            if len(epoch_kls) > 0:
+                mean_kl = torch.stack(epoch_kls).mean()
+            else:
+                # If no minibatches were processed, set a default KL value
+                mean_kl = torch.tensor(0.0)
+                print("Warning: No minibatches processed in this epoch")
 
             # adaptive LR
             if self.adaptive_lr:
@@ -215,7 +219,7 @@ class PPOUpdate:
 
         # final averaged metrics
         for k in metrics:
-            metrics[k] /= mb_updates
+            metrics[k] /= (mb_updates if mb_updates > 0 else 1)
 
         metrics["approx_kl"] = mean_kl.item()  # final KL of the run
 

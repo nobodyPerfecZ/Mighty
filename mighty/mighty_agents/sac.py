@@ -87,9 +87,10 @@ class MightySACAgent(MightyAgent):
         self.update_fn: SACUpdate | None = None
 
         # Exploration policy class
-        policy_class = retrieve_class(cls=policy_class, default_cls=StochasticPolicy)
-        self.policy_class = policy_class
-        self.policy_kwargs = policy_kwargs or {}
+        self.policy_class = retrieve_class(cls=policy_class, default_cls=StochasticPolicy)
+        self.policy_kwargs = policy_kwargs or {
+            'discrete': False   # Default to continuous SAC
+        }
 
         super().__init__(
             env=env,
