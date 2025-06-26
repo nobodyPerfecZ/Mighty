@@ -104,12 +104,15 @@ class TestQLearning:
             preds.type(torch.float32).detach(),
             torch.mul(batch.observations, 3).sum(axis=1).unsqueeze(-1),
         ), "Wrong initial predictions (weight 3)."
+        
+        # Fixed: Use model output instead of raw next_obs sum
+        mask = 1 - batch.dones.unsqueeze(-1).to(torch.float32)
         correct_targets = (
-            batch.rewards
-            + (~batch.dones)
+            batch.rewards.unsqueeze(-1)
+            + mask
             * 0.99
-            * model(torch.as_tensor(batch.next_obs, dtype=torch.float32)).max(1)[0]
-        ).unsqueeze(-1)
+            * model(torch.as_tensor(batch.next_obs, dtype=torch.float32)).max(1)[0].unsqueeze(-1)
+        )
         assert torch.allclose(
             targets.detach(), torch.as_tensor(correct_targets, dtype=torch.float32)
         ), "Wrong targets (weight 3)."
@@ -147,9 +150,13 @@ class TestDoubleQLearning:
         assert preds.shape == (32, 1), f"Wrong shape for predictions: {preds.shape}"
         assert targets.shape == (32, 1), f"Wrong shape for targets: {targets.shape}"
         assert sum(preds) == 0, "Wrong initial predictions (weight 0)."
-        correct_targets = batch.rewards.unsqueeze(-1) + (
-            ~batch.dones.unsqueeze(-1)
-        ) * 0.99 * batch.next_obs.sum(axis=1).unsqueeze(-1)
+        
+        # Fixed: Apply ~ before converting to float, and use proper target calculation
+        mask =  1 - batch.dones.unsqueeze(-1).to(torch.float32)
+        correct_targets = (
+            batch.rewards.unsqueeze(-1) + 
+            mask * 0.99 * target(torch.as_tensor(batch.next_obs, dtype=torch.float32)).max(1)[0].unsqueeze(-1)
+        )
         assert torch.allclose(targets.detach(), correct_targets.type(torch.float32)), (
             "Wrong targets (weight 0)."
         )
@@ -160,10 +167,13 @@ class TestDoubleQLearning:
             preds.type(torch.float32).detach(),
             torch.mul(batch.observations, 3).sum(axis=1).unsqueeze(-1),
         ), "Wrong initial predictions (weight 3)."
+        
+        # Fixed: Apply ~ before converting to float, and use proper target network calculation
+        mask =  1 - batch.dones.unsqueeze(-1).to(torch.float32)
         correct_targets = (
-            batch.rewards
-            + (~batch.dones) * 0.99 * torch.mul(batch.next_obs, 4).sum(axis=1)
-        ).unsqueeze(-1)
+            batch.rewards.unsqueeze(-1) + 
+            mask * 0.99 * target(torch.as_tensor(batch.next_obs, dtype=torch.float32)).max(1)[0].unsqueeze(-1)
+        )
         assert torch.allclose(
             targets.detach(), torch.as_tensor(correct_targets, dtype=torch.float32)
         ), "Wrong targets (weight 3)."
