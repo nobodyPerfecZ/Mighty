@@ -104,11 +104,14 @@ class RolloutBatch:
         def _promote(x: torch.Tensor | None, name: str):
             if x is None:
                 return None
-            if x.dim() == 1:
+            if x.dim() == 1:  # (n_envs,) → (1, n_envs)
                 return x.unsqueeze(0)
-            if x.dim() == 2:
+            elif x.dim() == 2:  # (timesteps, n_envs) - already correct
                 return x
-            raise RuntimeError(f"RolloutBatch: `{name}` bad rank {x.shape}")
+            elif x.dim() == 3 and name in ["actions", "observations"]:  # (timesteps, n_envs, features)
+                return x
+            else:
+                raise RuntimeError(f"Unexpected shape for {name}: {x.shape}")
 
         act_t = _promote(act_t, "actions")
         lat_t = _promote(lat_t, "latents")
@@ -341,7 +344,7 @@ class MightyRolloutBuffer(MightyBuffer):
         self.advantages[sl] = rb.advantages
         self.returns[sl] = rb.returns
         self.episode_starts[sl] = rb.episode_starts
-        self.log_probs[sl] = rb.log_probs.T  # keep original quirk
+        self.log_probs[sl] = rb.log_probs  # keep original quirk
         self.values[sl] = rb.values
         self.pos += n_steps
 

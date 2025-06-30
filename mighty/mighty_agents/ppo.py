@@ -291,6 +291,12 @@ class MightyPPOAgent(MightyAgent):
             else None
         )
 
+
+        # FIX: Remove extra dimension from log_prob if present
+        if log_prob is not None and log_prob.shape[-1] == 1:
+            log_prob = log_prob.squeeze(-1)  # (64, 1) → (64,)
+        
+        
         rollout_batch = RolloutBatch(
             observations=curr_s,
             actions=action,
