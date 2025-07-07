@@ -169,7 +169,7 @@ class RND(MightyMetaComponent):
                 obs = batch.observations
             prediction, target = self.rnd_net(obs)
             loss = nn.MSELoss(reduction="none")(prediction, target.detach()).mean(-1)
-            mask = torch.rand(len(loss))
+            mask = torch.rand(loss.shape)
             mask = mask < self.update_proportion
             loss = (loss * mask).sum() / torch.max(mask.sum(), torch.tensor([1]))
             self.rnd_optimizer.zero_grad()
