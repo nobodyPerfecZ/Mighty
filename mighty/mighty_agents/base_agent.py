@@ -23,10 +23,10 @@ from uniplot import plot_to_string
 
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer, PrioritizedReplay
-from mighty.mighty_utils.migthy_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
+from mighty.mighty_utils.mighty_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
-    from mighty.mighty_utils.migthy_types import TypeKwargs
+    from mighty.mighty_utils.mighty_types import TypeKwargs
 
 import gymnasium as gym
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
