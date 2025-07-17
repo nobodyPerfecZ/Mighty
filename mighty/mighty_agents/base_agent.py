@@ -431,7 +431,7 @@ class MightyAgent(ABC):
 
             metrics.update(agent_update_metrics)
 
-            metrics = {k: np.array(v) for k, v in metrics.items()}
+            # metrics = {k: np.array(v) for k, v in metrics.items()}
             metrics["step"] = self.steps
 
             # Wandb logging
