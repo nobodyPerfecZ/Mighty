@@ -4,19 +4,19 @@ This is a collection of different ways to run Mighty. It's not a full documentat
 Here's an overview of example content:
 
 - [Running Mighty from the Command Line](#running-mighty-from-the-command-line)
-  - [The Runner File](#the-runner-file)
-  - [Setting the Environment](#setting-the-environment)
-  - [Configuring Agents](#configuring-agents)
-  - [Meta Components](#meta-components)
-  - [Running Multiple Seeds](#running-multiple-seeds)
+    - [The Runner File](#the-runner-file)
+    - [Setting the Environment](#setting-the-environment)
+    - [Configuring Agents](#configuring-agents)
+    - [Meta Components](#meta-components)
+    - [Running Multiple Seeds](#running-multiple-seeds)
 - [Adding Custom Mighty Components](#adding-custom-mighty-components)
-  - [The Metrics Dictionary](#the-metrics-dictionary)
-  - [Priority Flexibility: Meta-Components](#priority-flexibility-meta-components)
-  - [Building a Custom Component](#building-a-custom-component)
+    - [The Metrics Dictionary](#the-metrics-dictionary)
+    - [Priority Flexibility: Meta-Components](#priority-flexibility-meta-components)
+    - [Building a Custom Component](#building-a-custom-component)
 - [Hyperparameter Optimization Options](#hyperparameter-optimization-options)
-  - [ES Runner](#es-runner)
-  - [Hydra Sweepers](#hydra-sweepers)
-  - [Hypersweeper](#hypersweeper)
+    - [The Mighty ES Runner](#the-mighty-es-runner)
+    - [Hydra Sweepers](#hydra-sweepers)
+    - [Hypersweeper](#hypersweeper)
 - [Logging \& Plotting](#logging--plotting)
 
 ## Running Mighty from the Command Line
@@ -24,7 +24,7 @@ Here's an overview of example content:
 Let's start with the basics, running a Mighty run from the command line! Mighty uses [Hydra](https://hydra.cc/) as a command line interface, so having basic familiarity with it will make your life easier.
 These examples show you how to configure Mighty from the command line, if you're interested in how to build configuration files, check out [our short guide](./Building_mighty_configs.md).
 
-### The Runner File
+#### The Runner File
 <details open>
   <summary>This is your entry point to Mighty in your script.</summary>
 Your central script will look very similar to the 'run_mighty.py' file we provide:
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 ```
 </details>
 
-### Setting the Environment
+#### Setting the Environment
 <details>
   <summary>How to switch environments using the command line. </summary>
 For these examples, we'll directly work with 'run_mighty.py' and our pre-defined configs. First, we want to specify an environment to train on, e.g. CartPole-v1:
@@ -82,7 +82,7 @@ python mighty/run_mighty.py 'environment=gymnasium/cartpole'
 ```
 </details>
 
-### Configuring Agents
+#### Configuring Agents
 <details>
   <summary>Changing algorithms and their settings. </summary>
 Overriding algorithms works very similarly, we can change from PPO to DQN by running:
@@ -103,7 +103,7 @@ python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' '+a
 You can see that in this case, the value we pass to the script is a class name string which can take the value of any function you want, including custom ones as we'll see further down.
 </details>
 
-### Meta Components
+#### Meta Components
 <details>
   <summary>Adding meta components. </summary>
 The meta components are a bit more complex, since they are a list of class names and optional keyword arguments:
@@ -114,7 +114,7 @@ python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' '
 As this can become complex, we recommend configuring these in Hydra config files.
 </details>
 
-### Running Multiple Seeds
+#### Running Multiple Seeds
 <details>
   <summary>Conventiently sweeper of variations like seeds. </summary>
 Hydra has a multirun functionality with which you can specify a grid of arguments that will automatically be run when appending '-m'. 
@@ -137,7 +137,7 @@ You can add your own components to Mighty without touching the core loop. Genera
 You can also add full algorithms, but this will likely be more involved since there are quite a few dependencies in the main algorithm classes.
 The other components are designed to be more contained. The API documentation should tell you how all of them interact with learning and what kind of functions they need to implement.
 
-### The Metrics Dictionary
+#### The Metrics Dictionary
 The most important part when adding components is the 'metrics' dictionary. This is Mighty's central information hub. 
 Here you can find transitions, losses, predictions, batches and parameters - everything you need to build methods that actively work with the RL loop.
 If you want examples of how it is used, you can check out our RND implementation:
@@ -165,7 +165,7 @@ We also add a new intrinsic reward key to enable logging.
 You can assume that most if not all relevant information is contained in the metrics dictionary at any given time. 
 It is also transmitted to many different Mighty components like the exploration policy, the buffer, the update function or to any meta-components.
 
-### Priority Flexibility: Meta-Components
+#### Priority Flexibility: Meta-Components
 Meta-components are classes with methods that can be called at different points in the learning loop. There are several different call positions and they are specified by the component itself:
 ```python
     def __init__(self) -> None:
@@ -189,7 +189,7 @@ Meta-components are also stackable, i.e. you can run multiple ones per training 
 In principle, you can do almost anything in a meta-component, including training additional networks or calling the policy directly.
 Before you default to using this class, however, we recommend double checking if your idea isn't better suited to a more specific class.
 
-### Building a Custom Component
+#### Building a Custom Component
 
 The 'examples/custom_policy.py' file contains an example of a custom exploration policy and 'examples/custom_exploration_scheduler.py' contains and example of a meta module for epsilon scheduling.
 Compare their structure: the custom policy has a fixed set of methods inherited form the abstract class while the meta module is free to choose the interaction time.
@@ -206,13 +206,13 @@ python mighty/run_mighty.py 'algorithm=dqn' '+algorithm_kwargs.meta_methods=[exa
 ## Hyperparameter Optimization Options
 Hyperparameter Optimization (HPO) is often essential for RL. Mighty comes with a few different options to take care of this step.
 
-### ES Runner
+#### The Mighty ES Runner
 You can do HPO with the ES runner within Mighty directly. This is usually not the most efficient way of doing things since all configurations will run sequentially, but you won't have to deal with external packages. You can select any evosax algorithm to optimize the hyperparameters of your choice and simply run it like any other Mighty run in the command line like this:
 ```bash
 python mighty/run_mighty.py --config-name=cmaes_hpo
 ```
 
-### Hydra Sweepers
+#### Hydra Sweepers
 The simplest way to do parallel HPO is likely to use the sweepers installable via hydra. These include grid search (though that's not recommended!), optuna or Ax. Each has their own documentation of how to set up the search space and meta-parameters, so you should pick one and look them up individually. A nice feature of these runners is that they can parallelize runs on slurm and ray clusters as well as run locally.
 
 We have prepared an example using Optuna, you can run it by:
@@ -221,7 +221,7 @@ uv pip install hydra-optuna-sweeper --upgrade
 python mighty/run_mighty.py --config-path=../examples --config-name=optuna_example_config -m
 ```
 
-### Hypersweeper
+#### Hypersweeper
 We do our own HPO with [Hypersweeper](https://github.com/automl/hypersweeper), a package that integrates HPO packages from research. Similarly to the hydra sweepers, you should look into the Hypersweeper examples, though the HPO configurations in Mighty are already set up to directly use Hypersweeper, so it will run out of the box. If you want to run it on clusters, you will need to add a cluster config containing partitions etc.
 
 As an example, you can run:
