@@ -25,8 +25,8 @@ Let's start with the basics, running a Mighty run from the command line! Mighty 
 These examples show you how to configure Mighty from the command line, if you're interested in how to build configuration files, check out [our short guide](./Building_mighty_configs.md).
 
 #### The Runner File
-<details open>
-  <summary>This is your entry point to Mighty in your script.</summary>
+<details>
+  <summary>This is your basic Mighty runscript.</summary>
 Your central script will look very similar to the 'run_mighty.py' file we provide:
 
 ```python
