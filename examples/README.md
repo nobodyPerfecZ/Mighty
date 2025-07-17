@@ -3,21 +3,21 @@
 This is a collection of different ways to run Mighty. It's not a full documentation of all features or possibilities, but rather documenting different entry points into the code base.
 Here's an overview of example content:
 
-+ [Running Mighty from the Command Line](#running-mighty-from-the-command-line)
-  + [The Runner File](#the-runner-file)
-  + [Setting the Environment](#setting-the-environment)
-  + [Configuring Agents](#configuring-agents)
-  + [Meta Components](#meta-components)
-  + [Running Multiple Seeds](#running-multiple-seeds)
-+ [Adding Custom Mighty Components](#adding-custom-mighty-components)
-  + [The Metrics Dictionary](#the-metrics-dictionary)
-  + [Priority Flexibility: Meta-Components](#priority-flexibility-meta-components)
-  + [Building a Custom Component](#building-a-custom-component)
-+ [Hyperparameter Optimization Options](#hyperparameter-optimization-options)
-  + [ES Runner](#es-runner)
-  + [Hydra Sweepers](#hydra-sweepers)
-  + [Hypersweeper](#hypersweeper)
-+ [Logging \& Plotting](#logging--plotting)
+- [Running Mighty from the Command Line](#running-mighty-from-the-command-line)
+  - [The Runner File](#the-runner-file)
+  - [Setting the Environment](#setting-the-environment)
+  - [Configuring Agents](#configuring-agents)
+  - [Meta Components](#meta-components)
+  - [Running Multiple Seeds](#running-multiple-seeds)
+- [Adding Custom Mighty Components](#adding-custom-mighty-components)
+  - [The Metrics Dictionary](#the-metrics-dictionary)
+  - [Priority Flexibility: Meta-Components](#priority-flexibility-meta-components)
+  - [Building a Custom Component](#building-a-custom-component)
+- [Hyperparameter Optimization Options](#hyperparameter-optimization-options)
+  - [ES Runner](#es-runner)
+  - [Hydra Sweepers](#hydra-sweepers)
+  - [Hypersweeper](#hypersweeper)
+- [Logging \& Plotting](#logging--plotting)
 
 ## Running Mighty from the Command Line
 
@@ -66,14 +66,17 @@ if __name__ == "__main__":
 <details>
   <summary>How to switch environments using the command line. </summary>
 For these examples, we'll directly work with 'run_mighty.py' and our pre-defined configs. First, we want to specify an environment to train on, e.g. CartPole-v1:
+
 ```bash
 python mighty/run_mighty.py 'env=CartPole-v1'
 ```
 We can also be more specific, e.g. by adding our desired number of interaction steps and the number of parallel environments we want to run:
+
 ```bash
 python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10'
 ```
 For some environments, including CartPole-1, these details are pre-configured in the Mighty configs, meaning we can use the environment keyword to set them all at once:
+
 ```bash
 python mighty/run_mighty.py 'environment=gymnasium/cartpole'
 ```
@@ -83,14 +86,17 @@ python mighty/run_mighty.py 'environment=gymnasium/cartpole'
 <details>
   <summary>Changing algorithms and their settings. </summary>
 Overriding algorithms works very similarly, we can change from PPO to DQN by running:
+
 ```bash
 python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn'
 ```
 Algorithms have pre-configured algorithm arguments like the learning rate or type of policy they use. These overrides work the same as the ones we have seem so far:
+
 ```bash
 python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' 'algorithm_kwargs.learning_rate=0.1'
 ```
 Or to use e.g. an ez-greedy exploration policy for DQN:
+
 ```bash
 python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' '+algorithm_kwargs.policy_class=mighty.mighty_exploration.EZGreedy'
 ```
@@ -101,6 +107,7 @@ You can see that in this case, the value we pass to the script is a class name s
 <details>
   <summary>Adding meta components. </summary>
 The meta components are a bit more complex, since they are a list of class names and optional keyword arguments:
+
 ```bash
 python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' '+algorithm_kwargs.meta_methods=[mighty.mighty_meta.RND]'
 ```
