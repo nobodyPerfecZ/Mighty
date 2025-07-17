@@ -1,6 +1,6 @@
 # Mighty Examples
 
-This is a collection of different ways to run Mighty. It's not a full documentation of all features or possibilities, but rather documenting different entry points into the code base.
+This is a collection of different ways to run Mighty. It's not a full documentation of all features or possibilities, but rather documenting different entry points into the code base. If you're interested how a full project built with Mighty looks like, check out our [example repository](https://github.com/automl/mighty_dr_example) using the [Syllabus curriculum learning library](https://github.com/RyanNavillus/Syllabus) to implement domain randomization with Mighty.
 Here's an overview of example content:
 
 - [Running Mighty from the Command Line](#running-mighty-from-the-command-line)
