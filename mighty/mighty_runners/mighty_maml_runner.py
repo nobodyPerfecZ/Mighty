@@ -15,7 +15,13 @@ if TYPE_CHECKING:
 
 
 class MightyMAMLRunner(MightyRunner):
-    def __init__(self, cfg: DictConfig, env = None, base_eval_env: function = None, eval_default: int = None) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        env=None,
+        base_eval_env: Callable = None,
+        eval_default: int = None,
+    ) -> None:
         super().__init__(cfg, env, base_eval_env, eval_default)
         self.meta_params = self.agent.policy.parameters().copy()
         self.meta_optimizer = torch.optim.Adam(self.meta_params, lr=cfg.meta_lr)

@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Tuple, Callable
 
 from hydra.utils import get_class
 
@@ -18,7 +18,13 @@ if TYPE_CHECKING:
 
 
 class MightyRunner(ABC):
-    def __init__(self, cfg: DictConfig, env = None, base_eval_env: function = None, eval_default: int = None) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        env=None,
+        base_eval_env: Callable = None,
+        eval_default: int = None,
+    ) -> None:
         """Parse config and run Mighty agent."""
         output_dir = Path(cfg.output_dir) / f"{cfg.experiment_name}_{cfg.seed}"
         if not output_dir.exists():
@@ -29,7 +35,7 @@ class MightyRunner(ABC):
             if any([env, base_eval_env, eval_default]):
                 warnings.warn(
                     "When providing custom envs, all three parameters (env, base_eval_env, eval_default) must be provided. Defaulting to config values.",
-                    UserWarning
+                    UserWarning,
                 )
             env, base_eval_env, eval_default = make_mighty_env(cfg)
 

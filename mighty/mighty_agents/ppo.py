@@ -38,7 +38,9 @@ class MightyPPOAgent(MightyAgent):
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
         ] = MightyRolloutBuffer,
-        rollout_buffer_kwargs: Optional[TypeKwargs] = {"buffer_size": 256,},
+        rollout_buffer_kwargs: Optional[TypeKwargs] = {
+            "buffer_size": 256,
+        },
         meta_methods: Optional[List[str | type]] = None,
         meta_kwargs: Optional[List[TypeKwargs]] = None,
         n_policy_units: int = 8,

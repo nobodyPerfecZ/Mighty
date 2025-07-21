@@ -239,6 +239,7 @@ def make_gym_env(
     eval_default = cfg.n_episodes_eval
     return env, eval_env, eval_default
 
+
 def make_mighty_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]:
     """Return environment according to the configuration."""
     if cfg.env.endswith("Benchmark"):

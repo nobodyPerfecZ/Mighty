@@ -103,30 +103,52 @@ class TestMightyRunner:
 
     def test_run_with_alternate_env(self):
         dummy_env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(3)])
-        dummy_eval_func = lambda: gym.vector.SyncVectorEnv([DummyEnv for _ in range(10)])
+        dummy_eval_func = lambda: gym.vector.SyncVectorEnv( # noqa: E731
+            [DummyEnv for _ in range(10)]
+        )
         eval_default = 10
         runner = MightyOnlineRunner(
-            self.runner_config, env=dummy_env, base_eval_env=dummy_eval_func, eval_default=eval_default
+            self.runner_config,
+            env=dummy_env,
+            base_eval_env=dummy_eval_func,
+            eval_default=eval_default,
         )
-        assert isinstance(runner.agent.env.envs[0], DummyEnv), "Runner env should be set to dummy_env"
-        assert isinstance(runner.agent.eval_env.envs[0], DummyEnv), "Runner base_eval_env should be set to dummy_eval_func"
+        assert isinstance(runner.agent.env.envs[0], DummyEnv), (
+            "Runner env should be set to dummy_env"
+        )
+        assert isinstance(runner.agent.eval_env.envs[0], DummyEnv), (
+            "Runner base_eval_env should be set to dummy_eval_func"
+        )
 
         runner = MightyOnlineRunner(
-            self.runner_config, env=None, base_eval_env=dummy_eval_func, eval_default=eval_default
+            self.runner_config,
+            env=None,
+            base_eval_env=dummy_eval_func,
+            eval_default=eval_default,
         )
-        assert not isinstance(runner.agent.env.envs[0], DummyEnv), "If env is None, runner env should set from config"
+        assert not isinstance(runner.agent.env.envs[0], DummyEnv), (
+            "If env is None, runner env should set from config"
+        )
         assert runner.agent.env is not None, "Env should not be None"
 
         runner = MightyOnlineRunner(
-            self.runner_config, env=dummy_env, base_eval_env=None, eval_default=eval_default
+            self.runner_config,
+            env=dummy_env,
+            base_eval_env=None,
+            eval_default=eval_default,
         )
-        assert not isinstance(runner.agent.env.envs[0], DummyEnv), "If base_eval_env is None, runner env should set from config"
+        assert not isinstance(runner.agent.env.envs[0], DummyEnv), (
+            "If base_eval_env is None, runner env should set from config"
+        )
         assert runner.agent.env is not None, "Env should not be None"
 
         runner = MightyOnlineRunner(
-            self.runner_config, env=dummy_env, base_eval_env=dummy_eval_func, eval_default=None
+            self.runner_config,
+            env=dummy_env,
+            base_eval_env=dummy_eval_func,
+            eval_default=None,
         )
-        assert not isinstance(runner.agent.env.envs[0], DummyEnv), "If eval_default is None, runner env should set from config"
+        assert not isinstance(runner.agent.env.envs[0], DummyEnv), (
+            "If eval_default is None, runner env should set from config"
+        )
         assert runner.agent.env is not None, "Env should not be None"
-        
-        
