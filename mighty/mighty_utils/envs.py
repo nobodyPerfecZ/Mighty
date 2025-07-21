@@ -23,6 +23,13 @@ try:
 except ImportError:
     ENVPOOL = False
 
+try:
+    import isaacgym # type: ignore
+
+    ISAACGYM = True
+except ImportError:
+    ISAACGYM = False
+
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
@@ -239,6 +246,15 @@ def make_gym_env(
     eval_default = cfg.n_episodes_eval
     return env, eval_env, eval_default
 
+def make_isaac_gym_env(
+    cfg: DictConfig,
+) -> Tuple[gym.vector.SyncVectorEnv, partial[gym.vector.SyncVectorEnv], int]:
+    """Make gymnasium environment."""
+    env = isaacgym.make(**cfg.env_config)
+    eval_env = partial(isaacgym.make, cfg.env_config)
+    eval_default = cfg.n_episodes_eval
+    return env, eval_env, eval_default
+
 
 def make_mighty_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]:
     """Return environment according to the configuration."""
@@ -250,6 +266,10 @@ def make_mighty_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]:
         env, eval_env, eval_default = make_procgen_env(cfg)  # type: ignore
     elif cfg.env.startswith("pufferlib"):
         env, eval_env, eval_default = make_pufferlib_env(cfg)  # type: ignore
+    elif cfg.env.startswith("isaacgym"):
+        if not ISAACGYM:
+            raise ImportError("Isaac Gym is not installed. Please install it to use this environment.")
+        env, eval_env, eval_default = make_isaac_gym_env(cfg)  # type: ignore
     elif ENVPOOL:
         env = envpool.make(cfg.env, env_type="gym", **cfg.env_kwargs)
         make_env = partial(gym.make, cfg.env, **cfg.env_kwargs)
