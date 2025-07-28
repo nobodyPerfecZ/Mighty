@@ -9,6 +9,7 @@ from mighty.mighty_runners.factory import get_runner_class
 
 @hydra.main("./configs", "base", version_base=None)
 def run_mighty(cfg: DictConfig) -> None:
+    print(cfg)
     # Make runner
     runner_cls = get_runner_class(cfg.runner)
     runner = runner_cls(cfg)

@@ -54,8 +54,10 @@ class MightySACAgent(MightyAgent):
             Union[str, DictConfig, Type[MightyExplorationPolicy]]
         ] = None,
         policy_kwargs: Optional[Dict] = None,
-        normalize_obs: bool = False,  # ← NEW
-        normalize_reward: bool = False,  # ← NEW (optional)
+        normalize_obs: bool = True,  # ← NEW
+        normalize_reward: bool = True,  # ← NEW (optional),
+        policy_frequency: int= 2,  # Frequency of policy updates
+        target_network_frequency: int = 1,  # Frequency of target network updates
     ):
         """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
         # Map PPO-style units to hidden_sizes if not provided
@@ -91,6 +93,9 @@ class MightySACAgent(MightyAgent):
         self.policy_kwargs = policy_kwargs or {
             'discrete': False   # Default to continuous SAC
         }
+        
+        self.policy_frequency = policy_frequency
+        self.target_network_frequency = target_network_frequency
 
         super().__init__(
             env=env,
@@ -108,6 +113,8 @@ class MightySACAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            batch_size=batch_size,
+            learning_rate= policy_lr,  # For compatibility with base class
         )
 
         # Initialize loss buffer for logging
@@ -151,6 +158,8 @@ class MightySACAgent(MightyAgent):
             auto_alpha=self.auto_alpha,
             target_entropy=self.target_entropy,
             alpha_lr=self.alpha_lr,
+            policy_frequency=self.policy_frequency,
+            target_network_frequency=self.target_network_frequency,
         )
 
     @property

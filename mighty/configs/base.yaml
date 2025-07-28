@@ -1,8 +1,8 @@
 defaults:
   - _self_
-  - algorithm: ppo
+  - algorithm: sac_mujoco
   - environment: pufferlib_ocean/bandit
-  - search_space: dqn_gym_classic
+  # - search_space: dqn_gym_classic
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog
   - override hydra/help: mighty_help

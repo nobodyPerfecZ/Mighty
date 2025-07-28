@@ -228,8 +228,8 @@ class MightyAgent(ABC):
 
         if normalize_reward:
             env = NormalizeReward(env)
-            if eval_env is not None:
-                eval_env = NormalizeReward(eval_env)
+            # if eval_env is not None:
+            #     eval_env = NormalizeReward(eval_env)
 
         # self.env = SeedWrapper(env=env,seed=self.seed)
         self.env = env
