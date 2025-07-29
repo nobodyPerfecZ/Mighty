@@ -1,0 +1,57 @@
+# @package _global_
+# Optimized SAC config for Walker2d-v4 with single environment
+# Target: ~4000-5000 reward (Walker2d's typical peak performance)
+algorithm: SAC
+env_id: Walker2d-v4
+
+algorithm_kwargs:
+  # Network sizes - Walker2d optimized
+  n_policy_units:     256       # Standard size works well for Walker2d
+  n_critic_units:     256       # Standard size works well for Walker2d
+  soft_update_weight: 0.005     # Standard SAC tau
+
+  # Replay buffer - Single env optimized
+  replay_buffer_class:
+    _target_: mighty.mighty_replay.MightyReplay
+  replay_buffer_kwargs:
+    capacity: 1e6              # 1M sufficient for Walker2d
+
+  # Scheduling & batch-updates - Walker2d optimized
+  batch_size:       256         # Standard batch size
+  learning_starts:  5000        # Standard CleanRL value
+  update_every:     1           # Update every step
+  n_gradient_steps: 1           # Single gradient step
+
+  # Learning rates - Walker2d specific tuning
+  policy_lr: 3e-4     # Standard SAC policy rate
+  q_lr:      1e-3     # Standard SAC Q rate
+  alpha_lr:  1e-3     # Match Q learning rate
+
+  # SAC hyperparameters - Walker2d specific
+  gamma: 0.99         # Standard discount factor
+  alpha: 0.2          # Standard initial alpha
+  auto_alpha: True    # Enable automatic entropy tuning
+  target_entropy: -6.0  # Walker2d has 6 action dimensions
+
+  # Policy configuration
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+    discrete: False
+
+  # Normalization - Walker2d benefits from observation normalization
+  normalize_obs: True     # Walker2d benefits from this
+  normalize_reward: False # Keep rewards unnormalized
+
+  # SAC specific frequencies - Standard values
+  policy_frequency: 2           # Delayed policy updates
+  target_network_frequency: 1   # Update targets every step
+
+# Environment and training configuration
+num_envs: 1                   # Single environment
+total_timesteps: 1000000      # 1M steps should reach peak performance
+max_episode_steps: 1000       # Walker2d episode length
+
+# Evaluation and logging
+eval_frequency: 10000         # Evaluate every 10k steps
+save_frequency: 50000         # Save every 50k steps

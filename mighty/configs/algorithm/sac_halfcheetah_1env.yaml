@@ -1,0 +1,57 @@
+# @package _global_
+# Optimized SAC config for single environment (n_envs=1)
+# This should reach 11k+ reward on HalfCheetah-v4
+algorithm: SAC
+env_id: HalfCheetah-v4
+
+algorithm_kwargs:
+  # Network sizes - Start with CleanRL proven size
+  n_policy_units:     256       # Proven to work for 11k+
+  n_critic_units:     256       # Proven to work for 11k+
+  soft_update_weight: 0.005     # CleanRL tau value
+
+  # Replay buffer - Single env optimized
+  replay_buffer_class:
+    _target_: mighty.mighty_replay.MightyReplay
+  replay_buffer_kwargs:
+    capacity: 1e6              # 1M sufficient for single env
+
+  # Scheduling & batch-updates - Single env optimized
+  batch_size:       256         # CleanRL proven batch size
+  learning_starts:  5000        # CleanRL value (no scaling needed)
+  update_every:     1           # Update every step
+  n_gradient_steps: 1           # Single gradient step like CleanRL
+
+  # Learning rates - CleanRL proven rates
+  policy_lr: 3e-4     # CleanRL policy learning rate
+  q_lr:      1e-3     # CleanRL Q learning rate  
+  alpha_lr:  1e-3     # Use q_lr for alpha like CleanRL
+
+  # SAC hyperparameters - CleanRL defaults
+  gamma: 0.99         # Standard discount factor
+  alpha: 0.2          # CleanRL initial alpha
+  auto_alpha: True    # Enable automatic entropy tuning
+  target_entropy: -6.0  # -action_dim for HalfCheetah (6 actions)
+
+  # Policy configuration
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+    discrete: False
+
+  # Normalization - CleanRL doesn't use normalization
+  normalize_obs: False    # CleanRL doesn't normalize observations
+  normalize_reward: False # CleanRL doesn't normalize rewards
+
+  # SAC specific frequencies - CleanRL values
+  policy_frequency: 2           # Delayed policy updates (CleanRL default)
+  target_network_frequency: 1   # Update targets every step
+
+# Environment and training configuration
+num_envs: 1                   # Single environment like CleanRL
+total_timesteps: 1000000      # 1M steps should be sufficient
+max_episode_steps: 1000       # HalfCheetah episode length
+
+# Evaluation and logging
+eval_frequency: 10000         # More frequent eval for single env
+save_frequency: 50000         # Save every 50k steps
