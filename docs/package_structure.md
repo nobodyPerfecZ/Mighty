@@ -1,4 +1,49 @@
-Mighty is desined to be highly modular, enabling access to the RL loop on different levels. This means it's not designed to be the absolute fastest way to run RL, but the most convenient one to apply different sorts of RL, MetaRL and AutoRL methods. As such, there are a few things you should know about the structure of Mighty.
+Mighty is designed to be highly modular, enabling access to the RL loop on different levels. This means it's not designed to be the absolute fastest way to run RL, but the most convenient one to apply different sorts of RL, MetaRL and AutoRL methods. As such, there are a few things you should know about the structure of Mighty. 
+
+### Quickstart
+If you only want to know which class category to choose for implementing your method, follow this handy diagram:
+
+``` mermaid
+stateDiagram
+  direction TB
+  classDef Peach stroke-width:1px,stroke-dasharray:none,stroke:#FBB35A,fill:#FFEFDB,color:#8F632D;
+  classDef Aqua stroke-width:1px,stroke-dasharray:none,stroke:#46EDC8,fill:#DEFFF8,color:#378E7A;
+  classDef Sky stroke-width:1px,stroke-dasharray:none,stroke:#374D7C,fill:#E2EBFF,color:#374D7C;
+  classDef Pine stroke-width:1px,stroke-dasharray:none,stroke:#254336,fill:#27654A,color:#FFFFFF;
+  classDef Rose stroke-width:1px,stroke-dasharray:none,stroke:#FF5978,fill:#FFDFE5,color:#8E2236;
+  classDef Ash stroke-width:1px,stroke-dasharray:none,stroke:#999999,fill:#EEEEEE,color:#000000;
+  classDef Seven fill:#E1BEE7,color:#D50000,stroke:#AA00FF;
+  Still --> root_end:Yes
+  Still --> Moving:No
+  Moving --> Crash:Yes
+  Moving --> s2:No, only current transitions, env and network
+  s2 --> s6:Action Sampling
+  s2 --> s10:Policy Update
+  s2 --> s8:Training Batch Sampling
+  s2 --> Crash:More than one/not listed
+  s2 --> s12:Direct Algorithm change?
+  s12 --> s13:Yes
+  s12 --> s14:No
+  Still:Modify training settings and then repeated runs?
+  root_end:Runner
+  Moving:Access to update infos (gradients, batches, etc.)?
+  Crash:Meta Component
+  s2:Which interaction point with the algorithm?
+  s6:Exploration Policy
+  s10:Update
+  s8:Buffer
+  s12:Change only the model architecture?
+  s13:Network and/or Model
+  s14:Agent
+  class root_end Peach
+  class Crash Aqua
+  class s6 Sky
+  class s8 Pine
+  class s10 Rose
+  class s13 Ash
+  class s14 Seven
+  style root_end color:none
+```
 
 ### For Multiple Inner Runs: Mighty Runners
 Mighty uses runner classes to control the outer training loop. In the simplest case, a runner will just directly call the agent's train and evaluation functions without any changes:
