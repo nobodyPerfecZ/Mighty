@@ -25,7 +25,7 @@ config:
   theme: redux-color
 ---
 mindmap
-))Mighty((
+((M))
   {{Buffers}}
     Rollout Buffer
     Replay Buffer
@@ -63,13 +63,13 @@ mindmap
     PPO
 ```
 
-- Agents: SAC, PPO, DQN
-- Updates: SAC, PPO, Q-learning, double Q-learning, clipped double Q-learning
-- Buffers: Rollout Buffer, Replay Buffer, Prioritized Replay Buffer
-- Exploration Policies: e-greedy (with and without decay), ez-greedy, standard stochastic
-- Models (with MLP, CNN or ResNet backbone): SAC, PPO, DQN (with soft and hard reset options)
-- Meta Components: RND, NovelD, SPaCE, PLR
-- Runners: online RL runner, ES runner
+- **Agents**: SAC, PPO, DQN
+- **Updates**: SAC, PPO, Q-learning, double Q-learning, clipped double Q-learning
+- **Buffer**s: Rollout Buffer, Replay Buffer, Prioritized Replay Buffer
+- **Exploration Policies**: e-greedy (with and without decay), ez-greedy, standard stochastic
+- **Models** (with MLP, CNN or ResNet backbone): SAC, PPO, DQN (with soft and hard reset options)
+- **Meta Components**: RND, NovelD, SPaCE, PLR
+- **Runners**: online RL runner, ES runner
 
 ### Where Is Mighty Going?
 
