@@ -95,8 +95,9 @@ def log_to_file(output_dir, result_buffer, hp_buffer, eval_buffer, loss_buffer):
 
     if (Path(output_dir) / "results.npz").exists():
         (Path(output_dir) / "results.npz").unlink()
-    np.savez(Path(output_dir) / "results.npz", result_buffer)
+    np.savez(Path(output_dir) / "results.npz", **result_buffer)
     result_df = pd.DataFrame(result_buffer)
+    result_df.drop(columns=["state", "next_state"], inplace=True, errors="ignore")
     if (Path(output_dir) / "results.csv").exists():
         (Path(output_dir) / "results.csv").unlink()
     result_df.to_csv(Path(output_dir) / "results.csv")
@@ -605,6 +606,7 @@ class MightyAgent(ABC):
         # FIXME: Get this back -- Aditya
         with Live(logging_layout, refresh_per_second=10, vertical_overflow="visible"):
             steps_since_eval = 0
+            steps_since_log = 0
             # FIXME: this is more of a question: are there cases where we don't want to reset this completely?
             # I can't think of any, can you? If yes, we should maybe add this as an optional argument
             metrics = {
@@ -699,6 +701,7 @@ class MightyAgent(ABC):
                 self.steps += len(action)
                 metrics["step"] = self.steps
                 steps_since_eval += len(action)
+                steps_since_log += len(action)
                 for _ in range(len(action)):
                     progress.advance(steps_task)
                 # Update agent
@@ -744,8 +747,9 @@ class MightyAgent(ABC):
                 # Save
                 if (
                     save_model_every_n_steps
-                    and self.steps % save_model_every_n_steps == 0
+                    and steps_since_log >= save_model_every_n_steps
                 ):
+                    steps_since_log = 0
                     self.save(self.steps)
                     log_to_file(
                         self.output_dir,

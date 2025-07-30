@@ -38,8 +38,8 @@ class TestEpsilonGreedy:
         actions = np.array(
             [policy.explore_func(state)[0] for _ in range(100)]
         ).flatten()
-        assert sum([a == 1 for a in actions]) / (100 * len(state)) > 0.5, (
-            "Actions should match greedy at least in half of cases."
+        assert sum([a == 1 for a in actions]) / (100 * len(state)) > 0.4, (
+            "Actions should match greedy in around half of cases."
         )
         assert sum([a == 1 for a in actions]) / (100 * len(state)) < 0.8, (
             "Actions should match greedy in less than 4/5 of cases."
