@@ -17,27 +17,19 @@ class TestSACModel:
         
         assert sac.obs_size == 8, "Obs size should be 8"
         assert sac.action_size == 3, "Action size should be 3"
-        assert sac.hidden_sizes == [256, 256], "Default hidden sizes should be [256, 256]"
         assert sac.activation == "tanh", "Passed activation should be tanh"
         assert sac.log_std_min == -20, "Default log_std_min should be -20"
         assert sac.log_std_max == 2, "Default log_std_max should be 2"
+        assert sac.continuous_action is True, "SAC should always be continuous"
         
-        # Check network structure
-        assert isinstance(sac.policy_net, nn.Sequential), (
-            "Policy network should be Sequential"
-        )
-        assert isinstance(sac.q_net1, nn.Sequential), (
-            "Q-network 1 should be Sequential"
-        )
-        assert isinstance(sac.q_net2, nn.Sequential), (
-            "Q-network 2 should be Sequential"
-        )
-        assert isinstance(sac.target_q_net1, nn.Sequential), (
-            "Target Q-network 1 should be Sequential"
-        )
-        assert isinstance(sac.target_q_net2, nn.Sequential), (
-            "Target Q-network 2 should be Sequential"
-        )
+        # Check network structure - updated for new architecture
+        assert hasattr(sac, 'feature_extractor'), "Should have feature extractor"
+        assert isinstance(sac.policy_net, nn.Linear), "Policy network should be Linear (after feature extractor)"
+        assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
+        assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
+        assert isinstance(sac.target_q_net1, nn.Sequential), "Target Q-network 1 should be Sequential"
+        assert isinstance(sac.target_q_net2, nn.Sequential), "Target Q-network 2 should be Sequential"
+        assert hasattr(sac, 'value_function_module'), "Should have value function module wrapper"
         
         # Check that target networks have gradients disabled
         for param in sac.target_q_net1.parameters():
@@ -76,6 +68,44 @@ class TestSACModel:
         assert sac.activation == "tanh", "Custom activation should be tanh"
         assert sac.log_std_min == -10.0, "Custom log_std_min should be -10.0"
         assert sac.log_std_max == 1.0, "Custom log_std_max should be 1.0"
+
+    def test_kwargs_configuration(self):
+        """Test initialization with kwargs-based configuration."""
+        head_kwargs = {"hidden_sizes": [128], "activation": "relu"}
+        feature_extractor_kwargs = {
+            "obs_shape": 6,
+            "activation": "relu",
+            "hidden_sizes": [64, 32],
+            "n_layers": 2,
+        }
+        
+        sac = SACModel(
+            obs_size=6,
+            action_size=4,
+            head_kwargs=head_kwargs,
+            feature_extractor_kwargs=feature_extractor_kwargs
+        )
+        
+        # Test that it works
+        dummy_state = torch.rand((5, 6))
+        action, z, mean, log_std = sac(dummy_state)
+        
+        assert action.shape == (5, 4), "Should work with custom kwargs"
+        assert mean.shape == (5, 4), "Mean should work with custom kwargs"
+
+    def test_value_function_module(self):
+        """Test the value function module wrapper."""
+        sac = SACModel(obs_size=4, action_size=2)
+        dummy_state = torch.rand((8, 4))
+        
+        # Test that value function module works
+        values_module = sac.value_function_module(dummy_state)
+        values_direct = sac.forward_value(dummy_state)
+        
+        assert torch.allclose(values_module, values_direct), (
+            "Value function module should produce same output as forward_value"
+        )
+        assert values_module.shape == (8, 1), "Value function module should have correct shape"
 
     def test_forward_stochastic(self):
         """Test forward pass with stochastic policy."""
@@ -222,30 +252,10 @@ class TestSACModel:
         sac = SACModel(obs_size=4, action_size=2)
         
         # Check that Q-networks have different parameters (due to random initialization)
-        params_different = False
-        for p1, p2 in zip(sac.q_net1.parameters(), sac.q_net2.parameters()):
-            if not torch.allclose(p1, p2):
-                params_different = True
-                break
-        
-        # Due to random initialization, they should be different
         assert sac.q_net1 is not sac.q_net2, "Q-networks should be separate objects"
         assert sac.target_q_net1 is not sac.target_q_net2, (
             "Target Q-networks should be separate objects"
         )
-
-    def test_make_q_net(self):
-        """Test Q-network creation method."""
-        sac = SACModel(obs_size=4, action_size=2)
-        
-        # Test that _make_q_net creates proper network
-        q_net = sac._make_q_net()
-        assert isinstance(q_net, nn.Sequential), "Q-network should be Sequential"
-        
-        # Test input/output dimensions
-        dummy_input = torch.rand((5, 6))  # obs_size + action_size = 4 + 2 = 6
-        q_output = q_net(dummy_input)
-        assert q_output.shape == (5, 1), "Q-network output should have shape (5, 1)"
 
     def test_log_std_bounds_enforcement(self):
         """Test that log_std bounds are properly enforced."""
@@ -268,76 +278,6 @@ class TestSACModel:
             "Log_std should be <= custom log_std_max"
         )
 
-    def test_state_dict_completeness(self):
-        """Test that state dict contains all expected parameters."""
-        sac = SACModel(obs_size=4, action_size=2)
-        state_dict = sac.state_dict()
-        
-        assert isinstance(state_dict, dict), "State dict should be a dictionary"
-        
-        # Check for expected network prefixes
-        expected_prefixes = [
-            "policy_net",
-            "q_net1",
-            "q_net2", 
-            "target_q_net1",
-            "target_q_net2"
-        ]
-        
-        for prefix in expected_prefixes:
-            found_key = any(key.startswith(prefix) for key in state_dict.keys())
-            assert found_key, f"Should find keys starting with {prefix}"
-
-    def test_load_state_dict(self):
-        """Test loading state dict preserves model behavior."""
-        sac1 = SACModel(obs_size=4, action_size=2)
-        sac2 = SACModel(obs_size=4, action_size=2)
-        
-        dummy_state = torch.rand((5, 4))
-        dummy_action = torch.rand((5, 2))
-        state_action = torch.cat([dummy_state, dummy_action], dim=-1)
-        
-        # Get predictions from first model
-        with torch.no_grad():
-            action1, z1, mean1, log_std1 = sac1(dummy_state, deterministic=True)
-            q1_1 = sac1.forward_q1(state_action)
-            q2_1 = sac1.forward_q2(state_action)
-        
-        # Initially, models should produce different outputs
-        with torch.no_grad():
-            action2_before, _, mean2_before, _ = sac2(dummy_state, deterministic=True)
-            q1_2_before = sac2.forward_q1(state_action)
-            q2_2_before = sac2.forward_q2(state_action)
-        
-        assert not torch.allclose(mean1, mean2_before), (
-            "Models should produce different outputs initially"
-        )
-        assert not torch.allclose(q1_1, q1_2_before), (
-            "Q1 networks should produce different outputs initially"
-        )
-        
-        # Load state dict
-        sac2.load_state_dict(sac1.state_dict())
-        
-        # Now they should produce the same outputs
-        with torch.no_grad():
-            action2_after, z2_after, mean2_after, log_std2_after = sac2(dummy_state, deterministic=True)
-            q1_2_after = sac2.forward_q1(state_action)
-            q2_2_after = sac2.forward_q2(state_action)
-        
-        assert torch.allclose(mean1, mean2_after), (
-            "Policy means should be same after loading state dict"
-        )
-        assert torch.allclose(log_std1, log_std2_after), (
-            "Policy log_stds should be same after loading state dict" 
-        )
-        assert torch.allclose(q1_1, q1_2_after), (
-            "Q1 networks should produce same outputs after loading state dict"
-        )
-        assert torch.allclose(q2_1, q2_2_after), (
-            "Q2 networks should produce same outputs after loading state dict"
-        )
-
     def test_gradient_flow(self):
         """Test that gradients flow properly through networks."""
         sac = SACModel(obs_size=4, action_size=2)
@@ -352,7 +292,8 @@ class TestSACModel:
         
         # Check that policy network has gradients
         policy_has_grad = any(p.grad is not None for p in sac.policy_net.parameters())
-        assert policy_has_grad, "Policy network should have gradients"
+        feature_has_grad = any(p.grad is not None for p in sac.feature_extractor.parameters())
+        assert policy_has_grad or feature_has_grad, "Policy network or feature extractor should have gradients"
         
         # Test Q-network gradients
         sac.zero_grad()

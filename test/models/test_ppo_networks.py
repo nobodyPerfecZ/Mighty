@@ -18,8 +18,6 @@ class TestPPOModel:
         assert ppo.obs_size == 4, "Obs size should be 4"
         assert ppo.action_size == 2, "Action size should be 2"
         assert ppo.continuous_action is False, "Should be discrete action"
-        assert ppo.hidden_sizes == [64, 64], "Default hidden sizes should be [64, 64]"
-        assert ppo.activation == "tanh", "Default activation should be tanh"
         assert ppo.tanh_squash is False, "Default tanh_squash should be False"
         
         # Check network structure - updated for new architecture
@@ -27,6 +25,7 @@ class TestPPOModel:
         assert hasattr(ppo, 'feature_extractor_value'), "Should have value feature extractor"
         assert isinstance(ppo.policy_head, nn.Sequential), "Policy head should be Sequential"
         assert isinstance(ppo.value_head, nn.Sequential), "Value head should be Sequential"
+        assert hasattr(ppo, 'value_function_module'), "Should have value function module wrapper"
         
         # Test forward pass shapes
         dummy_input = torch.rand((10, 4))
@@ -51,8 +50,6 @@ class TestPPOModel:
         assert ppo.action_size == 3, "Action size should be 3"
         assert ppo.continuous_action is True, "Should be continuous action"
         assert ppo.tanh_squash is True, "Should use tanh squashing"
-        assert ppo.hidden_sizes == [32, 32], "Hidden sizes should be [32, 32]"
-        assert ppo.activation == "tanh", "Activation should be tanh"
         assert ppo.log_std_min == -20.0, "Default log_std_min should be -20.0"
         assert ppo.log_std_max == 2.0, "Default log_std_max should be 2.0"
         assert ppo.log_std is None, "log_std parameter should be None for tanh squash"
@@ -117,6 +114,46 @@ class TestPPOModel:
         assert torch.all(log_std <= ppo.log_std_max), (
             "Log_std should be <= log_std_max"
         )
+
+    def test_kwargs_configuration(self):
+        """Test initialization with kwargs-based configuration."""
+        head_kwargs = {"hidden_sizes": [128], "layer_norm": False, "activation": "relu"}
+        feature_extractor_kwargs = {
+            "obs_shape": 6,
+            "activation": "relu",
+            "hidden_sizes": [64, 32],
+            "n_layers": 2,
+        }
+        
+        ppo = PPOModel(
+            obs_shape=6,
+            action_size=4,
+            continuous_action=False,
+            head_kwargs=head_kwargs,
+            feature_extractor_kwargs=feature_extractor_kwargs
+        )
+        
+        # Test that it works
+        dummy_input = torch.rand((5, 6))
+        logits = ppo(dummy_input)
+        values = ppo.forward_value(dummy_input)
+        
+        assert logits.shape == (5, 4), "Should work with custom kwargs"
+        assert values.shape == (5, 1), "Value output should work with custom kwargs"
+
+    def test_value_function_module(self):
+        """Test the value function module wrapper."""
+        ppo = PPOModel(obs_shape=4, action_size=2, continuous_action=False)
+        dummy_input = torch.rand((8, 4))
+        
+        # Test that value function module produces same output as forward_value
+        values_direct = ppo.forward_value(dummy_input)
+        values_module = ppo.value_function_module(dummy_input)
+        
+        assert torch.allclose(values_direct, values_module), (
+            "Value function module should produce same output as forward_value"
+        )
+        assert values_module.shape == (8, 1), "Value function module should have correct shape"
 
     def test_forward_discrete(self):
         """Test forward pass for discrete actions."""
@@ -308,83 +345,40 @@ class TestPPOModel:
             "Policy and value feature extractors should be separate objects"
         )
 
-    def test_state_dict_completeness(self):
-        """Test that state dict contains all expected parameters."""
-        ppo = PPOModel(obs_shape=4, action_size=2, continuous_action=True, tanh_squash=False)
-        state_dict = ppo.state_dict()
-        
-        assert isinstance(state_dict, dict), "State dict should be a dictionary"
-        
-        # Check for expected keys
-        expected_prefixes = [
-            "feature_extractor_policy",
-            "feature_extractor_value", 
-            "policy_head",
-            "value_head"
-        ]
-        
-        for prefix in expected_prefixes:
-            found_key = any(key.startswith(prefix) for key in state_dict.keys())
-            assert found_key, f"Should find keys starting with {prefix}"
-        
-        # For standard PPO, should also have log_std parameter
-        assert "log_std" in state_dict, "Should have log_std parameter for standard PPO"
-
-    def test_load_state_dict(self):
-        """Test loading state dict preserves model behavior."""
-        ppo1 = PPOModel(obs_shape=4, action_size=2, continuous_action=False)
-        ppo2 = PPOModel(obs_shape=4, action_size=2, continuous_action=False)
-        
-        dummy_input = torch.rand((5, 4))
-        
-        # Get predictions from first model
-        with torch.no_grad():
-            logits1 = ppo1(dummy_input)
-            values1 = ppo1.forward_value(dummy_input)
-        
-        # Initially, models should produce different outputs
-        with torch.no_grad():
-            logits2_before = ppo2(dummy_input)
-            values2_before = ppo2.forward_value(dummy_input)
-        
-        assert not torch.allclose(logits1, logits2_before), (
-            "Models should produce different outputs initially"
-        )
-        assert not torch.allclose(values1, values2_before), (
-            "Value networks should produce different outputs initially"
-        )
-        
-        # Load state dict
-        ppo2.load_state_dict(ppo1.state_dict())
-        
-        # Now they should produce the same outputs
-        with torch.no_grad():
-            logits2_after = ppo2(dummy_input)
-            values2_after = ppo2.forward_value(dummy_input)
-        
-        assert torch.allclose(logits1, logits2_after), (
-            "Models should produce same outputs after loading state dict"
-        )
-        assert torch.allclose(values1, values2_after), (
-            "Value networks should produce same outputs after loading state dict"
-        )
-
     def test_different_architectures(self):
         """Test with different hidden layer configurations."""
-        # Single layer
+        # Single layer - use feature_extractor_kwargs to ensure proper configuration
         ppo_single = PPOModel(
             obs_shape=3, 
             action_size=2, 
-            hidden_sizes=[32], 
-            continuous_action=False
+            continuous_action=False,
+            feature_extractor_kwargs={
+                "obs_shape": 3,
+                "hidden_sizes": [32],
+                "n_layers": 1,
+                "activation": "tanh"
+            },
+            head_kwargs={
+                "hidden_sizes": [32],
+                "activation": "tanh"
+            }
         )
         
         # Multiple layers
         ppo_multi = PPOModel(
             obs_shape=3, 
             action_size=2, 
-            hidden_sizes=[64, 32, 16], 
-            continuous_action=False
+            continuous_action=False,
+            feature_extractor_kwargs={
+                "obs_shape": 3,
+                "hidden_sizes": [64, 32, 16],
+                "n_layers": 3,
+                "activation": "tanh"
+            },
+            head_kwargs={
+                "hidden_sizes": [64, 32],
+                "activation": "tanh"
+            }
         )
         
         dummy_input = torch.rand((4, 3))

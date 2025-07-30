@@ -57,9 +57,6 @@ class TestPPOAgent:
             "hp/learning_starts": agent._learning_starts,
         }
         
-        
-        
-        
         prediction = agent.step(test_obs, metrics)[0]
         assert len(prediction) == 1, "Prediction should have shape (1, 2)"
         assert prediction.shape[1] == 2, "Action dimension should be 2"
@@ -133,7 +130,6 @@ class TestPPOAgent:
             "hp/batch_size": agent._batch_size,
             "hp/learning_starts": agent._learning_starts,
         }
-       
         
         # Store original parameters
         original_params = deepcopy(list(agent.model.policy_head.parameters()))
@@ -141,7 +137,6 @@ class TestPPOAgent:
         
         # Manually collect data to fill the buffer
         curr_s, _ = env.reset(seed=42)
-        
         
         # Collect enough transitions to fill the buffer
         for step in range(128):  # Fill buffer with 128 transitions
@@ -176,8 +171,6 @@ class TestPPOAgent:
         assert len(agent.buffer) >= agent._batch_size, f"Buffer size {len(agent.buffer)} should be >= batch size {agent._batch_size}"
         
         # Perform update
-        
-        
         update_kwargs = {
             "next_s": curr_s,
             "dones": np.array([False])
@@ -247,8 +240,14 @@ class TestPPOAgent:
         assert len(params) > 0, "Should have parameters"
         assert all(isinstance(p, torch.nn.Parameter) for p in params), "All should be Parameters"
         
-        # Test value_function property
+        # Test value_function property - updated for new structure
         value_fn = ppo.value_function
-        assert value_fn is ppo.model.value_head, "Value function should be model's value head"
+        assert value_fn is ppo.model.value_function_module, "Value function should be model's value function module"
+        
+        # Test that the value function wrapper works - use correct obs shape
+        obs_shape = env.single_observation_space.shape[0]  # Get actual obs shape from env
+        dummy_obs = torch.rand((1, obs_shape))
+        value_output = value_fn(dummy_obs)
+        assert value_output.shape == (1, 1), "Value function should output shape (1, 1)"
         
         clean(output_dir)
