@@ -29,16 +29,13 @@ class MightyPPOAgent(MightyAgent):
         learning_starts: int = 1,
         render_progress: bool = True,
         log_wandb: bool = False,
-        wandb_kwargs: Optional[Dict] = {
-            "project": "mighty",
-            "entity": "amsks",
-            "name": "ppo",
-            "group": "ppo",
-        },
+        wandb_kwargs: dict | None = None,
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
         ] = MightyRolloutBuffer,
-        rollout_buffer_kwargs: Optional[TypeKwargs] = {"buffer_size": 256,},
+        rollout_buffer_kwargs: Optional[TypeKwargs] = {
+            "buffer_size": 256,
+        },
         meta_methods: Optional[List[str | type]] = None,
         meta_kwargs: Optional[List[TypeKwargs]] = None,
         n_policy_units: int = 8,
@@ -61,8 +58,10 @@ class MightyPPOAgent(MightyAgent):
         use_value_clip: bool = True,
         value_clip_eps: float = 0.2,
         total_timesteps: int = 1_000_000,
-        normalize_obs: bool = False,  # ← NEW
-        normalize_reward: bool = False,  # ← NEW (optional)
+        normalize_obs: bool = False,
+        normalize_reward: bool = False,
+        rescale_action: bool = False,
+        tanh_squash: bool = False,
     ):
         """Initialize the PPO agent.
 
@@ -112,6 +111,7 @@ class MightyPPOAgent(MightyAgent):
         self.kl_target = kl_target
         self.use_value_clip = use_value_clip
         self.value_clip_eps = value_clip_eps
+        self.tanh_squash = tanh_squash
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -142,6 +142,7 @@ class MightyPPOAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action,
         )
 
         self.loss_buffer = {
@@ -178,6 +179,7 @@ class MightyPPOAgent(MightyAgent):
                 else self.env.single_action_space.shape[0]  # type: ignore
             ),
             continuous_action=not self.discrete_action,
+            tanh_squash=self.tanh_squash,
         )
         self.policy = self.policy_class(
             algo=self,
@@ -212,7 +214,7 @@ class MightyPPOAgent(MightyAgent):
     @property
     def value_function(self) -> torch.nn.Module:
         """Return the value function model."""
-        return self.model.value_head  # type: ignore
+        return self.model.value_function_module  # type: ignore
 
     def update_agent(
         self, transition_batch, batches_left, next_s, dones, **kwargs
@@ -254,10 +256,6 @@ class MightyPPOAgent(MightyAgent):
             torch.as_tensor(update_kwargs["next_s"], dtype=torch.float32)
         ).detach()
 
-        # steps_recorded = self.buffer.pos
-        # total_trans = steps_recorded * self.buffer.n_envs
-        # print(f"[DEBUG] buffer.pos = {steps_recorded}, n_envs = {self.buffer.n_envs}, total = {total_trans}")
-
         self.buffer.compute_returns_and_advantage(last_values, update_kwargs["dones"])  # type: ignore
         if "rollout_values" in metrics:
             del metrics["rollout_values"]
@@ -266,7 +264,13 @@ class MightyPPOAgent(MightyAgent):
         if "rollout_logits" in metrics:
             del metrics["rollout_logits"]
             metrics["rollout_logits"] = []
-        return super().update(metrics, update_kwargs)  # type: ignore
+
+        # FIXME: Hack Temporarily override batch_size for PPO minibatching
+        original_batch_size = self._batch_size
+        self._batch_size = self.minibatch_size
+        result = super().update(metrics, update_kwargs)  # type: ignore
+        self._batch_size = original_batch_size  # Restore original
+        return result
 
     def process_transition(  # type: ignore
         self,
@@ -287,9 +291,15 @@ class MightyPPOAgent(MightyAgent):
 
         latents = (
             np.arctanh(np.clip(action, -0.999, 0.999))
-            if getattr(self.policy, "continuous_action", False)
+            if (
+                getattr(self.model, "continuous_action", False)
+                and getattr(self.model, "tanh_squash", False)
+            )
             else None
         )
+
+        if log_prob is not None and log_prob.shape[-1] == 1:
+            log_prob = log_prob.squeeze(-1)  # (64, 1) → (64,)
 
         rollout_batch = RolloutBatch(
             observations=curr_s,
