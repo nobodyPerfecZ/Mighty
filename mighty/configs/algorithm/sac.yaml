@@ -1,11 +1,16 @@
 # @package _global_
 algorithm: SAC
+env_id: HalfCheetah-v4
 
 algorithm_kwargs:
-  # network sizes (PPO-style)
-  n_policy_units:     256       # will become hidden_sizes=[8,8]
-  n_critic_units:     256       # same for both Q-nets
-  soft_update_weight: 0.01    # maps to tau
+
+  # Normalization
+  normalize_obs: False
+  normalize_reward: False
+
+  # Network sizes
+  n_policy_units:     256        
+  soft_update_weight: 0.005  
 
   # Replay buffer
   replay_buffer_class:
@@ -16,22 +21,39 @@ algorithm_kwargs:
   # Scheduling & batch-updates
   batch_size:       256
   learning_starts:  5000
-  update_every:     2
+  update_every:     1
   n_gradient_steps: 1
 
   # Learning rates
   policy_lr: 3e-4
-  q_lr:      3e-4
+  q_lr:      1e-3  
+  alpha_lr:  1e-3
 
   # SAC hyperparameters
   gamma: 0.99
   alpha: 0.2
   auto_alpha: True
-  target_entropy: null
-  alpha_lr: 3e-4
+  target_entropy: -6.0  # -action_dim for HalfCheetah (6 actions)
 
-  # Exploration wrapper
+  # Policy configuration
   policy_class: mighty.mighty_exploration.StochasticPolicy
   policy_kwargs:
-    entropy_coefficient: 0.2
+    entropy_coefficient: 0.0
     discrete: False
+
+
+  # SAC specific frequencies
+  policy_frequency: 2           # Delayed policy updates
+  target_network_frequency: 1   # Update targets every step
+
+# Environment and training configuration
+num_envs: 1                   # Single environment
+total_timesteps: 1000000      # 1M steps should be sufficient
+max_episode_steps: 1000       # HalfCheetah episode length
+
+# Evaluation and logging
+eval_frequency: 10000         # More frequent eval for single env
+save_frequency: 50000         # Save every 50k steps
+
+
+#  python mighty/run_mighty.py algorithm=sac env=HalfCheetah-v4 num_steps=1e6 num_envs=1

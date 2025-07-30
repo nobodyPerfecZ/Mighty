@@ -115,15 +115,15 @@ class TestMLP:
 
         assert isinstance(mlp, torch.jit.ScriptModule), "MLP is not a ScriptModule."
         for n in range(n_layers):
-            assert type(mlp.layers[2 * n]) is torch.nn.Linear, (
-                f"Layer {n} is not a Linear."
-            )
-            assert type(mlp.layers[2 * n + 1]) is ACTIVATIONS[activation], (
-                f"Activation {n} is not correct."
-            )
-            assert mlp.layers[2 * n].out_features == hidden_sizes[n], (
-                f"Wrong in_features in layer {n}."
-            )
+            assert (
+                type(mlp.layers[2 * n]) is torch.nn.Linear
+            ), f"Layer {n} is not a Linear."
+            assert (
+                type(mlp.layers[2 * n + 1]) is ACTIVATIONS[activation]
+            ), f"Activation {n} is not correct."
+            assert (
+                mlp.layers[2 * n].out_features == hidden_sizes[n]
+            ), f"Wrong in_features in layer {n}."
 
         with pytest.raises(IndexError):
             mlp.layers[2 * n + 2]
@@ -138,21 +138,21 @@ class TestMLP:
         ]
         mlp.soft_reset(0, 0.5, 0.5)
         reset_pred = mlp(dummy_input)
-        assert torch.allclose(original_pred, reset_pred), (
-            "Model prediction has changed."
-        )
-        assert torch.allclose(mlp.layers[0].weight, prev_model_weights[0]), (
-            "Weights have reset in layer 0 even though probability was 0."
-        )
-        assert torch.allclose(mlp.layers[2].weight, prev_model_weights[1]), (
-            "Weights have reset in layer 1 even though probability was 0."
-        )
+        assert torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has changed."
+        assert torch.allclose(
+            mlp.layers[0].weight, prev_model_weights[0]
+        ), "Weights have reset in layer 0 even though probability was 0."
+        assert torch.allclose(
+            mlp.layers[2].weight, prev_model_weights[1]
+        ), "Weights have reset in layer 1 even though probability was 0."
 
         mlp.soft_reset(1, 0.5, 0.5)
         reset_pred = mlp(dummy_input)
-        assert ~torch.allclose(original_pred, reset_pred), (
-            "Model prediction has not changed."
-        )
+        assert ~torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has not changed."
         assert not any(
             torch.isclose(mlp.layers[0].weight, prev_model_weights[0])
             .flatten()
@@ -170,23 +170,23 @@ class TestMLP:
         original_pred = mlp(dummy_input)
         mlp.soft_reset(1, 1, 0)
         reset_pred = mlp(dummy_input)
-        assert torch.allclose(original_pred, reset_pred), (
-            "Model prediction has changed though perturb was 0."
-        )
+        assert torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has changed though perturb was 0."
         for new_param, old_param in zip(mlp.parameters(), prev_params, strict=False):
-            assert torch.allclose(new_param, old_param), (
-                "Weights have been reset even though perturb was 0."
-            )
+            assert torch.allclose(
+                new_param, old_param
+            ), "Weights have been reset even though perturb was 0."
 
         mlp.soft_reset(1, 0.5, 0.0)
         reset_pred = mlp(dummy_input)
-        assert (original_pred * 0.5 - reset_pred).sum() < 0.1, (
-            "Model prediction didn't shrink with parameter value."
-        )
+        assert (
+            original_pred * 0.5 - reset_pred
+        ).sum() < 0.1, "Model prediction didn't shrink with parameter value."
         for new_param, old_param in zip(mlp.parameters(), prev_params, strict=False):
-            assert torch.allclose(new_param, old_param * 0.5), (
-                "Weights have not been shrunk."
-            )
+            assert torch.allclose(
+                new_param, old_param * 0.5
+            ), "Weights have not been shrunk."
 
         mlp.layers[0].weight = deepcopy(prev_model_weights[0])
         mlp.layers[2].weight = deepcopy(prev_model_weights[1])
@@ -194,13 +194,13 @@ class TestMLP:
         original_pred = mlp(dummy_input)
         mlp.soft_reset(1, 1, 1)
         reset_pred = mlp(dummy_input)
-        assert not torch.allclose(original_pred, reset_pred), (
-            "Model prediction has not changed."
-        )
+        assert not torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has not changed."
         for new_param, old_param in zip(mlp.parameters(), prev_params, strict=False):
-            assert not torch.allclose(new_param, old_param), (
-                "Weights have not been perturbed."
-            )
+            assert not torch.allclose(
+                new_param, old_param
+            ), "Weights have not been perturbed."
 
         mlp = MLP(3, 5, [100, 100, 100, 100, 100], "relu")
         n_reset = 0
@@ -229,15 +229,15 @@ class TestMLP:
         ]
         mlp.full_hard_reset()
         reset_pred = mlp(dummy_input)
-        assert ~torch.allclose(original_pred, reset_pred), (
-            "Model prediction has not changed."
-        )
-        assert ~torch.allclose(mlp.layers[0].weight, prev_model_weights[0]), (
-            "Weights have not been reset in layer 0."
-        )
-        assert ~torch.allclose(mlp.layers[2].weight, prev_model_weights[1]), (
-            "Weights have not been reset in layer 1."
-        )
+        assert ~torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has not changed."
+        assert ~torch.allclose(
+            mlp.layers[0].weight, prev_model_weights[0]
+        ), "Weights have not been reset in layer 0."
+        assert ~torch.allclose(
+            mlp.layers[2].weight, prev_model_weights[1]
+        ), "Weights have not been reset in layer 1."
 
     def test_reset(self):
         dummy_input = torch.rand(1, 3)
@@ -249,15 +249,15 @@ class TestMLP:
         ]
         mlp.reset(1)
         reset_pred = mlp(dummy_input)
-        assert ~torch.allclose(original_pred, reset_pred), (
-            "Model prediction has not changed."
-        )
-        assert ~torch.allclose(mlp.layers[0].weight, prev_model_weights[0]), (
-            "Weights have not been reset in layer 0."
-        )
-        assert ~torch.allclose(mlp.layers[2].weight, prev_model_weights[1]), (
-            "Weights have not been reset in layer 1."
-        )
+        assert ~torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has not changed."
+        assert ~torch.allclose(
+            mlp.layers[0].weight, prev_model_weights[0]
+        ), "Weights have not been reset in layer 0."
+        assert ~torch.allclose(
+            mlp.layers[2].weight, prev_model_weights[1]
+        ), "Weights have not been reset in layer 1."
 
         mlp = MLP(3, 5, [100, 100, 100, 100, 100], "relu")
         original_pred = mlp(dummy_input)
@@ -279,9 +279,9 @@ class TestMLP:
                     n_reset += 1
                     reset_param.data = old_param.data
 
-        assert ~torch.allclose(original_pred, reset_pred), (
-            "Model prediction has not changed."
-        )
+        assert ~torch.allclose(
+            original_pred, reset_pred
+        ), "Model prediction has not changed."
         assert n_reset / total_params >= 0.25, "Weights reset too rarely in soft reset."
         assert n_reset / total_params <= 0.75, "Weights reset too often in soft reset."
 
@@ -291,9 +291,9 @@ class TestMLP:
         output = mlp(dummy_input)
         assert output.shape == (3, 5), "Output shape is not correct."
         assert output.dtype == torch.float32, "Output dtype is not correct."
-        assert torch.allclose(output, mlp.layers(dummy_input)), (
-            "Forward is not correct."
-        )
+        assert torch.allclose(
+            output, mlp.layers(dummy_input)
+        ), "Forward is not correct."
 
 
 class TestCNN:
@@ -313,9 +313,9 @@ class TestComboNet:
         )
         cnn = CNN((64, 64, 3), 3, [32, 64, 64], [8, 4, 3], [4, 2, 1], [0, 0, 0], "relu")
         combo = ComboNet(cnn, mlp)
-        assert isinstance(combo, torch.jit.ScriptModule), (
-            "ComboNet is not a ScriptModule."
-        )
+        assert isinstance(
+            combo, torch.jit.ScriptModule
+        ), "ComboNet is not a ScriptModule."
         assert combo.module1 == cnn, "CNN is not the first module."
         assert combo.module2 == mlp, "MLP is not the second module."
 

@@ -59,28 +59,28 @@ class TestBatch:
         batch = TransitionBatch(
             observations, actions, rewards, next_observations, dones
         )
-        assert isinstance(batch.observations, torch.Tensor), (
-            "Observations were not a tensor."
-        )
+        assert isinstance(
+            batch.observations, torch.Tensor
+        ), "Observations were not a tensor."
         assert isinstance(batch.actions, torch.Tensor), "Actions were not a tensor."
         assert isinstance(batch.rewards, torch.Tensor), "Rewards were not a tensor."
-        assert isinstance(batch.next_obs, torch.Tensor), (
-            "Next observations were not a tensor."
-        )
+        assert isinstance(
+            batch.next_obs, torch.Tensor
+        ), "Next observations were not a tensor."
         assert isinstance(batch.dones, torch.Tensor), "Dones were not a tensor."
 
-        assert len(batch.observations.shape) == 2, (
-            f"Observation shape was not 2D: {batch.observations.shape}."
-        )
-        assert batch.observations.shape == batch.next_obs.shape, (
-            "Observation shape was not equal to next observation shape."
-        )
-        assert batch.actions.shape == batch.rewards.shape, (
-            "Action shape was not equal to reward shape."
-        )
-        assert batch.actions.shape == batch.dones.shape, (
-            "Action shape was not equal to reward shape."
-        )
+        assert (
+            len(batch.observations.shape) == 2
+        ), f"Observation shape was not 2D: {batch.observations.shape}."
+        assert (
+            batch.observations.shape == batch.next_obs.shape
+        ), "Observation shape was not equal to next observation shape."
+        assert (
+            batch.actions.shape == batch.rewards.shape
+        ), "Action shape was not equal to reward shape."
+        assert (
+            batch.actions.shape == batch.dones.shape
+        ), "Action shape was not equal to reward shape."
         assert (
             len(batch.actions.shape) == len(batch.observations.shape) - 1
         ), f"""Action shape was not one less than observation shape:
@@ -98,9 +98,9 @@ class TestBatch:
         elements = 0
         for obs, act, rew, next_obs, done in batch:
             assert obs.numpy() in observations, "Observation was not in observations."
-            assert next_obs.numpy() in next_observations, (
-                "Next observation was not in next_observations."
-            )
+            assert (
+                next_obs.numpy() in next_observations
+            ), "Next observation was not in next_observations."
             if isinstance(actions, int):
                 assert act.numpy().item() == actions, "Action was not in actions."
                 assert rew.numpy().item() == rewards, "Reward was not in rewards."
@@ -146,17 +146,17 @@ class TestStandardReplay:
         replay = self.get_replay(batch, size, empty=True)
         filled_replay = self.get_replay(batch, size)
         assert len(replay) == 0, "Empty replay length was not 0."
-        assert len(filled_replay) == size, (
-            "Filled replay length was not equal to batch size."
-        )
+        assert (
+            len(filled_replay) == size
+        ), "Filled replay length was not equal to batch size."
 
         replay.add(batch, {})
-        assert len(replay) == len(filled_replay), (
-            "Replay length was not equal to batch size."
-        )
-        assert replay.index == filled_replay.index, (
-            "Replay index was not equal to filled replay index."
-        )
+        assert len(replay) == len(
+            filled_replay
+        ), "Replay length was not equal to batch size."
+        assert (
+            replay.index == filled_replay.index
+        ), "Replay index was not equal to filled replay index."
         assert all(
             any(torch.equal(obs, ob) for obs in batch.observations) for ob in replay.obs
         ), "Observations were not added to replay."
@@ -201,9 +201,9 @@ class TestStandardReplay:
         replay = self.get_replay(batch, size)
         minibatch = replay.sample(batch_size=1)
         assert len(minibatch) == 1, "Minibatch length was incorrect (batch size 1)."
-        assert isinstance(minibatch, TransitionBatch), (
-            "Minibatch was not a TransitionBatch."
-        )
+        assert isinstance(
+            minibatch, TransitionBatch
+        ), "Minibatch was not a TransitionBatch."
         assert all(
             any(torch.allclose(obs, ob) for obs in batch.observations)
             for ob in minibatch.observations
@@ -228,9 +228,9 @@ class TestStandardReplay:
 
         minibatch = replay.sample(batch_size=2)
         assert len(minibatch) == 2, "Minibatch length was incorrect (batch size 2)."
-        assert isinstance(minibatch, TransitionBatch), (
-            "Minibatch was not a TransitionBatch."
-        )
+        assert isinstance(
+            minibatch, TransitionBatch
+        ), "Minibatch was not a TransitionBatch."
         assert all(
             any(torch.allclose(obs, ob) for obs in batch.observations)
             for ob in minibatch.observations
@@ -254,9 +254,9 @@ class TestStandardReplay:
 
         batchset = [replay.sample(batch_size=1) for _ in range(10)]
         all_actions = [act for batch in batchset for act in batch.actions]
-        assert ~all(x == all_actions[0] for x in all_actions), (
-            "All sampled batches were the same."
-        )
+        assert ~all(
+            x == all_actions[0] for x in all_actions
+        ), "All sampled batches were the same."
 
     def test_reset(self):
         (
@@ -295,9 +295,9 @@ class TestStandardReplay:
         assert len(replay) == size, "Replay length was not equal to batch size."
 
         replay.add(batch, {})
-        assert len(replay) == size * 2, (
-            "Replay length was not doubled after doubling transitions."
-        )
+        assert (
+            len(replay) == size * 2
+        ), "Replay length was not doubled after doubling transitions."
 
         replay = self.get_replay(batch, size, empty=True)
         assert len(replay) == 0, "Replay length of empty replay was not 0."
@@ -316,42 +316,42 @@ class TestStandardReplay:
         )
         replay = self.get_replay(batch, size, full=False)
         assert replay.full is False, "Replay was falsely full."
-        assert replay.capacity > len(replay), (
-            "Replay capacity was not greater than length in non-full replay."
-        )
-        assert replay.index < replay.capacity, (
-            "Replay index was not less than capacity in non-full replay."
-        )
+        assert replay.capacity > len(
+            replay
+        ), "Replay capacity was not greater than length in non-full replay."
+        assert (
+            replay.index < replay.capacity
+        ), "Replay index was not less than capacity in non-full replay."
 
         replay = self.get_replay(batch, size, full=True)
         assert replay.full is True, "Replay was not full."
-        assert replay.capacity == len(replay), (
-            "Replay capacity was not equal to length in full replay."
-        )
-        assert replay.index == replay.capacity, (
-            "Replay index was not equal to capacity in full replay."
-        )
+        assert replay.capacity == len(
+            replay
+        ), "Replay capacity was not equal to length in full replay."
+        assert (
+            replay.index == replay.capacity
+        ), "Replay index was not equal to capacity in full replay."
 
         second_batch = TransitionBatch(
             observations * 2, actions * 2, rewards * 2, next_observations * 2, dones * 2
         )
         replay.add(second_batch, {})
-        assert replay.full is True, (
-            "Replay was not full anymore after adding more transitions."
-        )
-        assert replay.capacity == len(replay), (
-            "Replay capacity was not equal to length after adding more transitions."
-        )
-        assert replay.index == replay.capacity, (
-            "Replay index was not equal to capacity after adding more transitions."
-        )
+        assert (
+            replay.full is True
+        ), "Replay was not full anymore after adding more transitions."
+        assert replay.capacity == len(
+            replay
+        ), "Replay capacity was not equal to length after adding more transitions."
+        assert (
+            replay.index == replay.capacity
+        ), "Replay index was not equal to capacity after adding more transitions."
         for obs, act, rew, next_obs, done in second_batch:
             assert obs in replay.obs, f"Observation {obs} was not in replay."
             assert act in replay.actions, f"Action {act} was not in replay."
             assert rew in replay.rewards, f"Reward {rew} was not in replay."
-            assert next_obs in replay.next_obs, (
-                f"Next observation {next_obs} was not in replay."
-            )
+            assert (
+                next_obs in replay.next_obs
+            ), f"Next observation {next_obs} was not in replay."
             assert done in replay.dones, f"Done {done} was not in replay."
 
     def test_empty(self):
@@ -388,27 +388,27 @@ class TestStandardReplay:
         replay.save("test_replay.pkl")
         with open("test_replay.pkl", "rb") as f:
             loaded_replay = pkl.load(f)
-        assert replay.capacity == loaded_replay.capacity, (
-            "Replay capacity was not loaded correctly."
-        )
-        assert replay.index == loaded_replay.index, (
-            "Replay index was not loaded correctly."
-        )
-        assert torch.allclose(replay.obs, loaded_replay.obs), (
-            "Replay observations were not loaded correctly."
-        )
-        assert torch.allclose(replay.actions, loaded_replay.actions), (
-            "Replay actions were not loaded correctly."
-        )
-        assert torch.allclose(replay.rewards, loaded_replay.rewards), (
-            "Replay rewards were not loaded correctly."
-        )
-        assert torch.allclose(replay.next_obs, loaded_replay.next_obs), (
-            "Replay next observations were not loaded correctly."
-        )
-        assert torch.allclose(replay.dones, loaded_replay.dones), (
-            "Replay dones were not loaded correctly."
-        )
+        assert (
+            replay.capacity == loaded_replay.capacity
+        ), "Replay capacity was not loaded correctly."
+        assert (
+            replay.index == loaded_replay.index
+        ), "Replay index was not loaded correctly."
+        assert torch.allclose(
+            replay.obs, loaded_replay.obs
+        ), "Replay observations were not loaded correctly."
+        assert torch.allclose(
+            replay.actions, loaded_replay.actions
+        ), "Replay actions were not loaded correctly."
+        assert torch.allclose(
+            replay.rewards, loaded_replay.rewards
+        ), "Replay rewards were not loaded correctly."
+        assert torch.allclose(
+            replay.next_obs, loaded_replay.next_obs
+        ), "Replay next observations were not loaded correctly."
+        assert torch.allclose(
+            replay.dones, loaded_replay.dones
+        ), "Replay dones were not loaded correctly."
         Path("test_replay.pkl").unlink()
 
 
@@ -504,21 +504,21 @@ class TestPrioritizedReplay:
         filled_replay = self.get_replay(batch, size)
 
         assert replay.current_size == 0, "Empty replay length was not 0."
-        assert filled_replay.current_size == size, (
-            "Filled replay length was not equal to batch size."
-        )
+        assert (
+            filled_replay.current_size == size
+        ), "Filled replay length was not equal to batch size."
 
         # Now add to the previously empty replay with a brand-new td_error array
         td_errors = rng.random(size).astype(np.float32)
         replay.add(batch, {"td_error": td_errors})
 
         # Both replays should have the same current_size and data_idx
-        assert replay.current_size == filled_replay.current_size, (
-            "Replay length was not equal to filled replay length."
-        )
-        assert replay.data_idx == filled_replay.data_idx, (
-            "Replay data_idx was not equal to filled replay data_idx."
-        )
+        assert (
+            replay.current_size == filled_replay.current_size
+        ), "Replay length was not equal to filled replay length."
+        assert (
+            replay.data_idx == filled_replay.data_idx
+        ), "Replay data_idx was not equal to filled replay data_idx."
 
         # Compute expected priority = (|td_error| + ε)^α for each leaf
         eps = replay.epsilon
@@ -527,9 +527,9 @@ class TestPrioritizedReplay:
 
         base = replay.capacity
         actual_leaves = replay.sum_tree[base : base + size]
-        assert np.allclose(actual_leaves, expected_prios, atol=1e-6), (
-            f"Expected leaves {expected_prios}, but got {actual_leaves}"
-        )
+        assert np.allclose(
+            actual_leaves, expected_prios, atol=1e-6
+        ), f"Expected leaves {expected_prios}, but got {actual_leaves}"
 
     @pytest.mark.parametrize(
         ("observations", "actions", "rewards", "next_observations", "dones", "size"),
@@ -588,9 +588,9 @@ class TestPrioritizedReplay:
 
         # If there is more than one element, uniform draws should vary
         if size > 1:
-            assert len(set(seen_actions)) >= 2, (
-                "Uniform-priority sampling did not vary."
-            )
+            assert (
+                len(set(seen_actions)) >= 2
+            ), "Uniform-priority sampling did not vary."
 
         # 2) Skewed priorities (only one index has nonzero td_error):
         replay = self.get_replay(batch, size, empty=True)
@@ -615,9 +615,9 @@ class TestPrioritizedReplay:
             forced_indices.append(int(batch_indices_b.item()))
 
         # All sampled indices must be identical (the only one with nonzero priority)
-        assert len(set(forced_indices)) == 1, (
-            f"Expected only one index to be chosen, but got {set(forced_indices)}"
-        )
+        assert (
+            len(set(forced_indices)) == 1
+        ), f"Expected only one index to be chosen, but got {set(forced_indices)}"
 
     @pytest.mark.parametrize(
         ("observations", "actions", "rewards", "next_observations", "dones", "size"),
@@ -648,9 +648,9 @@ class TestPrioritizedReplay:
         # **Because reset() does not clear on‐device buffers or sum_tree**, we expect:
         #   - current_size remains equal to `size`
         #   - sum_tree[1] (the total priority) remains > 0
-        assert replay.current_size == size, (
-            f"After reset(), expected current_size to still be {size}, but got {replay.current_size}"
-        )
-        assert replay.sum_tree[1] > 0.0, (
-            "After reset(), expected total priority (sum_tree[1]) to remain > 0"
-        )
+        assert (
+            replay.current_size == size
+        ), f"After reset(), expected current_size to still be {size}, but got {replay.current_size}"
+        assert (
+            replay.sum_tree[1] > 0.0
+        ), "After reset(), expected total priority (sum_tree[1]) to remain > 0"

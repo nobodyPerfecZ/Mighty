@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy~=1.21",
+    "numpy<2",
     "gymnasium",
     "matplotlib~=3.4",
     "seaborn~=0.11",
@@ -84,3 +84,9 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.coverage.run]
+omit = [
+    "mighty/mighty_utils/plotting.py",
+    "mighty/mighty_utils/test_helpers.py"
+    ]

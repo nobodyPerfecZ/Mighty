@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from omegaconf import DictConfig
 
     from mighty.mighty_replay import MightyReplay
-    from mighty.mighty_utils.migthy_types import MIGHTYENV, TypeKwargs
+    from mighty.mighty_utils.mighty_types import MIGHTYENV, TypeKwargs
 
 
 class MightyDQNAgent(MightyAgent):
@@ -68,6 +68,7 @@ class MightyDQNAgent(MightyAgent):
         n_gradient_steps: int = 1,
         normalize_obs: bool = False,
         normalize_reward: bool = False,
+        rescale_action: bool = False,  # type: ignore
     ):
         """DQN initialization.
 
@@ -152,6 +153,7 @@ class MightyDQNAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action,
         )
 
         self.loss_buffer = {
