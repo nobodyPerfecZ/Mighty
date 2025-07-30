@@ -842,8 +842,6 @@ class MightyAgent(ABC):
             dones = np.logical_or(terminated, truncated)
             mask = np.where(dones, 1, mask)
 
-        eval_env.close()  # type: ignore
-
         if isinstance(self.eval_env, DACENV) or isinstance(self.env, CARLENV):
             instance = eval_env.instance  # type: ignore
         else:

@@ -2,6 +2,15 @@
 
 num_steps: 1e5
 env: FunctionApproximationBenchmark
-env_kwargs: {}
-env_wrappers: [mighty.mighty_utils.wrappers.DictToVecActions]
+env_kwargs: 
+  config_space:
+    dim1: 
+      type: float
+      lower: 0.0
+      upper: 1.0
+    dim2:
+      type: float
+      lower: 0.0
+      upper: 1.0
+env_wrappers: []
 num_envs: 16
