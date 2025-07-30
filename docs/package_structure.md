@@ -6,6 +6,7 @@ If you only want to know which class category to choose for implementing your me
 ``` mermaid
 stateDiagram
   direction TB
+  classDef Neutral stroke-width:1px,stroke-dasharray:none,stroke:#000000,fill:#FFFFFF,color:#000000;
   classDef Peach stroke-width:1px,stroke-dasharray:none,stroke:#FBB35A,fill:#FFEFDB,color:#8F632D;
   classDef Aqua stroke-width:1px,stroke-dasharray:none,stroke:#46EDC8,fill:#DEFFF8,color:#378E7A;
   classDef Sky stroke-width:1px,stroke-dasharray:none,stroke:#374D7C,fill:#E2EBFF,color:#374D7C;
@@ -42,6 +43,10 @@ stateDiagram
   class s10 Rose
   class s13 Ash
   class s14 Seven
+  class Still Neutral
+  class Moving Neutral
+  class s2 Neutral
+  class s12 Neutral
   style root_end color:none
   style s8 color:#FFFFFF
 ```

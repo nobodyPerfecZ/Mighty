@@ -20,12 +20,10 @@ We currently do not support other learning paradigms, but might extend to e.g. i
 Mighty aims to provide a basic set of methods to demonstrate different usecases. This is what's currently implemented:
 
 ``` mermaid
----
-config:
-  theme: redux-color
----
+%%{init: { "theme": "base", 
+           "themeVariables": {"primaryColor": "#fffbfbff", "secondaryColor": "#fffeecff", "tertiaryColor": "#faffffff"}} }%%
 mindmap
-((M))
+((Mighty))
   {{Buffers}}
     Rollout Buffer
     Replay Buffer

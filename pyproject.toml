@@ -55,7 +55,7 @@ pufferlib = ["pufferlib==2.0.6"]
 docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",
         "mkdocs-gen-files", "mkdocs-literate-nav",
         "mkdocs-glightbox", "mkdocs-glossary-plugin",
-        "mkdocstrings[python]", "markdown-exec[ansi]", "mike"]
+        "mkdocstrings[python]", "markdown-exec[ansi]", "mike", "mkdocs-mermaid2-plugin"]
 examples = []
 
 [tool.setuptools.packages.find]
