@@ -9,8 +9,7 @@ algorithm_kwargs:
   normalize_reward: False # CleanRL doesn't normalize rewards
 
   # Network sizes
-  n_policy_units:     256       
-  n_critic_units:     256       
+  n_policy_units:     256        
   soft_update_weight: 0.005  
 
   # Replay buffer
@@ -57,4 +56,4 @@ eval_frequency: 10000         # More frequent eval for single env
 save_frequency: 50000         # Save every 50k steps
 
 
-#  python mighty/run_mighty.py algorithm=sac_halfcheetah_1env env=HalfCheetah-v4 num_steps=1e6 num_envs=1
+#  python mighty/run_mighty.py algorithm=sac env=HalfCheetah-v4 num_steps=1e6 num_envs=1

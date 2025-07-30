@@ -153,7 +153,7 @@ class MightyDQNAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
-            rescale_action=rescale_action
+            rescale_action=rescale_action,
         )
 
         self.loss_buffer = {
