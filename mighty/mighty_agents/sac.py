@@ -19,9 +19,7 @@ class MightySACAgent(MightyAgent):
         env: MIGHTYENV,
         eval_env: Optional[MIGHTYENV] = None,
         seed: Optional[int] = None,
-        # --- PPO-style network sizes ---
         n_policy_units: int = 64,
-        n_critic_units: int = 64,
         soft_update_weight: float = 0.005,
         # --- Replay & update scheduling ---
         batch_size: int = 256,
@@ -54,11 +52,13 @@ class MightySACAgent(MightyAgent):
             Union[str, DictConfig, Type[MightyExplorationPolicy]]
         ] = None,
         policy_kwargs: Optional[Dict] = None,
-        normalize_obs: bool = False,  # ← NEW
-        normalize_reward: bool = False,  # ← NEW (optional)
+        normalize_obs: bool = True,  # ← NEW
+        normalize_reward: bool = True,  # ← NEW (optional),
+        rescale_action: bool = False,  # ← NEW Whether to rescale actions to the environment's action space
+        policy_frequency: int = 2,  # Frequency of policy updates
+        target_network_frequency: int = 1,  # Frequency of target network updates
     ):
         """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
-        # Map PPO-style units to hidden_sizes if not provided
         if hidden_sizes is None:
             hidden_sizes = [n_policy_units, n_policy_units]
         tau = soft_update_weight
@@ -87,10 +87,15 @@ class MightySACAgent(MightyAgent):
         self.update_fn: SACUpdate | None = None
 
         # Exploration policy class
-        self.policy_class = retrieve_class(cls=policy_class, default_cls=StochasticPolicy)
+        self.policy_class = retrieve_class(
+            cls=policy_class, default_cls=StochasticPolicy
+        )
         self.policy_kwargs = policy_kwargs or {
-            'discrete': False   # Default to continuous SAC
+            "discrete": False  # Default to continuous SAC
         }
+
+        self.policy_frequency = policy_frequency
+        self.target_network_frequency = target_network_frequency
 
         super().__init__(
             env=env,
@@ -108,6 +113,9 @@ class MightySACAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action,
+            batch_size=batch_size,
+            learning_rate=policy_lr,  # For compatibility with base class
         )
 
         # Initialize loss buffer for logging
@@ -151,6 +159,8 @@ class MightySACAgent(MightyAgent):
             auto_alpha=self.auto_alpha,
             target_entropy=self.target_entropy,
             alpha_lr=self.alpha_lr,
+            policy_frequency=self.policy_frequency,
+            target_network_frequency=self.target_network_frequency,
         )
 
     @property
@@ -179,14 +189,9 @@ class MightySACAgent(MightyAgent):
         for k in metrics_acc:
             metrics_acc[k] /= self.n_gradient_steps
 
-        # Log to buffer and wandb
+        # Log to buffer
         stats = {**metrics_acc, "step": self.steps}
         self.loss_buffer = update_buffer(self.loss_buffer, stats)
-        if self.log_wandb:
-            import wandb
-
-            wandb.log(stats, step=self.steps)
-
         return metrics_acc
 
     def process_transition(
@@ -215,9 +220,8 @@ class MightySACAgent(MightyAgent):
     @property
     def value_function(self) -> torch.nn.Module:
         """Value function for compatibility: V(s) = min(Q1,Q2)(s, a_policy) - alpha * log_pi(a|s)."""
-        # Lazily create a wrapper module
-        import torch
 
+        # Lazily create a wrapper module
         class _ValueFunction(torch.nn.Module):
             def __init__(self, agent):
                 super().__init__()

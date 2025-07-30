@@ -1,3 +1,5 @@
+"""Stochastic Policy for Entropy-Based Exploration."""
+
 from __future__ import annotations
 
 from typing import Tuple
@@ -6,7 +8,10 @@ import numpy as np
 import torch
 from torch.distributions import Categorical, Normal
 
-from mighty.mighty_exploration.mighty_exploration_policy import MightyExplorationPolicy
+from mighty.mighty_exploration.mighty_exploration_policy import (
+    MightyExplorationPolicy,
+    sample_nondeterministic_logprobs,
+)
 from mighty.mighty_models import SACModel
 
 
@@ -34,7 +39,6 @@ class StochasticPolicy(MightyExplorationPolicy):
                 # forward returns (action, z, mean, log_std)
                 action, z, mean, log_std = model(state, deterministic=True)
                 logp = model.policy_log_prob(z, mean, log_std)
-
                 return action.detach().cpu().numpy(), logp
 
             self.sample_action = _sac_sample
@@ -48,43 +52,129 @@ class StochasticPolicy(MightyExplorationPolicy):
           weighted_log_prob: Tensor of shape [batch, 1]
         """
         state = torch.as_tensor(s, dtype=torch.float32)
+
         if self.discrete:
             logits = self.model(state)
             dist = Categorical(logits=logits)
             action = dist.sample()
             log_prob = dist.log_prob(action).unsqueeze(-1)
             return action.detach().cpu().numpy(), log_prob * self.entropy_coefficient
+
         else:
-            # If model has attribute continuous_action=True, we know:
-            #   model(state) → (action, z, mean, log_std)
-            if hasattr(self.model, "continuous_action") and getattr(
-                self.model, "continuous_action"
-            ):
-                # 1) Forward pass: get (action, z, mean, log_std)
-                action, z, mean, log_std = self.model(
-                    state
-                )  # each: [batch, action_dim]
-                std = torch.exp(log_std)  # [batch, action_dim]
+            # Get model output
+            model_output = self.model(state)
+
+            # Handle different model output formats
+
+            # NEW: 3-tuple case (Standard PPO): (action, mean, log_std)
+            if isinstance(model_output, tuple) and len(model_output) == 3:
+                action, mean, log_std = model_output
+                std = torch.exp(log_std)
                 dist = Normal(mean, std)
 
-                # 2) Compute log_prob of "z" under N(mean, std)
-                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
+                # Direct log prob (no tanh correction)
+                log_prob = dist.log_prob(action).sum(dim=-1, keepdim=True)
 
-                # 3) Tanh Jacobian‐correction: sum_i log(1 − tanh(z_i)^2 + ε)
-                eps = 1e-6
-                log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
-                    dim=-1, keepdim=True
-                )  # [batch, 1]
+                if return_logp:
+                    return action.detach().cpu().numpy(), log_prob
+                else:
+                    weighted_log_prob = log_prob * self.entropy_coefficient
+                    return action.detach().cpu().numpy(), weighted_log_prob
 
-                # 4) Final log_prob of a = tanh(z)
-                log_prob = log_pz - log_correction  # [batch, 1]
+            # 4-tuple case (Tanh squashing): (action, z, mean, log_std)
+            elif isinstance(model_output, tuple) and len(model_output) == 4:
+                action, z, mean, log_std = model_output
+                log_prob = sample_nondeterministic_logprobs(
+                    z=z,
+                    mean=mean,
+                    log_std=log_std,
+                    sac=self.algo == "sac",
+                )
 
-                # 5) (Optional) multiply by entropy_coeff to get “weighted log_prob”
-                weighted_log_prob = log_prob * self.entropy_coefficient
+                if return_logp:
+                    return action.detach().cpu().numpy(), log_prob
+                else:
+                    weighted_log_prob = log_prob * self.entropy_coefficient
+                    return action.detach().cpu().numpy(), weighted_log_prob
 
+            # Legacy 2-tuple case: (mean, std)
+            elif isinstance(model_output, tuple) and len(model_output) == 2:
+                mean, std = model_output
+                dist = Normal(mean, std)
+                z = dist.rsample()  # [batch, action_dim]
+                action = torch.tanh(z)  # [batch, action_dim]
+
+                log_prob = sample_nondeterministic_logprobs(
+                    z=z, mean=mean, log_std=torch.log(std), sac=self.algo == "sac"
+                )
+                entropy = dist.entropy().sum(dim=-1, keepdim=True)  # [batch, 1]
+                weighted_log_prob = log_prob * entropy
                 return action.detach().cpu().numpy(), weighted_log_prob
 
-            # If it’s actually a SACModel, fallback (should only happen in training if model∈SACModel)
+            # Check for model attribute-based approaches
+            elif hasattr(self.model, "continuous_action") and getattr(
+                self.model, "continuous_action"
+            ):
+                # This handles the case where model has continuous_action attribute
+                # but we need to determine the output format dynamically
+                if len(model_output) == 3:
+                    # Standard PPO mode: (action, mean, log_std)
+                    action, mean, log_std = model_output
+                    std = torch.exp(log_std)
+                    dist = Normal(mean, std)
+                    log_prob = dist.log_prob(action).sum(dim=-1, keepdim=True)
+                elif len(model_output) == 4:
+                    # Tanh squashing mode: (action, z, mean, log_std)
+                    action, z, mean, log_std = model_output
+                    log_prob = sample_nondeterministic_logprobs(
+                        z=z, mean=mean, log_std=log_std, sac=self.algo == "sac"
+                    )
+                else:
+                    raise ValueError(
+                        f"Unexpected model output length: {len(model_output)}"
+                    )
+
+                if return_logp:
+                    return action.detach().cpu().numpy(), log_prob
+                else:
+                    weighted_log_prob = log_prob * self.entropy_coefficient
+                    return action.detach().cpu().numpy(), weighted_log_prob
+
+            # Check for output_style attribute (backwards compatibility)
+            elif hasattr(self.model, "output_style"):
+                if self.model.output_style == "squashed_gaussian":
+                    # Should be 4-tuple: (action, z, mean, log_std)
+                    action, z, mean, log_std = model_output
+                    log_prob = sample_nondeterministic_logprobs(
+                        z=z, mean=mean, log_std=log_std, sac=self.algo == "sac"
+                    )
+
+                    if return_logp:
+                        return action.detach().cpu().numpy(), log_prob
+                    else:
+                        weighted_log_prob = log_prob * self.entropy_coefficient
+                        return action.detach().cpu().numpy(), weighted_log_prob
+
+                elif self.model.output_style == "mean_std":
+                    # Should be 2-tuple: (mean, std)
+                    mean, std = model_output
+                    dist = Normal(mean, std)
+                    z = dist.rsample()
+                    action = torch.tanh(z)
+
+                    log_prob = sample_nondeterministic_logprobs(
+                        z=z, mean=mean, log_std=torch.log(std), sac=self.algo == "sac"
+                    )
+                    entropy = dist.entropy().sum(dim=-1, keepdim=True)
+                    weighted_log_prob = log_prob * entropy
+                    return action.detach().cpu().numpy(), weighted_log_prob
+
+                else:
+                    raise RuntimeError(
+                        f"StochasticPolicy: unknown output_style '{self.model.output_style}'"
+                    )
+
+            # Special handling for SACModel
             elif isinstance(self.model, SACModel):
                 action, z, mean, log_std = self.model(state, deterministic=False)
                 std = torch.exp(log_std)
@@ -94,26 +184,14 @@ class StochasticPolicy(MightyExplorationPolicy):
                 weighted_log_prob = log_pz * self.entropy_coefficient
                 return action.detach().cpu().numpy(), weighted_log_prob
 
-            # If it’s “mean, std”‐style continuous (rare in our code), handle that case
             else:
-                mean, std = self.model(state)
-                dist = Normal(mean, std)
-                z = dist.rsample()  # [batch, action_dim]
-                action = torch.tanh(z)  # [batch, action_dim]
-
-                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
-                eps = 1e-6
-                log_correction = torch.log(1.0 - action.pow(2) + eps).sum(
-                    dim=-1, keepdim=True
+                raise RuntimeError(
+                    "StochasticPolicy: cannot interpret model(state) output of type "
+                    f"{type(model_output)} with length {len(model_output) if isinstance(model_output, tuple) else 'N/A'}"
                 )
-                log_prob = log_pz - log_correction  # [batch, 1]
-                entropy = dist.entropy().sum(dim=-1, keepdim=True)  # [batch, 1]
-                weighted_log_prob = log_prob * entropy
-
-                return action.detach().cpu().numpy(), weighted_log_prob
 
     def forward(self, s):
         """
         Alias for explore, so policy(s) returns (action, weighted_log_prob).
         """
-        return self.explore(s)
+        return self.explore(s, return_logp=False)
