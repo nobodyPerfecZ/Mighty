@@ -350,13 +350,14 @@ class TestMaxiBatch:
 
 
 class TestMightyRolloutBuffer:
-    def get_buffer(self, buffer_size=10, obs_shape=(4,), act_dim=2, n_envs=1, discrete=False):
+    def get_buffer(self, buffer_size=10, obs_shape=(4,), act_dim=2, n_envs=1, discrete=False, use_latents=False):
         return MightyRolloutBuffer(
             buffer_size=buffer_size,
             obs_shape=obs_shape,
             act_dim=act_dim,
             n_envs=n_envs,
             discrete_action=discrete,
+            use_latents=use_latents,  # Add this parameter
         )
 
 
@@ -375,12 +376,21 @@ class TestMightyRolloutBuffer:
         assert buffer.rewards.shape == (10, 1), "Wrong rewards buffer shape"
 
     def test_init_continuous(self):
-        buffer = self.get_buffer(discrete=False)
+        buffer = self.get_buffer(discrete=False, use_latents=True)  # Add use_latents=True
         
         assert buffer.discrete_action is False, "Discrete action flag should be False"
         assert buffer.actions.shape == (10, 1, 2), "Wrong actions buffer shape (continuous)"
-        assert buffer.latents is not None, "Latents should not be None for continuous"
+        assert buffer.latents is not None, "Latents should not be None for continuous with use_latents=True"
         assert buffer.latents.shape == (10, 1, 2), "Wrong latents buffer shape"
+    
+    def test_init_continuous_no_latents(self):
+        """Test continuous buffer without latents."""
+        buffer = self.get_buffer(discrete=False, use_latents=False)  # New test for use_latents=False
+        
+        assert buffer.discrete_action is False, "Discrete action flag should be False"
+        assert buffer.actions.shape == (10, 1, 2), "Wrong actions buffer shape (continuous)"
+        assert buffer.latents is None, "Latents should be None when use_latents=False"
+
 
     def test_init_multi_env(self):
         """Test initialization with multiple environments"""
@@ -418,7 +428,7 @@ class TestMightyRolloutBuffer:
             "Observations not stored correctly"
 
     def test_add_continuous_with_latents(self):
-        buffer = self.get_buffer(discrete=False)
+        buffer = self.get_buffer(discrete=False, use_latents=True)  # Add use_latents=True
         
         rb = RolloutBatch(
             observations=np.array([[1, 2, 3, 4]]),
@@ -438,26 +448,27 @@ class TestMightyRolloutBuffer:
         assert torch.allclose(buffer.latents[0, 0], torch.tensor([0.3, 0.4], dtype=torch.float32)), \
             "Latents not stored correctly"
 
-    # FIXME: This test is currently disabled due to the way the buffer handles multi-step additions
-    # might need to be reworked to handle multi-step additions properly
-    # def test_add_multi_step(self):
-    #     """Test adding multiple steps at once"""
-    #     buffer = self.get_buffer(buffer_size=5)
+    def test_add_continuous_without_latents(self):
+        """Test adding continuous data without latents."""
+        buffer = self.get_buffer(discrete=False, use_latents=False)  # New test for use_latents=False
         
-    #     rb = RolloutBatch(
-    #         observations=np.array([[[1, 2, 3, 4]], [[5, 6, 7, 8]], [[9, 10, 11, 12]]]),  # 3D: (3, 1, 4)
-    #         actions=np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),  # 2D: (3, 2) -> will stay (3, 2)
-    #         rewards=np.array([[1.0], [0.5], [-0.3]]),  # 2D: (3, 1)
-    #         advantages=np.array([[0.1], [-0.2], [0.05]]),  # 2D: (3, 1)
-    #         returns=np.array([[1.1], [0.3], [-0.25]]),  # 2D: (3, 1)
-    #         episode_starts=np.array([[1], [0], [0]]),  # 2D: (3, 1)
-    #         log_probs=np.array([[-0.5], [-0.8], [-0.3]]),  # 2D: (3, 1)
-    #         values=np.array([[1.0], [0.5], [-0.3]]),  # 2D: (3, 1)
-    #     )
+        rb = RolloutBatch(
+            observations=np.array([[1, 2, 3, 4]]),
+            actions=np.array([[0.1, 0.2]]),
+            latents=None,  # No latents provided
+            rewards=np.array([1.0]),
+            advantages=np.array([0.1]),
+            returns=np.array([1.1]),
+            episode_starts=np.array([1]),
+            log_probs=np.array([-0.5]),
+            values=np.array([1.0]),
+        )
         
-    #     buffer.add(rb)
-    #     assert buffer.pos == 3, "Position should be 3 after adding 3 steps"
-    
+        buffer.add(rb)
+        
+        assert buffer.pos == 1, "Position should be 1 after adding one step"
+        assert buffer.latents is None, "Buffer latents should remain None"
+
     def test_add_multi_step(self):
         """Test adding multiple steps at once"""
         buffer = self.get_buffer(buffer_size=5, n_envs=1)
@@ -489,7 +500,6 @@ class TestMightyRolloutBuffer:
         
         assert buffer.pos == 3, f"Position should be 3 after adding 3 steps, got {buffer.pos}"
         
-        
     def test_buffer_overflow(self):
         buffer = self.get_buffer(buffer_size=2)  # Small buffer
         
@@ -508,36 +518,6 @@ class TestMightyRolloutBuffer:
         with pytest.raises(RuntimeError, match="Buffer overflow"):
             buffer.add(rb)
 
-    # def test_compute_returns_and_advantage_single_env(self):
-    #     """Test GAE computation with single environment"""
-    #     buffer = self.get_buffer(buffer_size=3, n_envs=1, discrete=True)
-        
-    #     # Add some dummy data
-    #     rb = RolloutBatch(
-    #         observations=np.array([[[1, 2, 3, 4]], [[5, 6, 7, 8]]]),  # (2, 1, 4)
-    #         actions=np.array([[0], [1]]),  # (2, 1) - discrete actions
-    #         rewards=np.array([[1.0], [0.5]]),  # (2, 1)
-    #         advantages=np.array([[0.0], [0.0]]),  # (2, 1) - Will be computed
-    #         returns=np.array([[0.0], [0.0]]),    # (2, 1) - Will be computed
-    #         episode_starts=np.array([[1], [0]]),  # (2, 1)
-    #         log_probs=np.array([[-0.5], [-0.8]]),  # (2, 1)
-    #         values=np.array([[1.0], [0.5]]),  # (2, 1)
-    #     )
-        
-    #     buffer.add(rb)
-        
-    #     # Compute GAE
-    #     last_values = torch.tensor([0.3])  # Bootstrap value
-    #     dones = np.array([0])  # Not done
-        
-    #     buffer.compute_returns_and_advantage(last_values, dones)
-        
-    #     # Check that advantages and returns were computed (non-zero)
-    #     assert not torch.allclose(buffer.advantages[:2], torch.zeros(2, 1)), \
-    #         "Advantages should be computed (non-zero)"
-    #     assert not torch.allclose(buffer.returns[:2], torch.zeros(2, 1)), \
-    #         "Returns should be computed (non-zero)"
-    
     def test_compute_returns_and_advantage_single_env(self):
         """Test GAE computation with single environment"""
         buffer = self.get_buffer(buffer_size=3, n_envs=1, discrete=True)

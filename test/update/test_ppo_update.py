@@ -11,9 +11,10 @@ from mighty.mighty_update import PPOUpdate
 class DummyPPOModel(nn.Module):
     """Dummy PPO model for testing."""
     
-    def __init__(self, obs_dim=4, action_dim=2, continuous_action=False, initial_weights=0.0):
+    def __init__(self, obs_dim=4, action_dim=2, continuous_action=False, initial_weights=0.0, tanh_squash=False):
         super().__init__()
         self.continuous_action = continuous_action
+        self.tanh_squash = tanh_squash  # Add tanh_squash parameter
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         
@@ -22,8 +23,14 @@ class DummyPPOModel(nn.Module):
         
         # Policy head
         if continuous_action:
-            self.policy_head = nn.Linear(64, action_dim)  # mean
-            self.log_std = nn.Parameter(torch.zeros(action_dim))
+            if tanh_squash:
+                # Tanh squashing mode: output mean + log_std from network
+                self.policy_head = nn.Linear(64, action_dim * 2)  # mean + log_std
+                self.log_std = None  # No learnable parameter
+            else:
+                # Standard PPO mode: output only mean, use learnable log_std parameter
+                self.policy_head = nn.Linear(64, action_dim)  # mean only
+                self.log_std = nn.Parameter(torch.zeros(action_dim))
         else:
             self.policy_head = nn.Linear(64, action_dim)  # logits
             
@@ -39,14 +46,39 @@ class DummyPPOModel(nn.Module):
             param.data.fill_(weight_val)
     
     def forward(self, obs):
-        """Forward pass - returns different outputs based on action type."""
+        """Forward pass - returns different outputs based on action type and mode."""
         features = torch.relu(self.shared(obs))
         
         if self.continuous_action:
-            mean = self.policy_head(features)
-            log_std = self.log_std.expand_as(mean)
-            return None, None, mean, log_std  # Match your model's return format
+            if self.tanh_squash:
+                # TANH SQUASHING MODE (4-tuple return)
+                raw = self.policy_head(features)  # [batch, 2 * action_dim]
+                mean, log_std = raw.chunk(2, dim=-1)  # each [batch, action_dim]
+                log_std = torch.clamp(log_std, -20.0, 2.0)  # clamp log_std
+                std = torch.exp(log_std)
+                
+                # Sample a raw Gaussian z for reparameterization
+                eps = torch.randn_like(mean)
+                z = mean + std * eps
+                action = torch.tanh(z)  # squash to [-1, +1]
+                
+                return action, z, mean, log_std
+            else:
+                # STANDARD PPO MODE (3-tuple return)
+                mean = self.policy_head(features)  # [batch, action_dim]
+                
+                # Use the learnable log_std parameter
+                log_std = self.log_std.expand_as(mean)
+                log_std = torch.clamp(log_std, -20.0, 2.0)
+                std = torch.exp(log_std)
+                
+                # Sample directly from Normal distribution (NO TANH)
+                eps = torch.randn_like(mean)
+                action = mean + std * eps
+                
+                return action, mean, log_std
         else:
+            # DISCRETE ACTION MODE
             logits = self.policy_head(features)
             return logits
     
@@ -54,7 +86,6 @@ class DummyPPOModel(nn.Module):
         """Forward pass for value estimation."""
         features = torch.relu(self.shared(obs))
         return self.value_head(features)
-
 
 class DummyMiniBatch:
     """Dummy minibatch for testing."""
@@ -169,8 +200,12 @@ class TestPPOUpdate:
         
         # Store initial parameters
         initial_policy_params = [p.clone() for p in model.policy_head.parameters()]
-        initial_log_std = model.log_std.clone()
         initial_value_params = [p.clone() for p in model.value_head.parameters()]
+        
+        # Handle log_std parameter only if it exists (standard PPO mode)
+        initial_log_std = None
+        if hasattr(model, 'log_std') and model.log_std is not None:
+            initial_log_std = model.log_std.clone()
         
         # Run update
         metrics = update.update(batch)
@@ -180,15 +215,18 @@ class TestPPOUpdate:
             not torch.equal(p1, p2) 
             for p1, p2 in zip(initial_policy_params, model.policy_head.parameters())
         )
-        log_std_changed = not torch.equal(initial_log_std, model.log_std)
         value_changed = any(
             not torch.equal(p1, p2)
             for p1, p2 in zip(initial_value_params, model.value_head.parameters())
         )
         
         assert policy_changed, "Policy parameters should change after update"
-        assert log_std_changed, "Log std parameters should change after update"
         assert value_changed, "Value parameters should change after update"
+        
+        # Check log_std parameter change only if it exists
+        if initial_log_std is not None:
+            log_std_changed = not torch.equal(initial_log_std, model.log_std)
+            assert log_std_changed, "Log std parameters should change after update"
         
         # Check metrics
         required_metrics = ['Update/policy_loss', 'Update/value_loss', 'Update/entropy', 'Update/approx_kl']
@@ -298,6 +336,13 @@ class TestPPOUpdate:
         """Test that all metrics have correct shapes and types."""
         update, model = self.get_update_and_model(continuous_action=continuous_action)
         batch = DummyMaxiBatch(continuous_action=continuous_action)
+        
+        # Ensure batch has latents for continuous action (required by new implementation)
+        if continuous_action:
+            for mb in batch.minibatches:
+                if not hasattr(mb, 'latents') or mb.latents is None:
+                    # Create dummy latents if missing
+                    mb.latents = torch.randn_like(mb.actions)
         
         metrics = update.update(batch)
         

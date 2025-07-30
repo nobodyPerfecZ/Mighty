@@ -14,7 +14,7 @@ from mighty.mighty_utils.test_helpers import DummyEnv, DummyContinuousEnv, clean
 from mighty.mighty_replay.mighty_rollout_buffer import MaxiBatch, RolloutBatch
 
 
-class TestPPOAgent:
+class TestSACAgent:
     def test_init_continuous(self):
         """Test PPO agent initialization with continuous actions."""
         env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
@@ -53,7 +53,6 @@ class TestPPOAgent:
         assert prediction.shape[1] == 2, "Action dimension should be 2"
     
         clean(output_dir)
-    
     
     def test_update(self):
         """Test SAC agent update functionality with manual data collection."""
@@ -206,17 +205,18 @@ class TestPPOAgent:
             print("2. Gradients are too small")
             print("3. The loss function isn't working correctly")
             print("4. The optimizer isn't stepping correctly")
+            print("5. Policy updates are delayed due to frequency settings")
             
             # Try with higher learning rates for debugging
             print("Trying with higher learning rates...")
             agent.update_fn.policy_optimizer.param_groups[0]['lr'] = 0.01
-            agent.update_fn.q_optimizer1.param_groups[0]['lr'] = 0.01
-            agent.update_fn.q_optimizer2.param_groups[0]['lr'] = 0.01
+            agent.update_fn.q_optimizer.param_groups[0]['lr'] = 0.01  # Now single optimizer for both Q-nets
             
-            # Force another update
-            batch = agent.buffer.sample(agent.batch_size)
-            debug_metrics = agent.update_fn.update(batch)
-            print(f"Debug update metrics: {debug_metrics}")
+            # Force multiple updates to trigger policy update (due to policy_frequency)
+            for i in range(agent.update_fn.policy_frequency + 1):
+                batch = agent.buffer.sample(agent.batch_size)
+                debug_metrics = agent.update_fn.update(batch)
+                print(f"Debug update {i+1} metrics: {debug_metrics}")
             
             # Check parameters again
             new_policy_params_debug = list(agent.model.policy_net.parameters())
@@ -234,7 +234,7 @@ class TestPPOAgent:
         assert isinstance(result_metrics, dict), "Update should return metrics dict"
         
         # Check for expected SAC metrics in the result
-        expected_metrics = ["q_loss1", "q_loss2", "policy_loss"]
+        expected_metrics = ["q_loss1", "q_loss2", "policy_loss", "alpha_loss"]  # Added alpha_loss
         for metric in expected_metrics:
             if metric in result_metrics:
                 print(f"{metric}: {result_metrics[metric]}")
@@ -243,7 +243,6 @@ class TestPPOAgent:
         print("All parameter update checks passed!")
         
         clean(output_dir)
-    
     def test_properties(self):
         """Test SAC agent properties."""
         torch.manual_seed(0)

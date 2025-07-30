@@ -121,10 +121,9 @@ class TestSACUpdate:
         """Test SAC update initialization."""
         update, model = self.get_update_and_model()
         
-        # Check optimizers
+        # Check optimizers - now combined Q optimizer
         assert hasattr(update, 'policy_optimizer')
-        assert hasattr(update, 'q_optimizer1')
-        assert hasattr(update, 'q_optimizer2')
+        assert hasattr(update, 'q_optimizer')  # Single combined optimizer
         
         # Check auto-alpha setup
         assert hasattr(update, 'log_alpha')
@@ -136,14 +135,18 @@ class TestSACUpdate:
         assert update.gamma == 0.99
         assert update.tau == 0.005
         assert update.auto_alpha == True
+        
+        # Check new frequency parameters
+        assert hasattr(update, 'policy_frequency')
+        assert hasattr(update, 'target_network_frequency')
+        assert hasattr(update, 'update_step')
     
     def test_initialization_without_auto_alpha(self):
         """Test SAC initialization with fixed alpha."""
         update, model = self.get_update_and_model(auto_alpha=False, alpha=0.1)
         
         assert update.auto_alpha == False
-        # NOTE: Current implementation hardcodes alpha=0.2 when auto_alpha=False
-        assert update.alpha == 0.1
+        assert update.alpha == 0.1  # Should use the provided alpha value
         assert not hasattr(update, 'log_alpha')
         assert not hasattr(update, 'alpha_optimizer')
 
@@ -159,8 +162,10 @@ class TestSACUpdate:
         initial_q2_params = [p.clone() for p in model.q_net2.parameters()]
         initial_alpha = update.log_alpha.clone()
         
-        # Run update
-        metrics = update.update(batch)
+        # Run multiple updates to trigger policy update (due to policy_frequency)
+        metrics = None
+        for i in range(update.policy_frequency + 1):
+            metrics = update.update(batch)
         
         # Check that parameters changed
         policy_changed = any(
@@ -182,8 +187,8 @@ class TestSACUpdate:
         assert q2_changed, "Q2 parameters should change after update"
         assert alpha_changed, "Alpha should change when auto_alpha=True"
         
-        # Check metrics
-        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'td_error1', 'td_error2']
+        # Check metrics - updated to include alpha_loss
+        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'alpha_loss', 'td_error1', 'td_error2']
         for metric in required_metrics:
             assert metric in metrics, f"Missing metric: {metric}"
             assert isinstance(metrics[metric], (int, float)), f"Metric {metric} should be numeric"
@@ -263,10 +268,12 @@ class TestSACUpdate:
         assert not hasattr(update, 'log_alpha')
         assert not hasattr(update, 'alpha_optimizer')
         
-        # Metrics should still be valid
-        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'td_error1', 'td_error2']
+        # Metrics should still be valid - but alpha_loss should be 0
+        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'alpha_loss', 'td_error1', 'td_error2']
         for metric in required_metrics:
             assert metric in metrics
+        # Alpha loss should be 0 when auto_alpha=False
+        assert metrics['alpha_loss'] == 0.0
     
     def test_custom_target_entropy(self):
         """Test SAC with custom target entropy."""
@@ -291,8 +298,7 @@ class TestSACUpdate:
         
         # Check that optimizers have correct learning rates
         assert update.policy_optimizer.param_groups[0]['lr'] == 0.0005
-        assert update.q_optimizer1.param_groups[0]['lr'] == 0.002
-        assert update.q_optimizer2.param_groups[0]['lr'] == 0.002
+        assert update.q_optimizer.param_groups[0]['lr'] == 0.002  # Combined Q optimizer
         assert update.alpha_optimizer.param_groups[0]['lr'] == 0.001
     
     def test_different_tau_values(self):
@@ -368,6 +374,9 @@ class TestSACUpdate:
         # Policy loss can be negative (we want to maximize Q - alpha*entropy)
         assert np.isfinite(metrics['policy_loss']), "Policy loss should be finite"
         
+        # Alpha loss can be positive or negative
+        assert np.isfinite(metrics['alpha_loss']), "Alpha loss should be finite"
+        
         # TD errors can be positive or negative
         assert np.isfinite(metrics['td_error1']), "TD error 1 should be finite"
         assert np.isfinite(metrics['td_error2']), "TD error 2 should be finite"
@@ -381,10 +390,47 @@ class TestSACUpdate:
         # Should work with any reasonable batch size
         metrics = update.update(batch)
         
-        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'td_error1', 'td_error2']
+        required_metrics = ['q_loss1', 'q_loss2', 'policy_loss', 'alpha_loss', 'td_error1', 'td_error2']
         for metric in required_metrics:
             assert metric in metrics
             assert np.isfinite(metrics[metric])
+    
+    def test_policy_frequency(self):
+        """Test that policy updates only happen at specified frequency."""
+        policy_freq = 3
+        update, model = self.get_update_and_model(policy_frequency=policy_freq)
+        batch = DummyTransitionBatch()
+        
+        # Store initial policy parameters
+        initial_policy_params = [p.clone() for p in model.policy_net.parameters()]
+        initial_alpha = update.log_alpha.clone()
+        
+        # Run updates less than policy_frequency - policy shouldn't change
+        for i in range(policy_freq - 1):
+            metrics = update.update(batch)
+            assert metrics['policy_loss'] == 0.0, "Policy loss should be 0 when no policy update"
+            assert metrics['alpha_loss'] == 0.0, "Alpha loss should be 0 when no policy update"
+        
+        # Policy parameters shouldn't have changed yet
+        policy_unchanged = all(
+            torch.allclose(p1, p2, atol=1e-6)
+            for p1, p2 in zip(initial_policy_params, model.policy_net.parameters())
+        )
+        alpha_unchanged = torch.allclose(initial_alpha, update.log_alpha, atol=1e-6)
+        
+        assert policy_unchanged, "Policy parameters should not change before policy_frequency"
+        assert alpha_unchanged, "Alpha should not change before policy_frequency"
+        
+        # Now run one more update - should trigger policy update
+        metrics = update.update(batch)
+        assert metrics['policy_loss'] != 0.0, "Policy loss should be non-zero when policy updates"
+        
+        # Policy parameters should have changed now
+        policy_changed = any(
+            not torch.allclose(p1, p2, atol=1e-6)
+            for p1, p2 in zip(initial_policy_params, model.policy_net.parameters())
+        )
+        assert policy_changed, "Policy parameters should change at policy_frequency"
     
     def test_gradient_flow(self):
         """Test that gradients flow properly through the networks."""
@@ -397,8 +443,10 @@ class TestSACUpdate:
         for name, param in model.named_parameters():
             initial_params[name] = param.clone()
         
-        # Run update
-        metrics = update.update(batch)
+        # Run multiple updates to ensure policy update happens
+        metrics = None
+        for i in range(update.policy_frequency + 1):
+            metrics = update.update(batch)
         
         # Check that parameters changed (indicating gradient flow)
         changed_params = 0
