@@ -79,10 +79,12 @@ class StochasticPolicy(MightyExplorationPolicy):
                 # 4) Final log_prob of a = tanh(z)
                 log_prob = log_pz - log_correction  # [batch, 1]
 
-                # 5) (Optional) multiply by entropy_coeff to get “weighted log_prob”
-                weighted_log_prob = log_prob * self.entropy_coefficient
-
-                return action.detach().cpu().numpy(), weighted_log_prob
+                # 5) FIX: Return actual log_prob for PPO, or weighted version for other algorithms
+                if return_logp:
+                    return action.detach().cpu().numpy(), log_prob
+                else:
+                    weighted_log_prob = log_prob * self.entropy_coefficient
+                    return action.detach().cpu().numpy(), weighted_log_prob
 
             # If it’s actually a SACModel, fallback (should only happen in training if model∈SACModel)
             elif isinstance(self.model, SACModel):

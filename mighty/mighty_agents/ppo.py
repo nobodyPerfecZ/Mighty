@@ -293,17 +293,16 @@ class MightyPPOAgent(MightyAgent):
             .reshape((curr_s.shape[0],))
         )
 
+        # FIX: Use self.model.continuous_action instead of self.policy.continuous_action
         latents = (
             np.arctanh(np.clip(action, -0.999, 0.999))
-            if getattr(self.policy, "continuous_action", False)
+            if getattr(self.model, "continuous_action", False)  # ← FIXED!
             else None
         )
-
 
         # FIX: Remove extra dimension from log_prob if present
         if log_prob is not None and log_prob.shape[-1] == 1:
             log_prob = log_prob.squeeze(-1)  # (64, 1) → (64,)
-        
         
         rollout_batch = RolloutBatch(
             observations=curr_s,
