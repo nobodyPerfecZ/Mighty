@@ -32,9 +32,11 @@ class MaxiBatch:
                 return torch.tensor([])
             stacked = torch.stack(
                 [
-                    getattr(mb, name)
-                    if getattr(mb, name) is not None
-                    else torch.zeros_like(getattr(mbs[0], "actions"))
+                    (
+                        getattr(mb, name)
+                        if getattr(mb, name) is not None
+                        else torch.zeros_like(getattr(mbs[0], "actions"))
+                    )
                     for mb in mbs
                 ],  # type: ignore
                 dim=0,
@@ -108,7 +110,10 @@ class RolloutBatch:
                 return x.unsqueeze(0)
             elif x.dim() == 2:  # (timesteps, n_envs) - already correct
                 return x
-            elif x.dim() == 3 and name in ["actions", "observations"]:  # (timesteps, n_envs, features)
+            elif x.dim() == 3 and name in [
+                "actions",
+                "observations",
+            ]:  # (timesteps, n_envs, features)
                 return x
             else:
                 raise RuntimeError(f"Unexpected shape for {name}: {x.shape}")
@@ -173,7 +178,7 @@ class MightyRolloutBuffer(MightyBuffer):
         gamma: float = 0.99,
         n_envs: int = 1,
         discrete_action: bool = False,
-        use_latents: bool = False
+        use_latents: bool = False,
     ):
         super().__init__()
         self.buffer_size = buffer_size
@@ -198,7 +203,7 @@ class MightyRolloutBuffer(MightyBuffer):
             self.latents = None  # not used
         else:
             self.actions = zeros((buffer_size, n_envs, act_dim))
-            
+
             if use_latents:
                 self.latents = zeros((buffer_size, n_envs, act_dim))
             else:
@@ -238,7 +243,7 @@ class MightyRolloutBuffer(MightyBuffer):
 
         # 3) Get slices (these are views, but we'll create new tensors for advantages)
         rew_slice = self.rewards[:T]  # (T × n_envs)
-        val_slice = self.values[:T]   # (T × n_envs)
+        val_slice = self.values[:T]  # (T × n_envs)
         eps_slice = self.episode_starts[:T]  # (T × n_envs)
 
         # 4) Create NEW tensors for advantages and returns (not views!)
@@ -276,8 +281,6 @@ class MightyRolloutBuffer(MightyBuffer):
         returns = advantages + val_slice
         self.advantages[:T] = advantages
         self.returns[:T] = returns
-
-   
 
     #     self.pos += n_steps
     def add(self, rollout_batch: RolloutBatch, _=None):

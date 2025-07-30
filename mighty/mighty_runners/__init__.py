@@ -1,6 +1,5 @@
 from typing import Dict
 
-from .mighty_maml_runner import MightyMAMLRunner, MightyTRPOMAMLRunner
 from .mighty_online_runner import MightyOnlineRunner
 from .mighty_runner import MightyRunner
 
@@ -31,8 +30,6 @@ from .factory import get_runner_class  # noqa: E402
 __all__ = [
     "MightyRunner",
     "MightyOnlineRunner",
-    "MightyMAMLRunner",
-    "MightyTRPOMAMLRunner",
     "MightyESRunner",
     "get_runner_class",
 ]
