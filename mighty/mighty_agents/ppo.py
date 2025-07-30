@@ -214,7 +214,7 @@ class MightyPPOAgent(MightyAgent):
     @property
     def value_function(self) -> torch.nn.Module:
         """Return the value function model."""
-        return self.model.value_head  # type: ignore
+        return self.model.value_function_module  # type: ignore
 
     def update_agent(
         self, transition_batch, batches_left, next_s, dones, **kwargs
