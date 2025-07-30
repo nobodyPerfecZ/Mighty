@@ -69,23 +69,23 @@ class MightyExplorationPolicy:
 
                 # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
                 out = self.model(state)
-                if isinstance(out, tuple) and len(out) == 4:
-                    # Unpack exactly (action, z, mean, log_std)
-                    action, z, mean, log_std = out  # each [batch, action_dim]
-                    std = torch.exp(log_std)  # [batch, action_dim]
+                # NEW: Handle 3-tuple (Standard PPO)
+                if isinstance(out, tuple) and len(out) == 3:
+                    action, mean, log_std = out
+                    std = torch.exp(log_std)
                     dist = Normal(mean, std)
-
-                    # 2a) log_pz = ∑ᵢ log N(zᵢ; μᵢ, σᵢ)
-                    log_pz = dist.log_prob(z).sum(dim=-1)  # [batch]
-
-                    # 2b) tanh‐correction = ∑ᵢ log(1 − tanh(zᵢ)² + ε)
+                    log_prob = dist.log_prob(action).sum(dim=-1)  # Direct log prob
+                    return action.detach().cpu().numpy(), log_prob
+                
+                # Existing 4-tuple case (Tanh squashing)
+                elif isinstance(out, tuple) and len(out) == 4:
+                    action, z, mean, log_std = out
+                    std = torch.exp(log_std)
+                    dist = Normal(mean, std)
+                    log_pz = dist.log_prob(z).sum(dim=-1)
                     eps = 1e-6
-                    log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
-                        dim=-1
-                    )  # [batch]
-
-                    # 2c) final log_prob of a = tanh(z)
-                    log_prob = log_pz - log_correction  # [batch]
+                    log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(dim=-1)
+                    log_prob = log_pz - log_correction
                     return action.detach().cpu().numpy(), log_prob
 
                 # ─── Legacy continuous branch (model returns (mean, std)) ────────────

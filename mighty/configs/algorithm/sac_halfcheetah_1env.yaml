@@ -55,3 +55,6 @@ max_episode_steps: 1000       # HalfCheetah episode length
 # Evaluation and logging
 eval_frequency: 10000         # More frequent eval for single env
 save_frequency: 50000         # Save every 50k steps
+
+
+#  python mighty/run_mighty.py algorithm=sac_halfcheetah_1env env=HalfCheetah-v4 num_steps=1e6 num_envs=1

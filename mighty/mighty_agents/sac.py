@@ -56,6 +56,7 @@ class MightySACAgent(MightyAgent):
         policy_kwargs: Optional[Dict] = None,
         normalize_obs: bool = True,  # ← NEW
         normalize_reward: bool = True,  # ← NEW (optional),
+        rescale_action: bool = False,  # ← NEW Whether to rescale actions to the environment's action space
         policy_frequency: int= 2,  # Frequency of policy updates
         target_network_frequency: int = 1,  # Frequency of target network updates
     ):
@@ -113,6 +114,7 @@ class MightySACAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action,
             batch_size=batch_size,
             learning_rate= policy_lr,  # For compatibility with base class
         )

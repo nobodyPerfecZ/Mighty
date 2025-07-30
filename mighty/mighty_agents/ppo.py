@@ -63,6 +63,8 @@ class MightyPPOAgent(MightyAgent):
         total_timesteps: int = 1_000_000,
         normalize_obs: bool = False,  # ← NEW
         normalize_reward: bool = False,  # ← NEW (optional)
+        rescale_action: bool = False,  # Whether to rescale actions to the environment's action space
+        tanh_squash: bool = False,  # Whether to use tanh squashing for continuous actions
     ):
         """Initialize the PPO agent.
 
@@ -112,6 +114,7 @@ class MightyPPOAgent(MightyAgent):
         self.kl_target = kl_target
         self.use_value_clip = use_value_clip
         self.value_clip_eps = value_clip_eps
+        self.tanh_squash = tanh_squash
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -142,6 +145,7 @@ class MightyPPOAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action
         )
 
         self.loss_buffer = {
@@ -178,6 +182,7 @@ class MightyPPOAgent(MightyAgent):
                 else self.env.single_action_space.shape[0]  # type: ignore
             ),
             continuous_action=not self.discrete_action,
+            tanh_squash=self.tanh_squash
         )
         self.policy = self.policy_class(
             algo=self,
@@ -266,7 +271,13 @@ class MightyPPOAgent(MightyAgent):
         if "rollout_logits" in metrics:
             del metrics["rollout_logits"]
             metrics["rollout_logits"] = []
-        return super().update(metrics, update_kwargs)  # type: ignore
+        
+        # ONE-LINE FIX: Temporarily override batch_size for PPO minibatching
+        original_batch_size = self._batch_size
+        self._batch_size = self.minibatch_size
+        result = super().update(metrics, update_kwargs)  # type: ignore
+        self._batch_size = original_batch_size  # Restore original
+        return result
 
     def process_transition(  # type: ignore
         self,
@@ -285,17 +296,19 @@ class MightyPPOAgent(MightyAgent):
             .reshape((curr_s.shape[0],))
         )
 
+        # FIX: Use self.model.continuous_action instead of self.policy.continuous_action
+        
+        
         latents = (
             np.arctanh(np.clip(action, -0.999, 0.999))
-            if getattr(self.policy, "continuous_action", False)
+            if (getattr(self.model, "continuous_action", False) and 
+                getattr(self.model, "tanh_squash", False))
             else None
         )
-
 
         # FIX: Remove extra dimension from log_prob if present
         if log_prob is not None and log_prob.shape[-1] == 1:
             log_prob = log_prob.squeeze(-1)  # (64, 1) → (64,)
-        
         
         rollout_batch = RolloutBatch(
             observations=curr_s,
