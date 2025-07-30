@@ -34,6 +34,7 @@ Currently Mighty is still in its early stages with support for normal gym envs, 
 The interface is controlled through hydra and we provide DQN, PPO and SAC algorithms.
 We log training and regular evaluations to file and optionally also to tensorboard or wandb.
 If you have any questions or feedback, please tell us, ideally via the GitHub issues!
+If you want to get started immediately, use our [Template repository](https://github.com/automl/mighty_project_template).
 
 Mighty features:
 - Modular structure for easy (Meta-)RL tinkering
