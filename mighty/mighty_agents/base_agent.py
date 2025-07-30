@@ -235,9 +235,9 @@ class MightyAgent(ABC):
             #     eval_env = NormalizeReward(eval_env)
             
         if rescale_action:
-            env = RescaleAction(env, -1.0, 1.0)
+            env = RescaleAction(env, min_action=-1, max_action=1)
             if eval_env is not None:
-                eval_env = RescaleAction(eval_env, -1.0, 1.0)
+                eval_env = RescaleAction(eval_env, min_action=-1, max_action=1)
         
 
         # self.env = SeedWrapper(env=env,seed=self.seed)
