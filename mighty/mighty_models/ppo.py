@@ -19,6 +19,7 @@ class PPOModel(nn.Module):
         continuous_action: bool = False,
         log_std_min: float = -20.0,
         log_std_max: float = 2.0,
+        tanh_squash: bool = False,  # NEW: Toggle between tanh squashing and standard PPO
     ):
         """Initialize the PPO model."""
         super().__init__()
@@ -30,6 +31,7 @@ class PPOModel(nn.Module):
         self.continuous_action = continuous_action
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
+        self.tanh_squash = tanh_squash
 
         # Make feature extractor
         self.feature_extractor_policy, feat_dim = make_feature_extractor(
@@ -49,8 +51,15 @@ class PPOModel(nn.Module):
         )
 
         if self.continuous_action:
-            # Output size must be 2 * action_size (mean + log_std)
-            final_out_dim = action_size * 2
+            if self.tanh_squash:
+                # Tanh squashing mode: output mean + log_std from network
+                final_out_dim = action_size * 2
+                # No learnable parameter needed
+                self.log_std = None
+            else:
+                # Standard PPO mode: output only mean, use learnable log_std parameter
+                final_out_dim = action_size
+                self.log_std = nn.Parameter(torch.zeros(action_size))
         else:
             # For discrete actions, output logits of size = action_size
             final_out_dim = action_size
@@ -98,23 +107,47 @@ class PPOModel(nn.Module):
         self.apply(_init_weights)
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Forward pass through the policy network."""
+        """
+        Forward pass through the policy network.
+        
+        - If discrete: logits tensor
+        - If continuous + tanh_squash: (action, z, mean, log_std)
+        - If continuous + not tanh_squash: (action, mean, log_std)
+        
+        """
 
         if self.continuous_action:
-            raw = self.policy_head(x)  # [batch, 2 * action_size]
-            mean, log_std = raw.chunk(2, dim=-1)  # each [batch, action_size]
-            log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
-            std = torch.exp(log_std)  # [batch, action_size]
+            if self.tanh_squash:
+                # TANH SQUASHING MODE (4-tuple return)
+                raw = self.policy_head(x)  # [batch, 2 * action_size]
+                mean, log_std = raw.chunk(2, dim=-1)  # each [batch, action_size]
+                log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+                std = torch.exp(log_std)  # [batch, action_size]
 
-            # Sample a raw Gaussian z; during inference/training this is 'reparameterized'
-            # (If you need a deterministic‐eval mode, you can add a flag argument here.)
-            eps = torch.randn_like(mean)
-            z = mean + std * eps  # [batch, action_size]
-            action = torch.tanh(z)  # squash to [−1, +1]
+                # Sample a raw Gaussian z for reparameterization
+                eps = torch.randn_like(mean)
+                z = mean + std * eps  # [batch, action_size]
+                action = torch.tanh(z)  # squash to [−1, +1]
 
-            return action, z, mean, log_std
+                return action, z, mean, log_std
+
+            else:
+                # STANDARD PPO MODE (3-tuple return)
+                mean = self.policy_head(x)  # [batch, action_size]
+                
+                # Use the learnable log_std parameter
+                log_std = self.log_std.expand_as(mean)  # [batch, action_size]
+                log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+                std = torch.exp(log_std)  # [batch, action_size]
+
+                # Sample directly from Normal distribution (NO TANH)
+                eps = torch.randn_like(mean)
+                action = mean + std * eps  # [batch, action_size] - direct sampling
+                
+                return action, mean, log_std
 
         else:
+            # DISCRETE ACTION MODE
             logits = self.policy_head(x)  # [batch, action_size]
             return logits
 

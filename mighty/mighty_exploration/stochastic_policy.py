@@ -60,24 +60,33 @@ class StochasticPolicy(MightyExplorationPolicy):
             if hasattr(self.model, "continuous_action") and getattr(
                 self.model, "continuous_action"
             ):
-                # 1) Forward pass: get (action, z, mean, log_std)
-                action, z, mean, log_std = self.model(
-                    state
-                )  # each: [batch, action_dim]
-                std = torch.exp(log_std)  # [batch, action_dim]
-                dist = Normal(mean, std)
+                # Get model output
+                model_output = self.model(state)
+                
+                # NEW: Handle both 3-tuple and 4-tuple cases
+                if len(model_output) == 3:
+                    # Standard PPO mode: (action, mean, log_std)
+                    action, mean, log_std = model_output
+                    std = torch.exp(log_std)
+                    dist = Normal(mean, std)
+                    
+                    # Direct log prob (no tanh correction)
+                    log_prob = dist.log_prob(action).sum(dim=-1, keepdim=True)
+                    
+                elif len(model_output) == 4:
+                    # Tanh squashing mode: (action, z, mean, log_std)
+                    action, z, mean, log_std = model_output
+                    std = torch.exp(log_std)
+                    dist = Normal(mean, std)
 
-                # 2) Compute log_prob of "z" under N(mean, std)
-                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
-
-                # 3) Tanh Jacobian‐correction: sum_i log(1 − tanh(z_i)^2 + ε)
-                eps = 1e-6
-                log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
-                    dim=-1, keepdim=True
-                )  # [batch, 1]
-
-                # 4) Final log_prob of a = tanh(z)
-                log_prob = log_pz - log_correction  # [batch, 1]
+                    # Log prob with tanh correction
+                    log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
+                    eps = 1e-6
+                    log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(dim=-1, keepdim=True)
+                    log_prob = log_pz - log_correction
+                
+                else:
+                    raise ValueError(f"Unexpected model output length: {len(model_output)}")
 
                 # 5) FIX: Return actual log_prob for PPO, or weighted version for other algorithms
                 if return_logp:

@@ -2,8 +2,8 @@
 algorithm: PPO
 
 algorithm_kwargs:
-  # Scale [-1, 1] actions to the environment's action bounds
-  rescale_action: True
+  rescale_action: False
+  tanh_squash: False
 
   rollout_buffer_class:
     _target_: mighty.mighty_replay.MightyRolloutBuffer
@@ -39,5 +39,4 @@ algorithm_kwargs:
   policy_kwargs:
     entropy_coefficient: 0.0
 
-
-# python mighty/run_mighty.py algorithm=ppo_pendulum env=Pendulum-v1 num_steps=1e6 num_envs=16
+# python mighty/run_mighty.py algorithm=ppo_pendulum env=Pendulum-v1 num_steps=1e6 num_envs=16 rescale_action=False tanh_squash=False

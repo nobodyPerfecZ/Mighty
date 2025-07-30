@@ -64,6 +64,7 @@ class MightyPPOAgent(MightyAgent):
         normalize_obs: bool = False,  # ← NEW
         normalize_reward: bool = False,  # ← NEW (optional)
         rescale_action: bool = False,  # Whether to rescale actions to the environment's action space
+        tanh_squash: bool = False,  # Whether to use tanh squashing for continuous actions
     ):
         """Initialize the PPO agent.
 
@@ -113,6 +114,7 @@ class MightyPPOAgent(MightyAgent):
         self.kl_target = kl_target
         self.use_value_clip = use_value_clip
         self.value_clip_eps = value_clip_eps
+        self.tanh_squash = tanh_squash
 
         # Placeholder variables which are filled in self._initialize_agent
         self.model: PPOModel | None = None
@@ -180,6 +182,7 @@ class MightyPPOAgent(MightyAgent):
                 else self.env.single_action_space.shape[0]  # type: ignore
             ),
             continuous_action=not self.discrete_action,
+            tanh_squash=self.tanh_squash
         )
         self.policy = self.policy_class(
             algo=self,
@@ -294,9 +297,12 @@ class MightyPPOAgent(MightyAgent):
         )
 
         # FIX: Use self.model.continuous_action instead of self.policy.continuous_action
+        
+        
         latents = (
             np.arctanh(np.clip(action, -0.999, 0.999))
-            if getattr(self.model, "continuous_action", False)  # ← FIXED!
+            if (getattr(self.model, "continuous_action", False) and 
+                getattr(self.model, "tanh_squash", False))
             else None
         )
 

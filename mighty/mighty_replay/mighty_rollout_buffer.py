@@ -173,6 +173,7 @@ class MightyRolloutBuffer(MightyBuffer):
         gamma: float = 0.99,
         n_envs: int = 1,
         discrete_action: bool = False,
+        use_latents: bool = False
     ):
         super().__init__()
         self.buffer_size = buffer_size
@@ -181,6 +182,7 @@ class MightyRolloutBuffer(MightyBuffer):
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.discrete_action = discrete_action
+        self.use_latents = use_latents  # Store for later use
 
         # Shapes -----------------------------------------------------------
         if isinstance(obs_shape, int):
@@ -196,7 +198,11 @@ class MightyRolloutBuffer(MightyBuffer):
             self.latents = None  # not used
         else:
             self.actions = zeros((buffer_size, n_envs, act_dim))
-            self.latents = zeros((buffer_size, n_envs, act_dim))  # ← NEW
+            
+            if use_latents:
+                self.latents = zeros((buffer_size, n_envs, act_dim))
+            else:
+                self.latents = None
 
         self.rewards = zeros((buffer_size, n_envs))
         self.advantages = zeros((buffer_size, n_envs))
