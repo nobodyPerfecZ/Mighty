@@ -213,9 +213,9 @@ class TestPPOUpdate:
         ]
         for metric in required_metrics:
             assert metric in metrics, f"Missing metric: {metric}"
-            assert isinstance(metrics[metric], (int, float)), (
-                f"Metric {metric} should be numeric"
-            )
+            assert isinstance(
+                metrics[metric], (int, float)
+            ), f"Metric {metric} should be numeric"
 
     def test_continuous_action_update(self):
         """Test PPO update with continuous actions."""
@@ -261,9 +261,9 @@ class TestPPOUpdate:
         ]
         for metric in required_metrics:
             assert metric in metrics, f"Missing metric: {metric}"
-            assert isinstance(metrics[metric], (int, float)), (
-                f"Metric {metric} should be numeric"
-            )
+            assert isinstance(
+                metrics[metric], (int, float)
+            ), f"Metric {metric} should be numeric"
 
     def test_value_clipping(self):
         """Test value clipping mechanism."""
@@ -389,8 +389,8 @@ class TestPPOUpdate:
         for metric_name in expected_metrics:
             assert metric_name in metrics, f"Missing metric: {metric_name}"
             metric_value = metrics[metric_name]
-            assert isinstance(metric_value, (int, float)), (
-                f"Metric {metric_name} should be scalar"
-            )
+            assert isinstance(
+                metric_value, (int, float)
+            ), f"Metric {metric_name} should be scalar"
             assert not np.isnan(metric_value), f"Metric {metric_name} should not be NaN"
             assert np.isfinite(metric_value), f"Metric {metric_name} should be finite"

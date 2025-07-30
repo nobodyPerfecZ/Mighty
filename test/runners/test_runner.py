@@ -55,22 +55,22 @@ class TestMightyRunner:
 
     def test_init(self):
         runner = MightyOnlineRunner(self.runner_config)
-        assert isinstance(runner, MightyRunner), (
-            "MightyOnlineRunner should be an instance of MightyRunner"
-        )
-        assert isinstance(runner.agent, MightyAgent), (
-            "MightyOnlineRunner should have a MightyAgent"
-        )
-        assert isinstance(runner.agent.eval_env, PufferlibToGymAdapter), (
-            "Eval env should be a PufferlibToGymAdapter"
-        )
+        assert isinstance(
+            runner, MightyRunner
+        ), "MightyOnlineRunner should be an instance of MightyRunner"
+        assert isinstance(
+            runner.agent, MightyAgent
+        ), "MightyOnlineRunner should have a MightyAgent"
+        assert isinstance(
+            runner.agent.eval_env, PufferlibToGymAdapter
+        ), "Eval env should be a PufferlibToGymAdapter"
         assert runner.agent.env is not None, "Env should not be None"
-        assert runner.eval_every_n_steps == self.runner_config.eval_every_n_steps, (
-            "Eval every n steps should be set"
-        )
-        assert runner.num_steps == self.runner_config.num_steps, (
-            "Num steps should be set"
-        )
+        assert (
+            runner.eval_every_n_steps == self.runner_config.eval_every_n_steps
+        ), "Eval every n steps should be set"
+        assert (
+            runner.num_steps == self.runner_config.num_steps
+        ), "Num steps should be set"
 
     def test_train(self):
         runner = MightyOnlineRunner(self.runner_config)
@@ -94,7 +94,7 @@ class TestMightyRunner:
         train_results, eval_results = runner.run()
         assert isinstance(train_results, dict), "Train results should be a dictionary"
         assert isinstance(eval_results, dict), "Eval results should be a dictionary"
-        assert "mean_eval_reward" in eval_results, (
-            "Eval results should have mean_eval_reward"
-        )
+        assert (
+            "mean_eval_reward" in eval_results
+        ), "Eval results should have mean_eval_reward"
         shutil.rmtree("test_runner")

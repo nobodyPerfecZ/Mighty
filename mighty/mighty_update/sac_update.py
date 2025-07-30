@@ -72,7 +72,9 @@ class SACUpdate:
                 transition.rewards, dtype=torch.float32
             ).unsqueeze(-1) + (
                 1 - torch.as_tensor(transition.dones, dtype=torch.float32).unsqueeze(-1)
-            ) * self.gamma * (torch.min(q1_t, q2_t) - alpha * logp_next)
+            ) * self.gamma * (
+                torch.min(q1_t, q2_t) - alpha * logp_next
+            )
         sa = torch.cat(
             [
                 torch.as_tensor(transition.observations, dtype=torch.float32),

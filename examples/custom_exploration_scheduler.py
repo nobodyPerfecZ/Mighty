@@ -1,6 +1,7 @@
 """Epsilon Greedy Scheduler."""
 
 from __future__ import annotations
+
 from mighty.mighty_meta.mighty_component import MightyMetaComponent
 
 
@@ -8,10 +9,7 @@ class EpsilonSchedule(MightyMetaComponent):
     """Cosine LR Schedule with optional warm restarts."""
 
     def __init__(
-        self,
-        initial_epsilon=1.0,
-        num_decay_steps=40000,
-        target_epsilon=0.01
+        self, initial_epsilon=1.0, num_decay_steps=40000, target_epsilon=0.01
     ) -> None:
         """Epsilon schedule initialization.
 

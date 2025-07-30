@@ -119,9 +119,9 @@ class TestSACAgent:
         print(f"Buffer size after manual collection: {len(agent.buffer)}")
 
         # Ensure we have enough data in buffer
-        assert len(agent.buffer) >= agent.batch_size, (
-            f"Buffer size {len(agent.buffer)} should be >= batch size {agent.batch_size}"
-        )
+        assert (
+            len(agent.buffer) >= agent.batch_size
+        ), f"Buffer size {len(agent.buffer)} should be >= batch size {agent.batch_size}"
 
         # Set agent.steps to satisfy learning_starts condition
         agent.steps = agent.learning_starts + 1
@@ -214,9 +214,9 @@ class TestSACAgent:
             # Try with higher learning rates for debugging
             print("Trying with higher learning rates...")
             agent.update_fn.policy_optimizer.param_groups[0]["lr"] = 0.01
-            agent.update_fn.q_optimizer.param_groups[0]["lr"] = (
-                0.01  # Now single optimizer for both Q-nets
-            )
+            agent.update_fn.q_optimizer.param_groups[0][
+                "lr"
+            ] = 0.01  # Now single optimizer for both Q-nets
 
             # Force multiple updates to trigger policy update (due to policy_frequency)
             for i in range(agent.update_fn.policy_frequency + 1):
@@ -238,9 +238,9 @@ class TestSACAgent:
             print(f"After debug update - Policy changed: {policy_changed_debug}")
 
         # Modified assertions - warn instead of fail for debugging
-        assert policy_params_changed or q1_params_changed or q2_params_changed, (
-            "At least some parameters should change after update"
-        )
+        assert (
+            policy_params_changed or q1_params_changed or q2_params_changed
+        ), "At least some parameters should change after update"
         assert isinstance(result_metrics, dict), "Update should return metrics dict"
 
         # Check for expected SAC metrics in the result
@@ -281,39 +281,40 @@ class TestSACAgent:
         params = agent.parameters
         assert isinstance(params, list), "Parameters should be a list"
         assert len(params) > 0, "Should have parameters"
-        assert all(isinstance(p, torch.nn.Parameter) for p in params), (
-            "All should be Parameters"
-        )
+        assert all(
+            isinstance(p, torch.nn.Parameter) for p in params
+        ), "All should be Parameters"
 
         # Test that parameters include all three networks (policy, q1, q2)
         policy_params = list(agent.model.policy_net.parameters())
         q1_params = list(agent.model.q_net1.parameters())
         q2_params = list(agent.model.q_net2.parameters())
         expected_param_count = len(policy_params) + len(q1_params) + len(q2_params)
-        assert len(params) == expected_param_count, (
-            f"Expected {expected_param_count} parameters, got {len(params)}"
-        )
+        assert (
+            len(params) == expected_param_count
+        ), f"Expected {expected_param_count} parameters, got {len(params)}"
 
         # Test value_function property
         value_fn = agent.value_function
-        assert isinstance(value_fn, torch.nn.Module), (
-            "Value function should be a torch module"
-        )
+        assert isinstance(
+            value_fn, torch.nn.Module
+        ), "Value function should be a torch module"
 
         # Test that value function can be called with a state
         dummy_state = torch.randn(1, agent.env.single_observation_space.shape[0])
         value_output = value_fn(dummy_state)
-        assert isinstance(value_output, torch.Tensor), (
-            "Value function should return a tensor"
-        )
-        assert value_output.shape == (1, 1), (
-            f"Expected shape (1, 1), got {value_output.shape}"
-        )
+        assert isinstance(
+            value_output, torch.Tensor
+        ), "Value function should return a tensor"
+        assert value_output.shape == (
+            1,
+            1,
+        ), f"Expected shape (1, 1), got {value_output.shape}"
 
         # Test that value function is the cached module
         value_fn2 = agent.value_function
-        assert value_fn is value_fn2, (
-            "Value function should be cached and return same instance"
-        )
+        assert (
+            value_fn is value_fn2
+        ), "Value function should be cached and return same instance"
 
         clean(output_dir)

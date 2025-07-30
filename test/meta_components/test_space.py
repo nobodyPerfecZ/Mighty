@@ -25,12 +25,12 @@ class TestSPaCE:
             "rollout_values": [[0.0, 0.6, 0.7]],
         }
         space.get_instances(metrics)
-        assert len(space.all_instances) == 1, (
-            f"Expected 1, got {len(space.all_instances)}"
-        )
-        assert len(space.instance_set) == 1, (
-            f"Expected 1, got {len(space.instance_set)}"
-        )
+        assert (
+            len(space.all_instances) == 1
+        ), f"Expected 1, got {len(space.all_instances)}"
+        assert (
+            len(space.instance_set) == 1
+        ), f"Expected 1, got {len(space.instance_set)}"
         assert space.last_evals is not None, "Evals should not be None."
 
     def test_get_evals(self) -> None:
@@ -53,10 +53,10 @@ class TestSPaCE:
         )
         assert dqn.meta_modules["SPaCE"] is not None, "SPaCE should be initialized."
         dqn.run(100, 0)
-        assert dqn.meta_modules["SPaCE"].all_instances is not None, (
-            "All instances should be initialized."
-        )
-        assert env.inst_ids[0] in dqn.meta_modules["SPaCE"].all_instances, (
-            "Instance should be in all instances."
-        )
+        assert (
+            dqn.meta_modules["SPaCE"].all_instances is not None
+        ), "All instances should be initialized."
+        assert (
+            env.inst_ids[0] in dqn.meta_modules["SPaCE"].all_instances
+        ), "Instance should be in all instances."
         clean(output_dir)

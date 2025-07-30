@@ -13,18 +13,18 @@ class TestDQN:
         dqn = DQN(num_actions=4, obs_size=3)
         assert dqn.num_actions == 4, "Num_actions should be 4"
         assert dqn.dueling is False, "Dueling should be False"
-        assert isinstance(dqn.feature_extractor, MLP), (
-            "Default feature extractor should be an instance of MLP"
-        )
-        assert isinstance(dqn.head, torch.nn.Sequential), (
-            "Head should be a nn.Sequential"
-        )
-        assert isinstance(dqn.value, torch.nn.Linear), (
-            "Value layer should be a nn.Linear"
-        )
-        assert isinstance(dqn.advantage, torch.nn.Linear), (
-            "Advantage layer should be a nn.Linear"
-        )
+        assert isinstance(
+            dqn.feature_extractor, MLP
+        ), "Default feature extractor should be an instance of MLP"
+        assert isinstance(
+            dqn.head, torch.nn.Sequential
+        ), "Head should be a nn.Sequential"
+        assert isinstance(
+            dqn.value, torch.nn.Linear
+        ), "Value layer should be a nn.Linear"
+        assert isinstance(
+            dqn.advantage, torch.nn.Linear
+        ), "Advantage layer should be a nn.Linear"
         dummy_input = torch.rand((1, 3))
         assert dqn(dummy_input).shape == (1, 4), "Output should have shape (1, 4)"
 
@@ -45,21 +45,21 @@ class TestDQN:
         )
         assert dqn.num_actions == 2, "Num_actions should be 4"
         assert dqn.dueling is True, "Dueling should be True"
-        assert isinstance(dqn.feature_extractor, CNN), (
-            "Feature extractor should be a CNN"
-        )
-        assert len(dqn.feature_extractor.cnn) == 5, (
-            "Feature extractor should have 2 convolutions"
-        )
-        assert dqn.feature_extractor.cnn[0].out_channels == 32, (
-            "First convolution should have 32 output channels"
-        )
+        assert isinstance(
+            dqn.feature_extractor, CNN
+        ), "Feature extractor should be a CNN"
+        assert (
+            len(dqn.feature_extractor.cnn) == 5
+        ), "Feature extractor should have 2 convolutions"
+        assert (
+            dqn.feature_extractor.cnn[0].out_channels == 32
+        ), "First convolution should have 32 output channels"
         assert dqn.head[0].out_features == 32, "Head layer 1 should have hidden size 32"
         assert dqn.head[2].out_features == 32, "Head layer 2 should have hidden size 32"
         assert dqn.value.out_features == 1, "Value layer should have 1 output feature"
-        assert dqn.advantage.out_features == 2, (
-            "Advantage layer should have 2 output features"
-        )
+        assert (
+            dqn.advantage.out_features == 2
+        ), "Advantage layer should have 2 output features"
         dummy_input = torch.rand((5, 64, 64, 3))
         assert dqn(dummy_input).shape == (5, 2), "Output should have shape (1, 2)"
 
@@ -87,9 +87,9 @@ class TestDQN:
             + calculated_advantage
             - calculated_advantage.mean(dim=1, keepdim=True)
         )
-        assert torch.allclose(dqn_pred, calculated_pred), (
-            "Prediction should be equal to value + advantage - mean_advantage"
-        )
+        assert torch.allclose(
+            dqn_pred, calculated_pred
+        ), "Prediction should be equal to value + advantage - mean_advantage"
 
     def test_reset_head(self):
         head_kwargs = {"hidden_sizes": [32, 32]}
@@ -114,9 +114,9 @@ class TestDQN:
         new_features = dqn.feature_extractor(dummy_input)
         new_pred = dqn(dummy_input)
 
-        assert torch.allclose(original_features, new_features), (
-            "Features should be equal"
-        )
+        assert torch.allclose(
+            original_features, new_features
+        ), "Features should be equal"
         assert ~torch.allclose(original_pred, new_pred), "Predictions should differ"
 
     def test_shrink_weights(self):
@@ -128,21 +128,21 @@ class TestDQN:
         for new_param, old_param in zip(
             dqn.head.parameters(), prev_head_params, strict=False
         ):
-            assert torch.allclose(new_param, old_param * 0.5), (
-                "Weights have not been shrunk."
-            )
+            assert torch.allclose(
+                new_param, old_param * 0.5
+            ), "Weights have not been shrunk."
         for new_param, old_param in zip(
             dqn.advantage.parameters(), prev_adv_params, strict=False
         ):
-            assert torch.allclose(new_param, old_param * 0.5), (
-                "Advantage weights have not been shrunk."
-            )
+            assert torch.allclose(
+                new_param, old_param * 0.5
+            ), "Advantage weights have not been shrunk."
         for new_param, old_param in zip(
             dqn.value.parameters(), prev_value_params, strict=False
         ):
-            assert torch.allclose(new_param, old_param * 0.5), (
-                "Value weights have not been shrunk."
-            )
+            assert torch.allclose(
+                new_param, old_param * 0.5
+            ), "Value weights have not been shrunk."
 
     def test_get_state(self):
         dqn = DQN(num_actions=4, obs_size=3, dueling=True)
@@ -160,18 +160,18 @@ class TestDQN:
         state_dict = dqn.state_dict()
         dqn2 = DQN(num_actions=4, obs_size=3, dueling=True)
         original_pred = dqn2(dummy_input)
-        assert ~torch.allclose(baseline_pred, original_pred), (
-            "Predictions should be different before loading"
-        )
+        assert ~torch.allclose(
+            baseline_pred, original_pred
+        ), "Predictions should be different before loading"
         for p1, p2 in zip(dqn.parameters(), dqn2.parameters(), strict=False):
-            assert not torch.allclose(p1, p2), (
-                "Parameters should be different before loading"
-            )
+            assert not torch.allclose(
+                p1, p2
+            ), "Parameters should be different before loading"
         dqn2.load_state_dict(state_dict)
         new_pred = dqn2(dummy_input)
-        assert torch.allclose(baseline_pred, new_pred), (
-            "Predictions should be equal after loading"
-        )
+        assert torch.allclose(
+            baseline_pred, new_pred
+        ), "Predictions should be equal after loading"
         for p1, p2 in zip(dqn.parameters(), dqn2.parameters(), strict=False):
             assert torch.allclose(p1, p2), "Parameters should be equal after loading"
 

@@ -94,9 +94,9 @@ class TestPPOAgent:
 
         prediction = agent.step(test_obs, metrics)[0]
         assert len(prediction) == 1, "Prediction should have shape (1,)"
-        assert 0 <= prediction[0] < 4, (
-            "Action should be in valid range [0, 4)"
-        )  # Updated for 4 actions
+        assert (
+            0 <= prediction[0] < 4
+        ), "Action should be in valid range [0, 4)"  # Updated for 4 actions
 
         clean(output_dir)
 
@@ -166,9 +166,9 @@ class TestPPOAgent:
         print(f"Buffer size after manual collection: {len(agent.buffer)}")
 
         # Ensure we have enough data in buffer
-        assert len(agent.buffer) >= agent._batch_size, (
-            f"Buffer size {len(agent.buffer)} should be >= batch size {agent._batch_size}"
-        )
+        assert (
+            len(agent.buffer) >= agent._batch_size
+        ), f"Buffer size {len(agent.buffer)} should be >= batch size {agent._batch_size}"
 
         # Perform update
         update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
@@ -244,15 +244,15 @@ class TestPPOAgent:
         params = ppo.parameters
         assert isinstance(params, list), "Parameters should be a list"
         assert len(params) > 0, "Should have parameters"
-        assert all(isinstance(p, torch.nn.Parameter) for p in params), (
-            "All should be Parameters"
-        )
+        assert all(
+            isinstance(p, torch.nn.Parameter) for p in params
+        ), "All should be Parameters"
 
         # Test value_function property - updated for new structure
         value_fn = ppo.value_function
-        assert value_fn is ppo.model.value_function_module, (
-            "Value function should be model's value function module"
-        )
+        assert (
+            value_fn is ppo.model.value_function_module
+        ), "Value function should be model's value function module"
 
         # Test that the value function wrapper works - use correct obs shape
         obs_shape = env.single_observation_space.shape[

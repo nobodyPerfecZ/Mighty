@@ -266,10 +266,14 @@ def plot_final_performance_comparison(
         aggregation_funcs = lambda x: np.array([metrics.aggregate_iqm(x)])  # noqa: E731
         metric_names = ["IQM"]
     elif "mean" in aggregation:
-        aggregation_funcs = lambda x: np.array([metrics.aggregate_mean(x)])  # noqa: E731
+        aggregation_funcs = lambda x: np.array(
+            [metrics.aggregate_mean(x)]
+        )  # noqa: E731
         metric_names = ["Mean"]
     elif "median" in aggregation:
-        aggregation_funcs = lambda x: np.array([metrics.aggregate_median(x)])  # noqa: E731
+        aggregation_funcs = lambda x: np.array(
+            [metrics.aggregate_median(x)]
+        )  # noqa: E731
         metric_names = ["Median"]
 
     score_dict = {}

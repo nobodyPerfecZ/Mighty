@@ -168,11 +168,9 @@ class MightyAgent(ABC):
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
-        replay_buffer_class: str
-        | DictConfig
-        | type[MightyReplay]
-        | type[MightyRolloutBuffer]
-        | None = None,
+        replay_buffer_class: (
+            str | DictConfig | type[MightyReplay] | type[MightyRolloutBuffer] | None
+        ) = None,
         replay_buffer_kwargs: TypeKwargs | None = None,
         meta_methods: list[str | type] | None = None,
         meta_kwargs: list[TypeKwargs] | None = None,
@@ -289,9 +287,9 @@ class MightyAgent(ABC):
         self.meta_modules = {}
         for i, m in enumerate(meta_methods):
             meta_class = retrieve_class(cls=m, default_cls=None)  # type: ignore
-            assert meta_class is not None, (
-                f"Class {m} not found, did you specify the correct loading path?"
-            )
+            assert (
+                meta_class is not None
+            ), f"Class {m} not found, did you specify the correct loading path?"
             kwargs: Dict = {}
             if len(meta_kwargs) > i:
                 kwargs = meta_kwargs[i]

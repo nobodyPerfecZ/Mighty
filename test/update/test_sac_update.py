@@ -196,9 +196,9 @@ class TestSACUpdate:
         ]
         for metric in required_metrics:
             assert metric in metrics, f"Missing metric: {metric}"
-            assert isinstance(metrics[metric], (int, float)), (
-                f"Metric {metric} should be numeric"
-            )
+            assert isinstance(
+                metrics[metric], (int, float)
+            ), f"Metric {metric} should be numeric"
             assert np.isfinite(metrics[metric]), f"Metric {metric} should be finite"
 
     def test_target_network_updates(self):
@@ -239,9 +239,9 @@ class TestSACUpdate:
             initial_target_q1,
         ):
             expected = (1 - tau) * p_old_target + tau * p_main
-            assert torch.allclose(p_target, expected, atol=1e-5), (
-                "Target update should follow polyak averaging"
-            )
+            assert torch.allclose(
+                p_target, expected, atol=1e-5
+            ), "Target update should follow polyak averaging"
 
     def test_td_error_calculation(self):
         """Test TD error calculation."""
@@ -251,12 +251,14 @@ class TestSACUpdate:
         td_error1, td_error2 = update.calculate_td_error(batch)
 
         # Check shapes
-        assert td_error1.shape == (batch.batch_size, 1), (
-            f"TD error1 shape: {td_error1.shape}"
-        )
-        assert td_error2.shape == (batch.batch_size, 1), (
-            f"TD error2 shape: {td_error2.shape}"
-        )
+        assert td_error1.shape == (
+            batch.batch_size,
+            1,
+        ), f"TD error1 shape: {td_error1.shape}"
+        assert td_error2.shape == (
+            batch.batch_size,
+            1,
+        ), f"TD error2 shape: {td_error2.shape}"
 
         # Check that values are finite
         assert torch.all(torch.isfinite(td_error1)), "TD error1 should be finite"
@@ -356,9 +358,9 @@ class TestSACUpdate:
             )
         )
 
-        assert total_change_large > total_change, (
-            "Larger tau should cause bigger target network changes"
-        )
+        assert (
+            total_change_large > total_change
+        ), "Larger tau should cause bigger target network changes"
 
     def test_zero_rewards_batch(self):
         """Test SAC with zero rewards."""
@@ -370,9 +372,9 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         for metric_name, metric_value in metrics.items():
-            assert np.isfinite(metric_value), (
-                f"Metric {metric_name} should be finite with zero rewards"
-            )
+            assert np.isfinite(
+                metric_value
+            ), f"Metric {metric_name} should be finite with zero rewards"
 
     def test_all_done_batch(self):
         """Test SAC with all episodes terminated."""
@@ -384,9 +386,9 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         for metric_name, metric_value in metrics.items():
-            assert np.isfinite(metric_value), (
-                f"Metric {metric_name} should be finite with all done"
-            )
+            assert np.isfinite(
+                metric_value
+            ), f"Metric {metric_name} should be finite with all done"
 
     def test_metric_ranges(self):
         """Test that metrics are in reasonable ranges."""
@@ -443,12 +445,12 @@ class TestSACUpdate:
         # Run updates less than policy_frequency - policy shouldn't change
         for i in range(policy_freq - 1):
             metrics = update.update(batch)
-            assert metrics["policy_loss"] == 0.0, (
-                "Policy loss should be 0 when no policy update"
-            )
-            assert metrics["alpha_loss"] == 0.0, (
-                "Alpha loss should be 0 when no policy update"
-            )
+            assert (
+                metrics["policy_loss"] == 0.0
+            ), "Policy loss should be 0 when no policy update"
+            assert (
+                metrics["alpha_loss"] == 0.0
+            ), "Alpha loss should be 0 when no policy update"
 
         # Policy parameters shouldn't have changed yet
         policy_unchanged = all(
@@ -457,16 +459,16 @@ class TestSACUpdate:
         )
         alpha_unchanged = torch.allclose(initial_alpha, update.log_alpha, atol=1e-6)
 
-        assert policy_unchanged, (
-            "Policy parameters should not change before policy_frequency"
-        )
+        assert (
+            policy_unchanged
+        ), "Policy parameters should not change before policy_frequency"
         assert alpha_unchanged, "Alpha should not change before policy_frequency"
 
         # Now run one more update - should trigger policy update
         metrics = update.update(batch)
-        assert metrics["policy_loss"] != 0.0, (
-            "Policy loss should be non-zero when policy updates"
-        )
+        assert (
+            metrics["policy_loss"] != 0.0
+        ), "Policy loss should be non-zero when policy updates"
 
         # Policy parameters should have changed now
         policy_changed = any(
@@ -514,9 +516,9 @@ class TestSACUpdate:
 
         # At least some parameters should change
         change_ratio = changed_params / total_params
-        assert change_ratio > 0.1, (
-            f"Only {change_ratio:.2%} of parameters changed, gradient flow might be broken. Changes: {param_changes}"
-        )
+        assert (
+            change_ratio > 0.1
+        ), f"Only {change_ratio:.2%} of parameters changed, gradient flow might be broken. Changes: {param_changes}"
 
         # Additional check: ensure losses are reasonable
         assert np.isfinite(metrics["q_loss1"]) and metrics["q_loss1"] >= 0
