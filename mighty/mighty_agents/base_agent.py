@@ -18,23 +18,20 @@ from rich import print
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
-from rich.progress import (BarColumn, Progress, TimeElapsedColumn,
-                           TimeRemainingColumn)
+from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingColumn
 from rich.table import Table
 from uniplot import plot_to_string
 
 from mighty.mighty_exploration import MightyExplorationPolicy
-from mighty.mighty_replay import (MightyReplay, MightyRolloutBuffer,
-                                  PrioritizedReplay)
-from mighty.mighty_utils.mighty_types import (CARLENV, DACENV, MIGHTYENV,
-                                              retrieve_class)
+from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer, PrioritizedReplay
+from mighty.mighty_utils.mighty_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
     from mighty.mighty_utils.mighty_types import TypeKwargs
 
 import gymnasium as gym
-from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
 from gymnasium.wrappers import RescaleAction
+from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
 
 
 def seed_everything(seed: int, env: gym.Env | None = None):
@@ -271,11 +268,11 @@ class MightyAgent(ABC):
 
         if normalize_reward:
             env = NormalizeReward(env)
-            
+
         if rescale_action:
             env = RescaleAction(env, min_action=-1.0, max_action=1.0)
             if eval_env:
-                eval_env = RescaleAction(eval_env, min_action=-1.0, max_action=1.0)            
+                eval_env = RescaleAction(eval_env, min_action=-1.0, max_action=1.0)
 
         self.env = env
         if eval_env is None:

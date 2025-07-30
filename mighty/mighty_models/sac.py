@@ -37,7 +37,7 @@ class SACModel(nn.Module):
             "hidden_sizes": [256, 256],
             "n_layers": 2,
         }
-        
+
         # Allow direct specification of hidden_sizes and activation at top level
         if "hidden_sizes" in kwargs:
             feature_extractor_kwargs["hidden_sizes"] = kwargs["hidden_sizes"]
@@ -45,7 +45,7 @@ class SACModel(nn.Module):
         if "activation" in kwargs:
             feature_extractor_kwargs["activation"] = kwargs["activation"]
             head_kwargs["activation"] = kwargs["activation"]
-            
+
         if "head_kwargs" in kwargs:
             head_kwargs.update(kwargs["head_kwargs"])
         if "feature_extractor_kwargs" in kwargs:
@@ -93,18 +93,20 @@ class SACModel(nn.Module):
             def __init__(self, parent_model):
                 super().__init__()
                 self.parent_model = parent_model
-                
+
             def forward(self, x):
                 # SAC doesn't have a separate value function, but for compatibility
                 # we can return the minimum of the two Q-values with a zero action
                 # This is mainly for interface compatibility
                 batch_size = x.shape[0]
-                zero_action = torch.zeros(batch_size, self.parent_model.action_size, device=x.device)
+                zero_action = torch.zeros(
+                    batch_size, self.parent_model.action_size, device=x.device
+                )
                 state_action = torch.cat([x, zero_action], dim=-1)
                 q1 = self.parent_model.forward_q1(state_action)
                 q2 = self.parent_model.forward_q2(state_action)
                 return torch.min(q1, q2)
-        
+
         self.value_function_module = ValueFunctionWrapper(self)
 
     def forward(

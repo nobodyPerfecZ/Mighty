@@ -9,7 +9,9 @@ import torch
 from torch.distributions import Categorical, Normal
 
 from mighty.mighty_exploration.mighty_exploration_policy import (
-    MightyExplorationPolicy, sample_nondeterministic_logprobs)
+    MightyExplorationPolicy,
+    sample_nondeterministic_logprobs,
+)
 from mighty.mighty_models import SACModel
 
 

@@ -35,14 +35,20 @@ class PPOModel(nn.Module):
         self.tanh_squash = tanh_squash
 
         # Extract configuration from kwargs or use defaults
-        head_kwargs = kwargs.get("head_kwargs", {"hidden_sizes": [64], "layer_norm": True, "activation": "tanh"})
-        feature_extractor_kwargs = kwargs.get("feature_extractor_kwargs", {
-            "obs_shape": self.obs_size,
-            "activation": "tanh", 
-            "hidden_sizes": [64, 64],
-            "n_layers": 2,
-        })
-        
+        head_kwargs = kwargs.get(
+            "head_kwargs",
+            {"hidden_sizes": [64], "layer_norm": True, "activation": "tanh"},
+        )
+        feature_extractor_kwargs = kwargs.get(
+            "feature_extractor_kwargs",
+            {
+                "obs_shape": self.obs_size,
+                "activation": "tanh",
+                "hidden_sizes": [64, 64],
+                "n_layers": 2,
+            },
+        )
+
         # Allow direct specification of hidden_sizes and activation at top level
         if "hidden_sizes" in kwargs:
             feature_extractor_kwargs["hidden_sizes"] = kwargs["hidden_sizes"]
@@ -57,7 +63,7 @@ class PPOModel(nn.Module):
         self.feature_extractor_value, _ = make_feature_extractor(
             **feature_extractor_kwargs
         )
-        
+
         if self.continuous_action:
             if self.tanh_squash:
                 # Tanh squashing mode: output mean + log_std from network
@@ -101,18 +107,17 @@ class PPOModel(nn.Module):
                 nn.init.constant_(m.bias, 0.0)
 
         self.apply(_init_weights)
-        
+
         # Create a value function wrapper that can be called like a module
         class ValueFunctionWrapper(nn.Module):
             def __init__(self, parent_model):
                 super().__init__()
                 self.parent_model = parent_model
-                
+
             def forward(self, x):
                 return self.parent_model.forward_value(x)
-        
+
         self.value_function_module = ValueFunctionWrapper(self)
-   
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
