@@ -692,7 +692,7 @@ class TestMightyRolloutBuffer:
             episode_starts=np.array([[1, 1]]),  # (1, 2) ✓
             log_probs=np.array(
                 [[-0.5, -0.8]]
-            ),  # (1, 2) - FIXED: No more transpose needed
+            ),  # (1, 2)
             values=np.array([[1.0, 0.5]]),  # (1, 2) ✓
         )
 
@@ -795,7 +795,7 @@ class TestMightyRolloutBuffer:
                 [[1, 1]],
                 [[-0.5, -0.8]],
                 [[1.0, 0.5]],
-            ),  # FIXED: log_probs shape
+            ),
             # timestep 1: env0=[9,10,11,12], env1=[13,14,15,16]
             (
                 [[[9, 10, 11, 12], [13, 14, 15, 16]]],
@@ -806,7 +806,7 @@ class TestMightyRolloutBuffer:
                 [[0, 0]],
                 [[-0.3, -0.6]],
                 [[0.3, -0.2]],
-            ),  # FIXED: log_probs shape
+            ),
         ]
 
         for obs, acts, rews, advs, rets, eps, lps, vals in data_timesteps:
@@ -817,7 +817,7 @@ class TestMightyRolloutBuffer:
                 advantages=np.array(advs),  # (1, 2)
                 returns=np.array(rets),  # (1, 2)
                 episode_starts=np.array(eps),  # (1, 2)
-                log_probs=np.array(lps),  # (1, 2) - FIXED: Now matches other fields
+                log_probs=np.array(lps),  # (1, 2)
                 values=np.array(vals),  # (1, 2)
             )
             buffer.add(rb)
@@ -911,7 +911,7 @@ class TestMightyRolloutBuffer:
             advantages=np.array([[0.1, -0.1]]),  # (1, 2)
             returns=np.array([[1.1, 0.4]]),  # (1, 2)
             episode_starts=np.array([[1, 1]]),  # (1, 2)
-            log_probs=np.array([[-0.5, -0.8]]),  # (1, 2) - FIXED: No transpose needed
+            log_probs=np.array([[-0.5, -0.8]]),  # (1, 2)
             values=np.array([[1.0, 0.5]]),  # (1, 2)
         )
 
@@ -1156,7 +1156,7 @@ class TestMightyRolloutBuffer:
             episode_starts=np.array([[1, 1, 1]]),  # (1, 3) - All start new episodes
             log_probs=np.array(
                 [[-0.5, -0.8, -0.3]]
-            ),  # (1, 3) - FIXED: No transpose needed
+            ),  # (1, 3)
             values=np.array([[0.5, 1.0, 0.3]]),  # (1, 3)
         )
 
