@@ -65,7 +65,7 @@ def make_dacbench_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]
                 bench.config[k] = cfg.env_kwargs[k]
         make_env = bench.get_environment
 
-    def make_eval_env(make_env: Callable) -> Any:
+    def make_eval_env() -> Any:
         eval_env = make_env()
         eval_env.use_test_set()
         return eval_env
@@ -74,7 +74,7 @@ def make_dacbench_env(cfg: DictConfig) -> Tuple[ContextualVecEnv, Callable, int]
     eval_env = partial(
         ContextualVecEnv,
         [
-            partial(make_eval_env, make_env)
+            make_eval_env
             for _ in range(cfg.n_episodes_eval * len(env.envs[0].instance_set.keys()))  # type: ignore
         ],
     )
@@ -88,7 +88,6 @@ def make_carl_env(
     """Make carl environment."""
 
     import carl
-    from carl import envs
     from carl.context.sampler import ContextSampler
 
     env_kwargs = OmegaConf.to_container(cfg.env_kwargs, resolve=True)
@@ -104,7 +103,7 @@ def make_carl_env(
     if "evaluation_context_sample_seed" not in env_kwargs:  # type: ignore
         env_kwargs["evaluation_context_sample_seed"] = 1  # type: ignore
 
-    env_class = getattr(envs, cfg.env)
+    env_class = getattr(carl.envs, cfg.env)
 
     if len(env_kwargs["context_feature_args"].keys()) > 0:  # type: ignore
         context_distributions = []

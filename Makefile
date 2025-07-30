@@ -39,8 +39,7 @@ DOCDIR := ${CURDIR}/docs
 INDEX_HTML := file://${DOCDIR}/html/build/index.html
 
 install-dev:
-	$(PIP) install -e ".[dev,docs,pufferlib,dacbench]"
-	$(PIP) install carl_bench==1.1.1 brax==0.12.1
+	$(PIP) install -e ".[dev,docs,pufferlib,dacbench,carl]"
 
 install:
 	$(PIP) install -e ".[examples]"

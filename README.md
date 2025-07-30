@@ -27,23 +27,21 @@
 
 # Mighty
 
-**Warning: Mighty is still in development without an official release! Use at your own peril and check back frequently for updates!**
-
 Welcome to Mighty, hopefully your future one-stop shop for everything cRL.
 Currently Mighty is still in its early stages with support for normal gym envs, DACBench and CARL.
 The interface is controlled through hydra and we provide DQN, PPO and SAC algorithms.
-We log training and regular evaluations to file and optionally also to tensorboard or wandb.
+We log training and regular evaluations to file and optionally also to wandb.
 If you have any questions or feedback, please tell us, ideally via the GitHub issues!
 
 Mighty features:
 - Modular structure for easy (Meta-)RL tinkering
 - PPO, SAC and DQN as base algorithms
 - Environment integrations via Gymnasium, Pufferlib, CARL & DACBench
-- Implementations of some important baselines: MAML, PLR, Cosine LR Schedule and more!
+- Implementations of some important baselines: RND, PLR, Cosine LR Schedule and more!
 
 ## Installation
 We recommend to using uv to install and run Mighty in a virtual environment.
-The code has been tested with python 3.10.
+The code has been tested with python 3.10/3.11 on Unix systems.
 
 First create a clean python environment:
 
@@ -80,31 +78,93 @@ An example for running the PPO agent on the Pendulum gym environment looks like 
 python mighty/run_mighty.py 'algorithm=ppo' 'environment=gymnasium/pendulum'
 ```
 
-## Learning a Configuration Policy via DAC
-
-In order to use Mighty with DACBench, you need to install DACBench first.
-We recommend following the instructions in the [DACBench repo](https://github.com/automl/DACBench).
-
-Afterwards, select the benchmark you want to run, for example the SigmoidBenchmark, and providing it as the "env" keyword: 
-```bash
-python mighty/run_mighty.py 'algorithm=dqn' 'env=SigmoidBenchmark' 'env_wrappers=[dacbench.wrappers.MultiDiscreteActionWrapper]'
-```
-
-## Train your Agent on a CARL Environment
+### Train your Agent on a CARL Environment
 Mighty is designed with contextual RL in mind and therefore fully compatible with CARL.
 Before you start training, however, please follow the installation instructions in the [CARL repo](https://github.com/automl/CARL).
 
 Then use the same command as before, but provide the CARL environment, in this example CARLCartPoleEnv,
 and information about the context distribution as keywords:
 ```bash
-python mighty/run_mighty.py 'algorithm=dqn' 'env=CARLCartPoleEnv' '+env_kwargs.num_contexts=10' '+env_kwargs.context_feature_args=[gravity]'
+python mighty/run_mighty.py 'algorithm=dqn' 'env=CARLCartPole' 'num_envs=10' '+env_kwargs.num_contexts=10' '+env_kwargs.context_feature_args.gravity=[normal, 9.8, 1.0, -100.0, 100.0]' 'env_wrappers=[mighty.mighty_utils.wrappers.FlattenVecObs]'
 ```
 
-## Optimize Hyperparameters
-You can optimize the hyperparameters of your algorithm with the [Hypersweeper](https://github.com/automl/hypersweeper) package, e.g. using [SMAC3](https://github.com/automl/SMAC3). Mighty is directly compatible with Hypersweeper and thus smart and distributed HPO!
+For more complex configurations like this, we recommend making an environment configuration file. Check out our [CARL Ant](mighty/configs/environment/carl_walkers/ant_goals.yaml) file to see how this simplifies the process of working with configurable environments.
 
-## Further Examples
-We provide further examples, such as how to plot the logged evaluation data, in the [examples](examples) folder.
+### Learning a Configuration Policy via DAC
+
+In order to use Mighty with DACBench, you need to install DACBench first.
+We recommend following the instructions in the [DACBench repo](https://github.com/automl/DACBench).
+
+Afterwards, configure the benchmark you want to run. Since most DACBench benchmarks have Dict action and observation spaces, some fairly complex,  you might need to wrap DACBenchmarks in order to translate the observations and actions to an easy-to-handle format. We have a version of the FunctionApproximationBenchmark configured for you so you can get started like this:
+```bash
+python mighty/run_mighty.py 'algorithm=ppo' 'environment=dacbench/function_approximation'
+```
+The matching [configuration file](mighty/configs/environment/dacbench/function_approximation.yaml) shows you how to set the search spaces and benchmark type. Refer to DACBench itself to learn how to configure other elements like observations spaces or instance sets.
+
+### Optimize Hyperparameters
+You can optimize the hyperparameters of your algorithm with the [Hypersweeper](https://github.com/automl/hypersweeper) package, e.g. using [SMAC3](https://github.com/automl/SMAC3). Mighty is directly compatible with Hypersweeper and thus smart and distributed HPO! There are also other HPO options, check out our [examples](examples/README.md) for more information.
+
+## Build Your Own Mighty Project
+If you want to implement your own method in Mighty, we recommend using the [Mighty template repository](https://github.com/automl/mighty_project_template) as a base. It contains a runscript, the most relevant config files and basic scripts for plotting. Our [domain randomization example](https://github.com/automl/mighty_dr_example) shows that you can get started right away. Since Mighty has many options of how to implement your idea, here's a rough guide which Mighty class you want to look at:
+
+```mermaid
+stateDiagram
+  direction TB
+  classDef Neutral stroke-width:1px,stroke-dasharray:none,stroke:#000000,fill:#FFFFFF,color:#000000;
+  classDef Peach stroke-width:1px,stroke-dasharray:none,stroke:#FBB35A,fill:#FFEFDB,color:#8F632D;
+  classDef Aqua stroke-width:1px,stroke-dasharray:none,stroke:#46EDC8,fill:#DEFFF8,color:#378E7A;
+  classDef Sky stroke-width:1px,stroke-dasharray:none,stroke:#374D7C,fill:#E2EBFF,color:#374D7C;
+  classDef Pine stroke-width:1px,stroke-dasharray:none,stroke:#254336,fill:#8faea5,color:#FFFFFF;
+  classDef Rose stroke-width:1px,stroke-dasharray:none,stroke:#FF5978,fill:#FFDFE5,color:#8E2236;
+  classDef Ash stroke-width:1px,stroke-dasharray:none,stroke:#999999,fill:#EEEEEE,color:#000000;
+  classDef Seven fill:#E1BEE7,color:#D50000,stroke:#AA00FF;
+  Still --> root_end:Yes
+  Still --> Moving:No
+  Moving --> Crash:Yes
+  Moving --> s2:No, only current transitions, env and network
+  s2 --> s6:Action Sampling
+  s2 --> s10:Policy Update
+  s2 --> s8:Training Batch Sampling
+  s2 --> Crash:More than one/not listed
+  s2 --> s12:Direct algorithm change
+  s12 --> s13:Yes
+  s12 --> s14:No
+  Still:Modify training settings and then repeated runs?
+  root_end:Runner
+  Moving:Access to update infos (gradients, batches, etc.)?
+  Crash:Meta Component
+  s2:Which interaction point with the algorithm?
+  s6:Exploration Policy
+  s10:Update
+  s8:Buffer
+  s12:Change only the model architecture?
+  s13:Network and/or Model
+  s14:Agent
+  class root_end Peach
+  class Crash Aqua
+  class s6 Sky
+  class s8 Pine
+  class s10 Rose
+  class s13 Ash
+  class s14 Seven
+  class Still Neutral
+  class Moving Neutral
+  class s2 Neutral
+  class s12 Neutral
+  style root_end color:none
+  style s8 color:#FFFFFF
+```
+
+## Pre-Implemented Methods
+Mighty is meant to be a platform to build upon and not a large collection of methods in itself. We have a few relevant methods pre-implemented, however, and this collection will likely grow over time:
+
+- **Agents**: SAC, PPO, DQN
+- **Updates**: SAC, PPO, Q-learning, double Q-learning, clipped double Q-learning
+- **Buffer**s: Rollout Buffer, Replay Buffer, Prioritized Replay Buffer
+- **Exploration Policies**: e-greedy (with and without decay), ez-greedy, standard stochastic
+- **Models** (with MLP, CNN or ResNet backbone): SAC, PPO, DQN (with soft and hard reset options)
+- **Meta Components**: RND, NovelD, SPaCE, PLR
+- **Runners**: online RL runner, ES runner
 
 ## Cite Us
 
@@ -112,7 +172,7 @@ If you use Mighty in your work, please cite us:
 
 ```bibtex
 @misc{mohaneimer24,
-  author    = {A. Mohan and T. Eimer and C. Benjamins and F. Hutter and M. Lindauer and A. Biedenkapp},
+  author    = {A. Mohan and T. Eimer and C. Benjamins and M. Lindauer and A. Biedenkapp},
   title     = {Mighty},
   year      = {2024},
   url = {https://github.com/automl/mighty}

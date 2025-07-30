@@ -83,7 +83,8 @@ class DictToVecActions(gym.Wrapper):
         self.single_action_space = gym.spaces.flatten_space(
             self.env.single_action_space
         )
-        self.action_keys = list(self.env.single_action_space.spaces.keys())
+
+        self.action_keys = list(self.og_single_action_space.spaces.keys())
 
     def step(self, action):
         """Take a step in the environment."""
@@ -150,6 +151,8 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
         if self.num_envs > 1:
             return self.env.reset(**kwargs)
         else:
+            if "seed" in kwargs and not isinstance(kwargs["seed"], int):
+                kwargs["seed"] = int(kwargs["seed"][0])
             obs, info = self.env.reset(**kwargs)
             return np.array([obs]), np.array([info])
 
@@ -196,6 +199,13 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
 
 
 class ContextualVecEnv(gym.vector.SyncVectorEnv):
+    # def __init__(self, envs):
+    #     """Initialize the ContextualVecEnv with a list of environments."""
+    #     super().__init__(envs)
+    #     self.observations = create_empty_array(
+    #         self.single_observation_space, n=self.num_envs, fn=np.zeros
+    #     )
+
     @property
     def instance_id_list(self):
         return self.envs[0].instance_id_list
