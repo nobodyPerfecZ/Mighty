@@ -11,8 +11,8 @@ class PPOUpdate:
     def __init__(
         self,
         model: PPOModel,
-        policy_lr: float = 3e-4,  # INCREASED from 1e-8 to reasonable value
-        value_lr: float = 3e-4,  # INCREASED from 1e-8 to reasonable value
+        policy_lr: float = 3e-4,
+        value_lr: float = 3e-4,
         epsilon: float = 0.1,
         ent_coef: float = 0.0,
         vf_coef: float = 0.5,
@@ -23,8 +23,8 @@ class PPOUpdate:
         use_value_clip: bool = True,
         value_clip_eps: float = 0.2,
         total_timesteps: int = 1_000_000,
-        adaptive_lr: bool = True,  # Enable adaptive LR management
-        min_lr: float = 1e-6,  # Minimum LR threshold
+        adaptive_lr: bool = True,
+        min_lr: float = 1e-6,
     ):
         """Initialize PPO update mechanism."""
         self.model = model
@@ -54,10 +54,6 @@ class PPOUpdate:
         extra_params = []
         if getattr(model, "continuous_action", False) and hasattr(model, "log_std"):
             extra_params.append(model.log_std)
-
-        print(f"[DEBUG] Initial Policy LR: {policy_lr:.2e}, Value LR: {value_lr:.2e}")
-        print(f"[DEBUG] PPO clip ε = {self.epsilon}")
-        print(f"[DEBUG] KL target = {self.kl_target}")
 
         self.optimizer = optim.Adam(
             [
@@ -105,7 +101,7 @@ class PPOUpdate:
             0,
         )
 
-        # ───────────────────────── main PPO loop ────────────────────────────        
+        # ───────────────────────── main PPO loop ────────────────────────────
         for epoch in range(self.n_epochs):
             epoch_kls = []
             for i, mb in enumerate(batch.minibatches):
@@ -130,26 +126,28 @@ class PPOUpdate:
                 if self.model.continuous_action:
                     # Get model output
                     model_output = self.model(mb.observations)
-                    
+
                     # NEW: Handle both modes
-                    if hasattr(self.model, 'tanh_squash') and self.model.tanh_squash:
+                    if hasattr(self.model, "tanh_squash") and self.model.tanh_squash:
                         # Tanh squashing mode (existing logic)
                         _, _, mean, log_std = model_output  # 4-tuple
                         dist = torch.distributions.Normal(mean, log_std.exp())
-                        
+
                         z_old = mb.latents  # stored pre-tanh
                         log_pz = dist.log_prob(z_old).sum(-1)
-                        log_corr = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(-1)
+                        log_corr = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(
+                            -1
+                        )
                         log_probs = log_pz - log_corr
-                        
+
                     else:
                         # Standard PPO mode (new logic)
                         _, mean, log_std = model_output  # 3-tuple
                         dist = torch.distributions.Normal(mean, log_std.exp())
-                        
+
                         # Direct log prob on actions (no latents needed)
                         log_probs = dist.log_prob(mb.actions).sum(-1)
-                    
+
                     entropy = dist.entropy().sum(-1).mean()
                 else:
                     logits = self.model(mb.observations)
@@ -175,18 +173,27 @@ class PPOUpdate:
                 with torch.no_grad():
                     if self.model.continuous_action:
                         model_output_new = self.model(mb.observations)
-        
-                        if hasattr(self.model, 'tanh_squash') and self.model.tanh_squash:
+
+                        if (
+                            hasattr(self.model, "tanh_squash")
+                            and self.model.tanh_squash
+                        ):
                             # Tanh squashing mode
                             _, _, mean_new, log_std_new = model_output_new
-                            dist_new = torch.distributions.Normal(mean_new, log_std_new.exp())
+                            dist_new = torch.distributions.Normal(
+                                mean_new, log_std_new.exp()
+                            )
                             log_pz_new = dist_new.log_prob(z_old).sum(-1)
-                            log_corr_n = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(-1)
+                            log_corr_n = torch.log(
+                                1 - torch.tanh(z_old).pow(2) + 1e-6
+                            ).sum(-1)
                             new_lp = log_pz_new - log_corr_n
                         else:
                             # Standard PPO mode
                             _, mean_new, log_std_new = model_output_new
-                            dist_new = torch.distributions.Normal(mean_new, log_std_new.exp())
+                            dist_new = torch.distributions.Normal(
+                                mean_new, log_std_new.exp()
+                            )
                             new_lp = dist_new.log_prob(mb.actions).sum(-1)
                     else:
                         logits_new = self.model(mb.observations)
@@ -219,9 +226,11 @@ class PPOUpdate:
                     elif mean_kl < 0.5 * self.kl_target and epoch == 0:
                         g["lr"] = min(
                             g["lr"] * 1.1,
-                            self.initial_policy_lr
-                            if g is self.optimizer.param_groups[0]
-                            else self.initial_value_lr,
+                            (
+                                self.initial_policy_lr
+                                if g is self.optimizer.param_groups[0]
+                                else self.initial_value_lr
+                            ),
                         )
 
                 # early-stop if KL already large
@@ -238,7 +247,7 @@ class PPOUpdate:
 
         # final averaged metrics
         for k in metrics:
-            metrics[k] /= (mb_updates if mb_updates > 0 else 1)
+            metrics[k] /= mb_updates if mb_updates > 0 else 1
 
         metrics["approx_kl"] = mean_kl.item()  # final KL of the run
 

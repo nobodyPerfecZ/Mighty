@@ -4,9 +4,9 @@ env_id: HalfCheetah-v4
 
 algorithm_kwargs:
 
-  # Normalization - CleanRL doesn't use normalization
-  normalize_obs: False    # CleanRL doesn't normalize observations
-  normalize_reward: False # CleanRL doesn't normalize rewards
+  # Normalization
+  normalize_obs: False
+  normalize_reward: False
 
   # Network sizes
   n_policy_units:     256        

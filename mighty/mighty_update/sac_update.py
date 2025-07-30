@@ -27,10 +27,8 @@ class SACUpdate:
         self.model = model
 
         self.policy_optimizer = optim.Adam(model.policy_net.parameters(), lr=policy_lr)
-        # CleanRL --4: combine both Q-networks into single optimizer like CleanRL
         self.q_optimizer = optim.Adam(
-            list(model.q_net1.parameters()) + list(model.q_net2.parameters()), 
-            lr=q_lr
+            list(model.q_net1.parameters()) + list(model.q_net2.parameters()), lr=q_lr
         )
 
         self.alpha = alpha
@@ -38,15 +36,12 @@ class SACUpdate:
         self.tau = tau
         self.auto_alpha = auto_alpha
         self.action_dim = self.model.action_size
-
-        # CleanRL: store the new frequencies
         self.policy_frequency = policy_frequency
         self.target_network_frequency = target_network_frequency
         self.update_step = 0
 
         if self.auto_alpha:
             self.log_alpha = torch.nn.Parameter(torch.zeros(1, requires_grad=True))
-            # CleanRL --4: use q_lr for alpha optimizer by default like CleanRL
             self.alpha_optimizer = optim.Adam([self.log_alpha], lr=alpha_lr or q_lr)
             self.target_entropy = (
                 -float(self.action_dim)
@@ -59,7 +54,6 @@ class SACUpdate:
     def calculate_td_error(self, transition: TransitionBatch) -> Tuple:
         """Calculate the TD error for a given transition."""
         with torch.no_grad():
-            # CleanRL --4: use full action with scaling/bias like CleanRL's get_action
             a_next, z_next, mean_next, log_std_next = self.model(
                 torch.as_tensor(transition.next_obs, dtype=torch.float32)
             )
@@ -67,7 +61,7 @@ class SACUpdate:
             sa_next = torch.cat(
                 [
                     torch.as_tensor(transition.next_obs, dtype=torch.float32),
-                    a_next,  # CleanRL --4: use full action instead of torch.tanh(z_next)
+                    a_next,
                 ],
                 dim=-1,
             )
@@ -78,7 +72,9 @@ class SACUpdate:
                 transition.rewards, dtype=torch.float32
             ).unsqueeze(-1) + (
                 1 - torch.as_tensor(transition.dones, dtype=torch.float32).unsqueeze(-1)
-            ) * self.gamma * (torch.min(q1_t, q2_t) - alpha * logp_next)
+            ) * self.gamma * (
+                torch.min(q1_t, q2_t) - alpha * logp_next
+            )
         sa = torch.cat(
             [
                 torch.as_tensor(transition.observations, dtype=torch.float32),
@@ -109,7 +105,9 @@ class SACUpdate:
             sa_next = torch.cat([next_states, a_next], dim=-1)
             q1_t = self.model.target_q_net1(sa_next)
             q2_t = self.model.target_q_net2(sa_next)
-            current_alpha = self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+            current_alpha = (
+                self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+            )
             q_target = rewards + (1 - dones) * self.gamma * (
                 torch.min(q1_t, q2_t) - current_alpha * logp_next
             )
@@ -121,7 +119,7 @@ class SACUpdate:
         q_loss2 = F.mse_loss(q2, q_target)
         q_loss = q_loss1 + q_loss2
 
-        # CleanRL --4: use combined optimizer for both Q-networks
+        # use combined optimizer for both Q-networks
         self.q_optimizer.zero_grad()
         q_loss.backward()
         self.q_optimizer.step()
@@ -130,17 +128,18 @@ class SACUpdate:
         policy_loss = torch.tensor(0.0)
         alpha_loss = torch.tensor(0.0)
         if self.update_step % self.policy_frequency == 0:
-            # CleanRL --4: do multiple policy updates to compensate for delay like CleanRL
+            # do multiple policy updates to compensate for delay
             for _ in range(self.policy_frequency):
-                # CleanRL --4: recompute alpha after q update
-                current_alpha = self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+                # recompute alpha after q update
+                current_alpha = (
+                    self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+                )
 
                 a, z, mean, log_std = self.model(states)
                 logp = self.model.policy_log_prob(z, mean, log_std)
                 sa_pi = torch.cat([states, a], dim=-1)
                 q1_pi = self.model.q_net1(sa_pi)
                 q2_pi = self.model.q_net2(sa_pi)
-                # CleanRL --4: remove detach from critic outputs to match CleanRL
                 q_pi = torch.min(q1_pi, q2_pi)
                 policy_loss = (current_alpha * logp - q_pi).mean()
 
@@ -150,15 +149,15 @@ class SACUpdate:
 
                 # --- Entropy coefficient (alpha) update ---
                 if self.auto_alpha:
-                    # CleanRL --4: recompute action and log_prob for alpha update like CleanRL
                     with torch.no_grad():
                         _, _, _, _ = self.model(states)
                         # Use the logp from the policy update above
-                    alpha_loss = -(self.log_alpha * (logp.detach() + self.target_entropy)).mean()
+                    alpha_loss = -(
+                        self.log_alpha * (logp.detach() + self.target_entropy)
+                    ).mean()
                     self.alpha_optimizer.zero_grad()
                     alpha_loss.backward()
                     self.alpha_optimizer.step()
-                    # CleanRL --4: update stored alpha for logging/debugging
                     self.alpha = self.log_alpha.exp().item()
 
         # --- Soft update targets ---
@@ -180,7 +179,7 @@ class SACUpdate:
             "q_loss1": q_loss1.item(),
             "q_loss2": q_loss2.item(),
             "policy_loss": policy_loss.item(),
-            "alpha_loss": alpha_loss.item(),  # CleanRL --4: add alpha_loss to logging
+            "alpha_loss": alpha_loss.item(),
             "td_error1": td1.mean().item(),
             "td_error2": td2.mean().item(),
         }
