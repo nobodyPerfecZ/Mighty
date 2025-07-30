@@ -16,6 +16,59 @@ Mighty offers a lot of flexibility for training general agents with online RL:
 
 We currently do not support other learning paradigms, but might extend to e.g. include offline data as an option. 
 
+### What is currently implemented in Mighty?
+Mighty aims to provide a basic set of methods to demonstrate different usecases. This is what's currently implemented:
+
+``` mermaid
+%%{init: { "theme": "base", 
+           "themeVariables": {"primaryColor": "#fffbfbff", "secondaryColor": "#fffeecff", "tertiaryColor": "#faffffff"}} }%%
+mindmap
+((Mighty))
+  {{Buffers}}
+    Rollout Buffer
+    Replay Buffer
+    Prioritized Replay Buffer
+  {{Updates}}
+    Q-Learning
+      standard Q-Learning
+      double Q-Learning
+      clipped double Q-Learning
+    PPO
+    SAC
+  {{Agents}}
+    DQN
+    PPO
+    SAC
+  {{Runners}}
+    ES Runner
+    online RL runner
+  {{Meta Components}}
+    Intrinsic Rewards
+      NovelD
+      RND
+    Curricula
+      SPaCE
+      PLR
+    Hyperparameters
+      cosine annealing
+  {{Exploration Policies}}
+    e-greedy with optional decay
+    ez-greedy
+    standard stochastic policy
+  {{Models with MLP, CNN or ResNet backbones}}
+    DQN with soft and hard reset options
+    SAC
+    PPO
+```
+
+- **Agents**: SAC, PPO, DQN
+- **Updates**: SAC, PPO, Q-learning, double Q-learning, clipped double Q-learning
+- **Buffer**s: Rollout Buffer, Replay Buffer, Prioritized Replay Buffer
+- **Exploration Policies**: e-greedy (with and without decay), ez-greedy, standard stochastic
+- **Models** (with MLP, CNN or ResNet backbone): SAC, PPO, DQN (with soft and hard reset options)
+- **Meta Components**: RND, NovelD, SPaCE, PLR
+- **Runners**: online RL runner, ES runner
+
 ### Where Is Mighty Going?
 
 Currently Mighty is in early development and includes only standard RL algorithms compatible with cRL benchmarks and

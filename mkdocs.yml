@@ -18,7 +18,7 @@ repo_name: automl/Mighty
 
 theme:
   name: material
-  logo: img/logo_no_font.png
+  logo: img/logo_only.svg
   favicon: img/favicon.ico
   icon:
     repo: fontawesome/brands/github
@@ -106,7 +106,7 @@ markdown_extensions:
       custom_fences:
       - name: mermaid
         class: mermaid
-        format: !!python/name:pymdownx.superfences.fence_code_format
+        format: !!python/name:mermaid2.fence_mermaid_custom
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -125,6 +125,12 @@ hooks:
 
 plugins:
   - search
+  - mermaid2:
+      version: '10.1.0'
+      arguments:
+        securityLevel: 'loose'
+        theme: |
+          ^(JSON.parse(__md_get("__palette").index == 1)) ? 'dark' : 'light'
   - autorefs
   - glightbox
   - offline:
@@ -199,3 +205,6 @@ nav:
     - "methods/inner_loops.md"
   # Auto generated with docs/api_generator.py
   - API: "api/"
+
+extra_javascript:
+  - extra/refresh_on_toggle_dark_light.js
