@@ -199,13 +199,6 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
 
 
 class ContextualVecEnv(gym.vector.SyncVectorEnv):
-    # def __init__(self, envs):
-    #     """Initialize the ContextualVecEnv with a list of environments."""
-    #     super().__init__(envs)
-    #     self.observations = create_empty_array(
-    #         self.single_observation_space, n=self.num_envs, fn=np.zeros
-    #     )
-
     @property
     def instance_id_list(self):
         return self.envs[0].instance_id_list
