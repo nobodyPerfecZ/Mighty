@@ -128,14 +128,28 @@ class PPOUpdate:
 
                 # ---- policy loss  (continuous & discrete share the same surr) ----
                 if self.model.continuous_action:
-                    # We ONLY need mean / log_std; do NOT resample
-                    _, _, mean, log_std = self.model(mb.observations)
-                    dist = torch.distributions.Normal(mean, log_std.exp())
-
-                    z_old = mb.latents  # <-- stored pre-tanh
-                    log_pz = dist.log_prob(z_old).sum(-1)
-                    log_corr = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(-1)
-                    log_probs = log_pz - log_corr
+                    # Get model output
+                    model_output = self.model(mb.observations)
+                    
+                    # NEW: Handle both modes
+                    if hasattr(self.model, 'tanh_squash') and self.model.tanh_squash:
+                        # Tanh squashing mode (existing logic)
+                        _, _, mean, log_std = model_output  # 4-tuple
+                        dist = torch.distributions.Normal(mean, log_std.exp())
+                        
+                        z_old = mb.latents  # stored pre-tanh
+                        log_pz = dist.log_prob(z_old).sum(-1)
+                        log_corr = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(-1)
+                        log_probs = log_pz - log_corr
+                        
+                    else:
+                        # Standard PPO mode (new logic)
+                        _, mean, log_std = model_output  # 3-tuple
+                        dist = torch.distributions.Normal(mean, log_std.exp())
+                        
+                        # Direct log prob on actions (no latents needed)
+                        log_probs = dist.log_prob(mb.actions).sum(-1)
+                    
                     entropy = dist.entropy().sum(-1).mean()
                 else:
                     logits = self.model(mb.observations)
@@ -160,15 +174,20 @@ class PPOUpdate:
                 # ---- KL divergence on *same* z_old --------------------------------
                 with torch.no_grad():
                     if self.model.continuous_action:
-                        _, _, mean_new, log_std_new = self.model(mb.observations)
-                        dist_new = torch.distributions.Normal(
-                            mean_new, log_std_new.exp()
-                        )
-                        log_pz_new = dist_new.log_prob(z_old).sum(-1)
-                        log_corr_n = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(
-                            -1
-                        )
-                        new_lp = log_pz_new - log_corr_n
+                        model_output_new = self.model(mb.observations)
+        
+                        if hasattr(self.model, 'tanh_squash') and self.model.tanh_squash:
+                            # Tanh squashing mode
+                            _, _, mean_new, log_std_new = model_output_new
+                            dist_new = torch.distributions.Normal(mean_new, log_std_new.exp())
+                            log_pz_new = dist_new.log_prob(z_old).sum(-1)
+                            log_corr_n = torch.log(1 - torch.tanh(z_old).pow(2) + 1e-6).sum(-1)
+                            new_lp = log_pz_new - log_corr_n
+                        else:
+                            # Standard PPO mode
+                            _, mean_new, log_std_new = model_output_new
+                            dist_new = torch.distributions.Normal(mean_new, log_std_new.exp())
+                            new_lp = dist_new.log_prob(mb.actions).sum(-1)
                     else:
                         logits_new = self.model(mb.observations)
                         new_lp = torch.distributions.Categorical(
@@ -193,7 +212,7 @@ class PPOUpdate:
                 print("Warning: No minibatches processed in this epoch")
 
             # adaptive LR
-            if self.adaptive_lr:
+            if self.adaptive_lr and self.kl_target:
                 for g in self.optimizer.param_groups[:2]:  # policy & value groups
                     if mean_kl > 1.5 * self.kl_target:
                         g["lr"] = max(g["lr"] * 0.8, self.min_lr)
@@ -205,9 +224,9 @@ class PPOUpdate:
                             else self.initial_value_lr,
                         )
 
-            # early-stop if KL already large
-            if mean_kl > self.kl_target:
-                break
+                # early-stop if KL already large
+                if mean_kl > self.kl_target:
+                    break
 
         # Scheduler AFTER adaptive block (won’t drive LR below 0.1× init)
         self.scheduler.step()
