@@ -1,6 +1,6 @@
 <p align="center">
     <a href="./docs/img/logo.png">
-        <img src="./docs/img/logo.png" alt="Mighty Logo" width="80%"/>
+        <img src="./docs/img/logo_with_font.svg" alt="Mighty Logo" width="80%"/>
     </a>
 </p>
 

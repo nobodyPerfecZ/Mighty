@@ -18,7 +18,7 @@ repo_name: automl/Mighty
 
 theme:
   name: material
-  logo: img/logo_no_font.png
+  logo: img/logo_only.svg
   favicon: img/favicon.ico
   icon:
     repo: fontawesome/brands/github
