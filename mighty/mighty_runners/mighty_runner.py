@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Tuple, Callable
 
 from hydra.utils import get_class
 
@@ -18,15 +18,26 @@ if TYPE_CHECKING:
 
 
 class MightyRunner(ABC):
-    def __init__(self, cfg: DictConfig) -> None:
+    def __init__(
+        self,
+        cfg: DictConfig,
+        env=None,
+        base_eval_env: Callable = None,
+        eval_default: int = None,
+    ) -> None:
         """Parse config and run Mighty agent."""
         output_dir = Path(cfg.output_dir) / f"{cfg.experiment_name}_{cfg.seed}"
         if not output_dir.exists():
             output_dir.mkdir(parents=True)
 
-        # Check whether env is from DACBench, CARL or gym
         # Make train and eval env
-        env, base_eval_env, eval_default = make_mighty_env(cfg)
+        if env is None or base_eval_env is None or eval_default is None:
+            if any([env, base_eval_env, eval_default]):
+                warnings.warn(
+                    "When providing custom envs, all three parameters (env, base_eval_env, eval_default) must be provided. Defaulting to config values.",
+                    UserWarning,
+                )
+            env, base_eval_env, eval_default = make_mighty_env(cfg)
 
         wrapper_classes = []
         for w in cfg.env_wrappers:

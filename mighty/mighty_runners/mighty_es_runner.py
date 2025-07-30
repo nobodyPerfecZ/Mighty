@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import importlib.util as iutil
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Tuple, Callable
 
 import numpy as np
 import torch
@@ -40,8 +40,14 @@ if TYPE_CHECKING:
 
 
 class MightyESRunner(MightyRunner):
-    def __init__(self, cfg: DictConfig) -> None:
-        super().__init__(cfg)
+    def __init__(
+        self,
+        cfg: DictConfig,
+        env=None,
+        base_eval_env: Callable = None,
+        eval_default: int = None,
+    ) -> None:
+        super().__init__(cfg, env, base_eval_env, eval_default)
         self.search_targets = cfg.search_targets
         num_dims = len(self.search_targets)
         self.search_params = False
