@@ -2,9 +2,35 @@
 
 from __future__ import annotations
 
+from typing import Tuple
+
 import numpy as np
 import torch
 from torch.distributions import Categorical, Normal
+
+
+def sample_nondeterministic_logprobs(
+    z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor, sac: bool = False
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    std = torch.exp(log_std)  # [batch, action_dim]
+    dist = Normal(mean, std)
+
+    # For SAC, don't apply correction
+    if sac:
+        return dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
+    # If not SAC, we need to apply the tanh correction
+    else:
+        log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
+
+        # 2b) tanh‐correction = ∑ᵢ log(1 − tanh(zᵢ)² + ε)
+        eps = 1e-6
+        log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
+            dim=-1, keepdim=True
+        )  # [batch, 1]
+
+        # 2c) final log_prob of a = tanh(z)
+        log_prob = log_pz - log_correction  # [batch, 1]
+        return log_prob
 
 
 class MightyExplorationPolicy:
@@ -13,6 +39,7 @@ class MightyExplorationPolicy:
     Now supports:
       - Discrete: `model(state)` → logits → Categorical
       - Continuous (squashed-Gaussian): `model(state)` → (action, z, mean, log_std)
+      - Continuous (Standard PPO): `model(state)` → (action, mean, log_std)
       - Continuous (legacy): `model(state)` → (mean, std)
     """
 
@@ -32,95 +59,89 @@ class MightyExplorationPolicy:
         self.model = model
         self.discrete = discrete
 
-        # Undistorted action sampling
+        # Check which action sampling to use
         if self.algo == "q":
-
-            def sample_func(state_np):
-                """
-                Q-learning branch:
-                  • state_np: np.ndarray of shape [batch, obs_dim]
-                  • model(state) returns Q-values: tensor [batch, n_actions]
-                We choose action = argmax(Q), and also return the full Q‐vector.
-                """
-                state = torch.as_tensor(state_np, dtype=torch.float32)
-                qs = self.model(state)  # [batch, n_actions]
-                # Choose greedy action
-                action = torch.argmax(qs, dim=1)  # [batch]
-                return action.detach().cpu().numpy(), qs  # action_np, Q‐vector
-
-            self.sample_action = sample_func
-
+            self.sample_action = self.sample_func_q
         else:
+            self.sample_action = self.sample_func_logits
 
-            def sample_func(state_np):
-                """
-                state_np: np.ndarray of shape [batch, obs_dim]
-                Returns: (action_tensor, log_prob_tensor)
-                """
-                state = torch.as_tensor(state_np, dtype=torch.float32)
+    def sample_func_q(self, state_array):
+        """
+        Q-learning branch:
+          • state_np: np.ndarray of shape [batch, obs_dim]
+          • model(state) returns Q-values: tensor [batch, n_actions]
+        We choose action = argmax(Q), and also return the full Q‐vector.
+        """
+        state = torch.as_tensor(state_array, dtype=torch.float32)
+        qs = self.model(state)  # [batch, n_actions]
+        # Choose greedy action
+        action = torch.argmax(qs, dim=1)  # [batch]
+        return action.detach().cpu().numpy(), qs  # action_np, Q‐vector
 
-                # ─── Discrete action branch ─────────────────────────────────────────
-                if self.discrete:
-                    logits = self.model(state)  # [batch, n_actions]
-                    dist = Categorical(logits=logits)
-                    action = dist.sample()  # [batch]
-                    log_prob = dist.log_prob(action)  # [batch]
-                    return action.detach().cpu().numpy(), log_prob
+    def sample_func_logits(self, state_array):
+        """
+        state_np: np.ndarray of shape [batch, obs_dim]
+        Returns: (action_tensor, log_prob_tensor)
+        """
+        state = torch.as_tensor(state_array, dtype=torch.float32)
 
-                # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
-                out = self.model(state)
-                # NEW: Handle 3-tuple (Standard PPO)
-                if isinstance(out, tuple) and len(out) == 3:
-                    action, mean, log_std = out
-                    std = torch.exp(log_std)
-                    dist = Normal(mean, std)
-                    log_prob = dist.log_prob(action).sum(dim=-1)  # Direct log prob
-                    return action.detach().cpu().numpy(), log_prob
-                
-                # Existing 4-tuple case (Tanh squashing)
-                elif isinstance(out, tuple) and len(out) == 4:
-                    action, z, mean, log_std = out
-                    std = torch.exp(log_std)
-                    dist = Normal(mean, std)
-                    log_pz = dist.log_prob(z).sum(dim=-1)
-                    eps = 1e-6
-                    log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(dim=-1)
-                    log_prob = log_pz - log_correction
-                    return action.detach().cpu().numpy(), log_prob
+        # ─── Discrete action branch ─────────────────────────────────────────
+        if self.discrete:
+            logits = self.model(state)  # [batch, n_actions]
+            dist = Categorical(logits=logits)
+            action = dist.sample()  # [batch]
+            log_prob = dist.log_prob(action)  # [batch]
+            return action.detach().cpu().numpy(), log_prob
 
-                # ─── Legacy continuous branch (model returns (mean, std)) ────────────
-                if isinstance(out, tuple) and len(out) == 2:
-                    mean, std = out  # both [batch, action_dim]
-                    dist = Normal(mean, std)
-                    z = dist.rsample()  # [batch, action_dim]
-                    action = torch.tanh(z)  # [batch, action_dim]
+        # ─── Continuous action branches ─────────────────────────────────────
+        out = self.model(state)
 
-                    # 3a) log_pz = ∑ᵢ log N(zᵢ; μᵢ, σᵢ)
-                    log_pz = dist.log_prob(z).sum(dim=-1)  # [batch]
+        # NEW: Handle 3-tuple (Standard PPO)
+        if isinstance(out, tuple) and len(out) == 3:
+            action, mean, log_std = out
+            std = torch.exp(log_std)
+            dist = Normal(mean, std)
+            log_prob = dist.log_prob(action).sum(dim=-1)  # Direct log prob
+            return action.detach().cpu().numpy(), log_prob
 
-                    # 3b) tanh‐correction
-                    eps = 1e-6
-                    log_correction = torch.log(1.0 - action.pow(2) + eps).sum(
-                        dim=-1
-                    )  # [batch]
+        # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
+        elif isinstance(out, tuple) and len(out) == 4:
+            action = out[0]  # [batch, action_dim]
+            log_prob = sample_nondeterministic_logprobs(
+                z=out[1], mean=out[2], log_std=out[3], sac=self.algo == "sac"
+            )
+            return action.detach().cpu().numpy(), log_prob
 
-                    log_prob = log_pz - log_correction  # [batch]
-                    return action.detach().cpu().numpy(), log_prob
+        # ─── Legacy continuous branch (model returns (mean, std)) ────────────
+        elif isinstance(out, tuple) and len(out) == 2:
+            mean, std = out  # both [batch, action_dim]
+            dist = Normal(mean, std)
+            z = dist.rsample()  # [batch, action_dim]
+            action = torch.tanh(z)  # [batch, action_dim]
 
-                # ─── Fallback: if model(state) returns a Distribution ────────────────
-                if isinstance(out, torch.distributions.Distribution):
-                    dist = out  # user returned a Distribution
-                    action = dist.sample()  # [batch]
-                    log_prob = dist.log_prob(action)  # [batch]
-                    return action.detach().cpu().numpy(), log_prob
+            # 3a) log_pz = ∑ᵢ log N(zᵢ; μᵢ, σᵢ)
+            log_pz = dist.log_prob(z).sum(dim=-1)  # [batch]
 
-                # ─── Otherwise, we don’t know how to sample ─────────────────────────
-                raise RuntimeError(
-                    "MightyExplorationPolicy: cannot interpret model(state) output of type "
-                    f"{type(out)}"
-                )
+            # 3b) tanh‐correction
+            eps = 1e-6
+            log_correction = torch.log(1.0 - action.pow(2) + eps).sum(dim=-1)  # [batch]
 
-        self.sample_action = sample_func
+            log_prob = log_pz - log_correction  # [batch]
+            return action.detach().cpu().numpy(), log_prob
+
+        # ─── Fallback: if model(state) returns a Distribution ────────────────
+        elif isinstance(out, torch.distributions.Distribution):
+            dist = out  # user returned a Distribution
+            action = dist.sample()  # [batch]
+            log_prob = dist.log_prob(action)  # [batch]
+            return action.detach().cpu().numpy(), log_prob
+
+        # ─── Otherwise, we don't know how to sample ─────────────────────────
+        else:
+            raise RuntimeError(
+                "MightyExplorationPolicy: cannot interpret model(state) output of type "
+                f"{type(out)}"
+            )
 
     def __call__(self, s, return_logp=False, metrics=None, evaluate=False):
         """Get action.
