@@ -63,6 +63,7 @@ class MightyPPOAgent(MightyAgent):
         total_timesteps: int = 1_000_000,
         normalize_obs: bool = False,  # ← NEW
         normalize_reward: bool = False,  # ← NEW (optional)
+        rescale_action: bool = False,  # Whether to rescale actions to the environment's action space
     ):
         """Initialize the PPO agent.
 
@@ -142,6 +143,7 @@ class MightyPPOAgent(MightyAgent):
             meta_kwargs=meta_kwargs,
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
+            rescale_action=rescale_action
         )
 
         self.loss_buffer = {
@@ -266,7 +268,13 @@ class MightyPPOAgent(MightyAgent):
         if "rollout_logits" in metrics:
             del metrics["rollout_logits"]
             metrics["rollout_logits"] = []
-        return super().update(metrics, update_kwargs)  # type: ignore
+        
+        # ONE-LINE FIX: Temporarily override batch_size for PPO minibatching
+        original_batch_size = self._batch_size
+        self._batch_size = self.minibatch_size
+        result = super().update(metrics, update_kwargs)  # type: ignore
+        self._batch_size = original_batch_size  # Restore original
+        return result
 
     def process_transition(  # type: ignore
         self,

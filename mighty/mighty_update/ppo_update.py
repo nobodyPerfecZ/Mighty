@@ -193,7 +193,7 @@ class PPOUpdate:
                 print("Warning: No minibatches processed in this epoch")
 
             # adaptive LR
-            if self.adaptive_lr:
+            if self.adaptive_lr and self.kl_target:
                 for g in self.optimizer.param_groups[:2]:  # policy & value groups
                     if mean_kl > 1.5 * self.kl_target:
                         g["lr"] = max(g["lr"] * 0.8, self.min_lr)
@@ -205,9 +205,9 @@ class PPOUpdate:
                             else self.initial_value_lr,
                         )
 
-            # early-stop if KL already large
-            if mean_kl > self.kl_target:
-                break
+                # early-stop if KL already large
+                if mean_kl > self.kl_target:
+                    break
 
         # Scheduler AFTER adaptive block (won’t drive LR below 0.1× init)
         self.scheduler.step()

@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 
 import gymnasium as gym
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
+from gymnasium.wrappers import RescaleAction
+
 
 
 def seed_everything(seed: int, env: gym.Env | None = None):
@@ -140,6 +142,7 @@ class MightyAgent(ABC):
         verbose: bool = True,
         normalize_obs: bool = False,  # ← NEW
         normalize_reward: bool = False,  # ← NEW (optional)
+        rescale_action: bool = False,  # ← NEW (optional)
     ):
         """Base agent initialization.
 
@@ -230,6 +233,12 @@ class MightyAgent(ABC):
             env = NormalizeReward(env)
             # if eval_env is not None:
             #     eval_env = NormalizeReward(eval_env)
+            
+        if rescale_action:
+            env = RescaleAction(env, -1.0, 1.0)
+            if eval_env is not None:
+                eval_env = RescaleAction(eval_env, -1.0, 1.0)
+        
 
         # self.env = SeedWrapper(env=env,seed=self.seed)
         self.env = env
