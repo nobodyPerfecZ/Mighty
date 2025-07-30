@@ -180,62 +180,6 @@ class TestSACAgent:
                 )
                 break
 
-        print(
-            f"Parameters changed - Policy: {policy_params_changed}, Q1: {q1_params_changed}, Q2: {q2_params_changed}"
-        )
-
-        # Debug: Check if gradients are flowing
-        if not policy_params_changed or not q1_params_changed or not q2_params_changed:
-            print("Some parameters didn't change. Checking gradients...")
-            batch = agent.buffer.sample(agent.batch_size)
-
-            # Check gradients before optimization step
-            for name, param in agent.model.policy_net.named_parameters():
-                if param.grad is not None:
-                    print(f"Policy grad {name}: max = {param.grad.abs().max().item()}")
-                else:
-                    print(f"Policy grad {name}: None")
-
-            for name, param in agent.model.q_net1.named_parameters():
-                if param.grad is not None:
-                    print(f"Q1 grad {name}: max = {param.grad.abs().max().item()}")
-                else:
-                    print(f"Q1 grad {name}: None")
-
-        # Assertions - make them less strict for debugging
-        if not (policy_params_changed and q1_params_changed and q2_params_changed):
-            print("WARNING: Not all parameters changed. This might indicate:")
-            print("1. Learning rates are too small")
-            print("2. Gradients are too small")
-            print("3. The loss function isn't working correctly")
-            print("4. The optimizer isn't stepping correctly")
-            print("5. Policy updates are delayed due to frequency settings")
-
-            # Try with higher learning rates for debugging
-            print("Trying with higher learning rates...")
-            agent.update_fn.policy_optimizer.param_groups[0]["lr"] = 0.01
-            agent.update_fn.q_optimizer.param_groups[0][
-                "lr"
-            ] = 0.01  # Now single optimizer for both Q-nets
-
-            # Force multiple updates to trigger policy update (due to policy_frequency)
-            for i in range(agent.update_fn.policy_frequency + 1):
-                batch = agent.buffer.sample(agent.batch_size)
-                debug_metrics = agent.update_fn.update(batch)
-                print(f"Debug update {i + 1} metrics: {debug_metrics}")
-
-            # Check parameters again
-            new_policy_params_debug = list(agent.model.policy_net.parameters())
-            policy_changed_debug = False
-            for old, new in zip(original_policy_params, new_policy_params_debug):
-                if not torch.allclose(old, new, atol=1e-8):
-                    policy_changed_debug = True
-                    print(
-                        f"Policy parameter changed (debug): max diff = {torch.max(torch.abs(old - new)).item()}"
-                    )
-                    break
-
-            print(f"After debug update - Policy changed: {policy_changed_debug}")
 
         # Modified assertions - warn instead of fail for debugging
         assert (

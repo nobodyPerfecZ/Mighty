@@ -507,13 +507,7 @@ class TestSACUpdate:
                 # Use more lenient tolerance since SAC updates can be small
                 if change > 1e-8:  # Much more lenient than 1e-6
                     changed_params += 1
-
-        # Debug information
-        if changed_params == 0:
-            print("Parameter changes:")
-            for name, change in param_changes.items():
-                print(f"  {name}: {change:.2e}")
-
+                    
         # At least some parameters should change
         change_ratio = changed_params / total_params
         assert (

@@ -822,31 +822,14 @@ class TestMightyRolloutBuffer:
             )
             buffer.add(rb)
 
-        # Debug: Check what the buffer actually contains
-        print(
-            f"Buffer pos: {buffer.pos}, n_envs: {buffer.n_envs}, total: {buffer.pos * buffer.n_envs}"
-        )
-        print(f"Buffer length: {len(buffer)}")
 
         # We have 2 timesteps × 2 envs = 4 total transitions
         assert (
             len(buffer) == 4
         ), f"Buffer should contain 4 transitions, got {len(buffer)}"
 
-        # Debug the buffer contents before sampling
-        print("\nDEBUG: Buffer contents before sampling:")
-        print(f"observations shape: {buffer.observations[: buffer.pos].shape}")
-        print(f"actions shape: {buffer.actions[: buffer.pos].shape}")
-        print(f"rewards shape: {buffer.rewards[: buffer.pos].shape}")
-        print(f"log_probs shape: {buffer.log_probs[: buffer.pos].shape}")
 
         maxi_batch = buffer.sample(batch_size=2)
-
-        # Debug: Check what the sampling produced
-        print("\nDEBUG: Sampling results:")
-        print(f"MaxiBatch size (len): {len(maxi_batch)}")
-        print(f"MaxiBatch.size property: {maxi_batch.size}")
-        print(f"Number of minibatches: {len(list(maxi_batch.minibatches))}")
 
         # Check each minibatch individually
         for i, mb in enumerate(maxi_batch.minibatches):
@@ -1185,11 +1168,6 @@ class TestMightyRolloutBuffer:
             advantages[1] != advantages[2]
         ), "Done env should have different advantage"
 
-        # Debug: Print the computed advantages for verification
-        print(f"Computed advantages: {advantages}")
-        print(f"Env 0 (continuing): {advantages[0]:.4f}")
-        print(f"Env 1 (done): {advantages[1]:.4f}")
-        print(f"Env 2 (continuing): {advantages[2]:.4f}")
 
         # Additional verification: returns should equal advantages + values for GAE
         returns = buffer.returns[0, :].cpu().numpy()
