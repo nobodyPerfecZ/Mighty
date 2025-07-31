@@ -106,9 +106,7 @@ class CNN(jit.ScriptModule):
     def forward(self, x, transform: bool = True):
         """Forward pass."""
         if transform:
-            x = (
-                x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)
-            )  # noqa: PLR2004
+            x = x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)  # noqa: PLR2004
         return self.cnn(x)
 
     def __getstate__(self):
@@ -194,9 +192,7 @@ class ResNet(jit.ScriptModule):
     def forward(self, x, transform: bool = True):
         """Forward pass."""
         if transform:
-            x = (
-                x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)
-            )  # noqa: PLR2004
+            x = x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)  # noqa: PLR2004
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -221,9 +217,7 @@ class ComboNet(jit.ScriptModule):
 
     def forward(self, x):
         """Forward pass."""
-        x = (
-            x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)
-        )  # noqa: PLR2004
+        x = x.permute(2, 0, 1) if len(x.shape) == 3 else x.permute(0, 3, 1, 2)  # noqa: PLR2004
         x = self.module1(x, False)
         return self.module2(x)
 

@@ -7,7 +7,7 @@
 <div align="center">
     
 [![PyPI Version](https://img.shields.io/pypi/v/mighty-rl.svg)](https://pypi.org/project/Mighty-RL/)
-![Python](https://img.shields.io/badge/Python-3.10-3776AB)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB)
 ![License](https://img.shields.io/badge/License-BSD3-orange)
 [![Test](https://github.com/automl/Mighty/actions/workflows/test.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/test.yaml)
 [![Doc Status](https://github.com/automl/Mighty/actions/workflows/docs_test.yaml/badge.svg)](https://github.com/automl/Mighty/actions/workflows/docs_test.yaml)
@@ -42,12 +42,12 @@ Mighty features:
 
 ## Installation
 We recommend to using uv to install and run Mighty in a virtual environment.
-The code has been tested with python 3.10/3.11 on Unix systems.
+The code has been tested with python 3.11 on Unix systems.
 
 First create a clean python environment:
 
 ```bash
-uv venv --python=3.10
+uv venv --python=3.11
 source .venv/bin/activate
 ```
 

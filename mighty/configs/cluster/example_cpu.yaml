@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /hydra/launcher: submitit_slurm
+
+hydra:
+  launcher:
+    partition: your_partition
+    cpus_per_task: 1
+    name: mighty_cpu_experiment
+    timeout_min: 30
+    mem_gb: 10

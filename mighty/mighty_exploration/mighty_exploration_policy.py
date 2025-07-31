@@ -65,6 +65,10 @@ class MightyExplorationPolicy:
         else:
             self.sample_action = self.sample_func_logits
 
+    def seed(self, seed: int) -> None:
+        """Set the random seed for reproducibility."""
+        self.rng = np.random.default_rng(seed)
+
     def sample_func_q(self, state_array):
         """
         Q-learning branch:

@@ -27,13 +27,14 @@ class DummyEnv(gym.Env):
         self.instance_set = instance_set
 
     def reset(self, options={}, seed=None):
+        super().reset(seed=seed if seed is not None else 0)
         if self.inst_id is None:
-            self.inst_id = np.random.default_rng().integers(0, 100)
+            self.inst_id = self._np_random.integers(0, 100)
         return self.observation_space.sample(), {}
 
     def step(self, action):
-        tr = np.random.default_rng().choice([0, 1], p=[0.9, 0.1])
-        return self.observation_space.sample(), 0, False, tr, {}
+        tr = self._np_random.choice([0, 1], p=[0.9, 0.1])
+        return self.observation_space.sample(), self._np_random.random(), False, tr, {}
 
 
 class DummyContinuousEnv(gym.Env):
@@ -57,13 +58,14 @@ class DummyContinuousEnv(gym.Env):
         self.instance_set = instance_set
 
     def reset(self, options={}, seed=None):
+        super().reset(seed=seed if seed is not None else 0)
         if self.inst_id is None:
-            self.inst_id = np.random.default_rng().integers(0, 100)
+            self.inst_id = self._np_random.integers(0, 100)
         return self.observation_space.sample(), {}
 
     def step(self, action):
-        tr = np.random.default_rng().choice([0, 1], p=[0.9, 0.1])
-        return self.observation_space.sample(), np.random.rand(), False, tr, {}
+        tr = self._np_random.choice([0, 1], p=[0.9, 0.1])
+        return self.observation_space.sample(), self._np_random.random(), False, tr, {}
 
 
 class DummyModel:

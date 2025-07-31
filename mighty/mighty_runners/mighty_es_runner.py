@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import importlib.util as iutil
-from typing import TYPE_CHECKING, Dict, Tuple, Callable
+from typing import TYPE_CHECKING, Callable, Dict, Tuple
 
 import numpy as np
 import torch

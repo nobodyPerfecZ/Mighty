@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Tuple, Callable
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
 from hydra.utils import get_class
 

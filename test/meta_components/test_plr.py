@@ -73,16 +73,16 @@ class TestPLR:
         assert plr.score_transform == "max", "Score transform should be set to max."
         assert plr.temperature == 0.8, "Temperature should be set to 0.8."
         assert plr.eps == 1e-5, "Epsilon should be set to 1e-5."
-        assert (
-            plr.staleness_transform == "max"
-        ), "Staleness transform should be set to max."
-        assert (
-            plr.staleness_temperature == 0.8
-        ), "Staleness temperature should be set to 0.8."
+        assert plr.staleness_transform == "max", (
+            "Staleness transform should be set to max."
+        )
+        assert plr.staleness_temperature == 0.8, (
+            "Staleness temperature should be set to 0.8."
+        )
 
-        assert (
-            plr.instance_scores == {}
-        ), "Instance scores should be an empty dictionary."
+        assert plr.instance_scores == {}, (
+            "Instance scores should be an empty dictionary."
+        )
         assert plr.staleness == {}, "Staleness should be an empty dictionary."
         assert plr.all_instances is None, "All instances should be None."
         assert plr.index == 0, "Index should be 0."
@@ -95,22 +95,22 @@ class TestPLR:
         metrics = {"env": EnvSim(1)}
         plr.get_instance(metrics=metrics)
         assert metrics["env"].inst_ids is not None, "Instance should not be None."
-        assert (
-            metrics["env"].inst_ids in plr.instance_scores.keys()
-        ), "Instance should be in instance scores."
+        assert metrics["env"].inst_ids in plr.instance_scores.keys(), (
+            "Instance should be in instance scores."
+        )
         assert plr.all_instances is not None, "All instances should be initialized."
-        assert all(
-            [i in plr.all_instances for i in plr.instance_scores.keys()]
-        ), "All instances should be in instance scores."
+        assert all([i in plr.all_instances for i in plr.instance_scores.keys()]), (
+            "All instances should be in instance scores."
+        )
 
         plr.sample_strategy = "sequential"
         index = plr.index
         metrics = {"env": EnvSim(10)}
         original_instance = 10
         plr.get_instance(metrics=metrics)
-        assert (
-            original_instance != metrics["env"].inst_ids
-        ), "Instance should be changed."
+        assert original_instance != metrics["env"].inst_ids, (
+            "Instance should be changed."
+        )
         assert plr.index == index + 1, "Index should be incremented by 1."
 
     def test_sample_weights(self) -> None:
@@ -118,9 +118,9 @@ class TestPLR:
         for m in DUMMY_METRICS:
             plr.add_rollout(m)
         weights = plr.sample_weights()
-        assert len(weights) == len(
-            plr.instance_scores.keys()
-        ), "Length of weights should be equal to the number of instances."
+        assert len(weights) == len(plr.instance_scores.keys()), (
+            "Length of weights should be equal to the number of instances."
+        )
         assert np.isclose(sum(weights), 1), "Sum of weights should be 1."
 
     def test_score_transforms(self) -> None:
@@ -137,9 +137,9 @@ class TestPLR:
         ]:
             plr.score_transform = score_transform
             weights = plr.sample_weights()
-            assert len(weights) == len(
-                plr.instance_scores.keys()
-            ), "Length of weights should be equal to the number of instances."
+            assert len(weights) == len(plr.instance_scores.keys()), (
+                "Length of weights should be equal to the number of instances."
+            )
             assert np.isclose(sum(weights), 1), "Sum of weights should be 1."
 
     @pytest.mark.parametrize("metrics", DUMMY_METRICS)
@@ -162,22 +162,22 @@ class TestPLR:
                     plr.add_rollout(metrics)
             else:
                 plr.add_rollout(metrics)
-                assert (
-                    plr.instance_scores[metrics["env"].inst_ids[0]] is not None
-                ), "Instance score should not be None."
+                assert plr.instance_scores[metrics["env"].inst_ids[0]] is not None, (
+                    "Instance score should not be None."
+                )
 
             if score_func == "random":
-                assert (
-                    plr.instance_scores[0] == 1.0
-                ), f"Random score should be 1. Scores were: {plr.instance_scores}"
+                assert plr.instance_scores[0] == 1.0, (
+                    f"Random score should be 1. Scores were: {plr.instance_scores}"
+                )
 
     @pytest.mark.parametrize("metrics", DUMMY_METRICS)
     def test_add_rollout(self, metrics) -> None:
         plr = PLR()
         plr.add_rollout(metrics)
-        assert (
-            metrics["env"].inst_ids[0] in plr.instance_scores
-        ), "Instance should be added to instance scores."
+        assert metrics["env"].inst_ids[0] in plr.instance_scores, (
+            "Instance should be added to instance scores."
+        )
 
     def test_in_loop(self) -> None:
         env = ContextualVecEnv([DummyEnv for _ in range(2)])
@@ -189,13 +189,13 @@ class TestPLR:
             use_target=False,
             meta_methods=["mighty.mighty_meta.PrioritizedLevelReplay"],
         )
-        assert (
-            dqn.meta_modules["PrioritizedLevelReplay"] is not None
-        ), "PLR should be initialized."
+        assert dqn.meta_modules["PrioritizedLevelReplay"] is not None, (
+            "PLR should be initialized."
+        )
         dqn.run(100, 0)
-        assert (
-            dqn.meta_modules["PrioritizedLevelReplay"].all_instances is not None
-        ), "All instances should be initialized."
+        assert dqn.meta_modules["PrioritizedLevelReplay"].all_instances is not None, (
+            "All instances should be initialized."
+        )
         assert (
             env.inst_ids[0] in dqn.meta_modules["PrioritizedLevelReplay"].all_instances
         ), "Instance should be in all instances."

@@ -133,7 +133,7 @@ class TestSACUpdate:
         # Check hyperparameters
         assert update.gamma == 0.99
         assert update.tau == 0.005
-        assert update.auto_alpha == True
+        assert update.auto_alpha
 
         # Check new frequency parameters
         assert hasattr(update, "policy_frequency")
@@ -144,7 +144,7 @@ class TestSACUpdate:
         """Test SAC initialization with fixed alpha."""
         update, model = self.get_update_and_model(auto_alpha=False, alpha=0.1)
 
-        assert update.auto_alpha == False
+        assert not update.auto_alpha
         assert update.alpha == 0.1  # Should use the provided alpha value
         assert not hasattr(update, "log_alpha")
         assert not hasattr(update, "alpha_optimizer")
@@ -187,18 +187,18 @@ class TestSACUpdate:
 
         # Check metrics - updated to include alpha_loss
         required_metrics = [
-            "q_loss1",
-            "q_loss2",
-            "policy_loss",
-            "alpha_loss",
-            "td_error1",
-            "td_error2",
+            "Update/q_loss1",
+            "Update/q_loss2",
+            "Update/policy_loss",
+            "Update/alpha_loss",
+            "Update/td_error1",
+            "Update/td_error2",
         ]
         for metric in required_metrics:
             assert metric in metrics, f"Missing metric: {metric}"
-            assert isinstance(
-                metrics[metric], (int, float)
-            ), f"Metric {metric} should be numeric"
+            assert isinstance(metrics[metric], (int, float)), (
+                f"Metric {metric} should be numeric"
+            )
             assert np.isfinite(metrics[metric]), f"Metric {metric} should be finite"
 
     def test_target_network_updates(self):
@@ -209,10 +209,6 @@ class TestSACUpdate:
         # Store initial target parameters
         initial_target_q1 = [p.clone() for p in model.target_q_net1.parameters()]
         initial_target_q2 = [p.clone() for p in model.target_q_net2.parameters()]
-
-        # Store initial main Q parameters
-        initial_q1 = [p.clone() for p in model.q_net1.parameters()]
-        initial_q2 = [p.clone() for p in model.q_net2.parameters()]
 
         # Run update
         update.update(batch)
@@ -239,9 +235,9 @@ class TestSACUpdate:
             initial_target_q1,
         ):
             expected = (1 - tau) * p_old_target + tau * p_main
-            assert torch.allclose(
-                p_target, expected, atol=1e-5
-            ), "Target update should follow polyak averaging"
+            assert torch.allclose(p_target, expected, atol=1e-5), (
+                "Target update should follow polyak averaging"
+            )
 
     def test_td_error_calculation(self):
         """Test TD error calculation."""
@@ -285,17 +281,17 @@ class TestSACUpdate:
 
         # Metrics should still be valid - but alpha_loss should be 0
         required_metrics = [
-            "q_loss1",
-            "q_loss2",
-            "policy_loss",
-            "alpha_loss",
-            "td_error1",
-            "td_error2",
+            "Update/q_loss1",
+            "Update/q_loss2",
+            "Update/policy_loss",
+            "Update/alpha_loss",
+            "Update/td_error1",
+            "Update/td_error2",
         ]
         for metric in required_metrics:
             assert metric in metrics
         # Alpha loss should be 0 when auto_alpha=False
-        assert metrics["alpha_loss"] == 0.0
+        assert metrics["Update/alpha_loss"] == 0.0
 
     def test_custom_target_entropy(self):
         """Test SAC with custom target entropy."""
@@ -308,7 +304,7 @@ class TestSACUpdate:
         batch = DummyTransitionBatch()
         metrics = update.update(batch)
 
-        assert "policy_loss" in metrics
+        assert "Update/policy_loss" in metrics
 
     def test_different_learning_rates(self):
         """Test SAC with different learning rates for policy and Q-networks."""
@@ -358,9 +354,9 @@ class TestSACUpdate:
             )
         )
 
-        assert (
-            total_change_large > total_change
-        ), "Larger tau should cause bigger target network changes"
+        assert total_change_large > total_change, (
+            "Larger tau should cause bigger target network changes"
+        )
 
     def test_zero_rewards_batch(self):
         """Test SAC with zero rewards."""
@@ -372,9 +368,9 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         for metric_name, metric_value in metrics.items():
-            assert np.isfinite(
-                metric_value
-            ), f"Metric {metric_name} should be finite with zero rewards"
+            assert np.isfinite(metric_value), (
+                f"Metric {metric_name} should be finite with zero rewards"
+            )
 
     def test_all_done_batch(self):
         """Test SAC with all episodes terminated."""
@@ -386,9 +382,9 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         for metric_name, metric_value in metrics.items():
-            assert np.isfinite(
-                metric_value
-            ), f"Metric {metric_name} should be finite with all done"
+            assert np.isfinite(metric_value), (
+                f"Metric {metric_name} should be finite with all done"
+            )
 
     def test_metric_ranges(self):
         """Test that metrics are in reasonable ranges."""
@@ -398,18 +394,20 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         # Q losses should be non-negative (MSE loss)
-        assert metrics["q_loss1"] >= 0, "Q loss 1 should be non-negative"
-        assert metrics["q_loss2"] >= 0, "Q loss 2 should be non-negative"
+        assert metrics["Update/q_loss1"] >= 0, "Q loss 1 should be non-negative"
+        assert metrics["Update/q_loss2"] >= 0, "Q loss 2 should be non-negative"
 
         # Policy loss can be negative (we want to maximize Q - alpha*entropy)
-        assert np.isfinite(metrics["policy_loss"]), "Policy loss should be finite"
+        assert np.isfinite(metrics["Update/policy_loss"]), (
+            "Policy loss should be finite"
+        )
 
         # Alpha loss can be positive or negative
-        assert np.isfinite(metrics["alpha_loss"]), "Alpha loss should be finite"
+        assert np.isfinite(metrics["Update/alpha_loss"]), "Alpha loss should be finite"
 
         # TD errors can be positive or negative
-        assert np.isfinite(metrics["td_error1"]), "TD error 1 should be finite"
-        assert np.isfinite(metrics["td_error2"]), "TD error 2 should be finite"
+        assert np.isfinite(metrics["Update/td_error1"]), "TD error 1 should be finite"
+        assert np.isfinite(metrics["Update/td_error2"]), "TD error 2 should be finite"
 
     @pytest.mark.parametrize("batch_size", [1, 16, 64, 128])
     def test_different_batch_sizes(self, batch_size):
@@ -421,12 +419,12 @@ class TestSACUpdate:
         metrics = update.update(batch)
 
         required_metrics = [
-            "q_loss1",
-            "q_loss2",
-            "policy_loss",
-            "alpha_loss",
-            "td_error1",
-            "td_error2",
+            "Update/q_loss1",
+            "Update/q_loss2",
+            "Update/policy_loss",
+            "Update/alpha_loss",
+            "Update/td_error1",
+            "Update/td_error2",
         ]
         for metric in required_metrics:
             assert metric in metrics
@@ -445,12 +443,12 @@ class TestSACUpdate:
         # Run updates less than policy_frequency - policy shouldn't change
         for i in range(policy_freq - 1):
             metrics = update.update(batch)
-            assert (
-                metrics["policy_loss"] == 0.0
-            ), "Policy loss should be 0 when no policy update"
-            assert (
-                metrics["alpha_loss"] == 0.0
-            ), "Alpha loss should be 0 when no policy update"
+            assert metrics["Update/policy_loss"] == 0.0, (
+                "Policy loss should be 0 when no policy update"
+            )
+            assert metrics["Update/alpha_loss"] == 0.0, (
+                "Alpha loss should be 0 when no policy update"
+            )
 
         # Policy parameters shouldn't have changed yet
         policy_unchanged = all(
@@ -459,16 +457,16 @@ class TestSACUpdate:
         )
         alpha_unchanged = torch.allclose(initial_alpha, update.log_alpha, atol=1e-6)
 
-        assert (
-            policy_unchanged
-        ), "Policy parameters should not change before policy_frequency"
+        assert policy_unchanged, (
+            "Policy parameters should not change before policy_frequency"
+        )
         assert alpha_unchanged, "Alpha should not change before policy_frequency"
 
         # Now run one more update - should trigger policy update
         metrics = update.update(batch)
-        assert (
-            metrics["policy_loss"] != 0.0
-        ), "Policy loss should be non-zero when policy updates"
+        assert metrics["Update/policy_loss"] != 0.0, (
+            "Policy loss should be non-zero when policy updates"
+        )
 
         # Policy parameters should have changed now
         policy_changed = any(
@@ -507,14 +505,14 @@ class TestSACUpdate:
                 # Use more lenient tolerance since SAC updates can be small
                 if change > 1e-8:  # Much more lenient than 1e-6
                     changed_params += 1
-                    
+
         # At least some parameters should change
         change_ratio = changed_params / total_params
-        assert (
-            change_ratio > 0.1
-        ), f"Only {change_ratio:.2%} of parameters changed, gradient flow might be broken. Changes: {param_changes}"
+        assert change_ratio > 0.1, (
+            f"Only {change_ratio:.2%} of parameters changed, gradient flow might be broken. Changes: {param_changes}"
+        )
 
         # Additional check: ensure losses are reasonable
-        assert np.isfinite(metrics["q_loss1"]) and metrics["q_loss1"] >= 0
-        assert np.isfinite(metrics["q_loss2"]) and metrics["q_loss2"] >= 0
-        assert np.isfinite(metrics["policy_loss"])
+        assert np.isfinite(metrics["Update/q_loss1"]) and metrics["Update/q_loss1"] >= 0
+        assert np.isfinite(metrics["Update/q_loss2"]) and metrics["Update/q_loss2"] >= 0
+        assert np.isfinite(metrics["Update/policy_loss"])

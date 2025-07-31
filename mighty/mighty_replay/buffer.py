@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 
 class MightyBuffer(ABC):
     @abstractmethod
@@ -21,3 +23,7 @@ class MightyBuffer(ABC):
     @abstractmethod
     def __bool__(self):
         pass
+
+    def seed(self, seed: int):
+        """Set random seed."""
+        self.rng = np.random.default_rng(seed)

@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - /cluster: local
   - algorithm: ppo
   - environment: gymnasium/pendulum
   - search_space: ppo_rs

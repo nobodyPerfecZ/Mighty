@@ -94,9 +94,9 @@ class TestPPOAgent:
 
         prediction = agent.step(test_obs, metrics)[0]
         assert len(prediction) == 1, "Prediction should have shape (1,)"
-        assert (
-            0 <= prediction[0] < 4
-        ), "Action should be in valid range [0, 4)"  # Updated for 4 actions
+        assert 0 <= prediction[0] < 4, (
+            "Action should be in valid range [0, 4)"
+        )  # Updated for 4 actions
 
         clean(output_dir)
 
@@ -166,9 +166,9 @@ class TestPPOAgent:
         print(f"Buffer size after manual collection: {len(agent.buffer)}")
 
         # Ensure we have enough data in buffer
-        assert (
-            len(agent.buffer) >= agent._batch_size
-        ), f"Buffer size {len(agent.buffer)} should be >= batch size {agent._batch_size}"
+        assert len(agent.buffer) >= agent._batch_size, (
+            f"Buffer size {len(agent.buffer)} should be >= batch size {agent._batch_size}"
+        )
 
         # Perform update
         update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
@@ -244,15 +244,15 @@ class TestPPOAgent:
         params = ppo.parameters
         assert isinstance(params, list), "Parameters should be a list"
         assert len(params) > 0, "Should have parameters"
-        assert all(
-            isinstance(p, torch.nn.Parameter) for p in params
-        ), "All should be Parameters"
+        assert all(isinstance(p, torch.nn.Parameter) for p in params), (
+            "All should be Parameters"
+        )
 
         # Test value_function property - updated for new structure
         value_fn = ppo.value_function
-        assert (
-            value_fn is ppo.model.value_function_module
-        ), "Value function should be model's value function module"
+        assert value_fn is ppo.model.value_function_module, (
+            "Value function should be model's value function module"
+        )
 
         # Test that the value function wrapper works - use correct obs shape
         obs_shape = env.single_observation_space.shape[
@@ -310,15 +310,19 @@ class TestPPOAgent:
         update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
         original_metrics = ppo.update(metrics, update_kwargs)
         original_params = deepcopy(list(ppo.model.parameters()))
-        
+
         for _ in range(3):
             env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
             output_dir = Path("test_ppo_agent")
             output_dir.mkdir(parents=True, exist_ok=True)
             ppo = MightyPPOAgent(output_dir, env, batch_size=2, seed=42)
-            for old, new in zip(init_params[:10], list(ppo.model.parameters())[:10], strict=False):
-                assert not torch.allclose(old, new), "Parameter initialization should be the same with same seed"
-            
+            for old, new in zip(
+                init_params[:10], list(ppo.model.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Parameter initialization should be the same with same seed"
+                )
+
             metrics = {
                 "env": ppo.env,
                 "step": 0,
@@ -358,13 +362,24 @@ class TestPPOAgent:
             update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
             new_metrics = ppo.update(metrics, update_kwargs)
 
-            for old, new in zip(original_params[:10], list(ppo.model.parameters())[:10], strict=False):
-                assert not torch.allclose(old, new), "Model parameters should stay the same with same seed"
+            for old, new in zip(
+                original_params[:10], list(ppo.model.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Model parameters should stay the same with same seed"
+                )
 
-            for old, new in zip(original_metrics["Update/value_loss"], new_metrics["Update/value_loss"], strict=False):
-                assert torch.allclose(old, new), "Value loss should be the same with same seed"
-            for old, new in zip(original_metrics["Update/policy_loss"], new_metrics["Update/policy_loss"], strict=False):
-                assert torch.allclose(old, new), "Policy loss should be the same with same seed"
-            for old, new in zip(original_metrics["Update/entropy"], new_metrics["Update/entropy"], strict=False):
-                assert torch.allclose(old, new), "Entropy should be the same with same seed"
+            assert np.isclose(
+                original_metrics["Update/policy_loss"],
+                new_metrics["Update/policy_loss"],
+            ), "Policy loss should be the same with same seed"
+            assert np.isclose(
+                original_metrics["Update/value_loss"], new_metrics["Update/value_loss"]
+            ), "Value loss should be the same with same seed"
+            assert np.allclose(
+                original_metrics["Update/approx_kl"], new_metrics["Update/approx_kl"]
+            ), "Approx KL should be the same with same seed"
+            assert np.allclose(
+                original_metrics["Update/entropy"], new_metrics["Update/entropy"]
+            ), "Entropy should be the same with same seed"
         clean(output_dir)

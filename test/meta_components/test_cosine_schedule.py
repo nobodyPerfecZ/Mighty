@@ -25,12 +25,12 @@ class TestCosineLR:
         dqn.learning_rate = lr
         for i in range(4):
             metrics = dqn.run(n_steps=10 * (i + 1))
-            assert (
-                metrics["hp/lr"] == dqn.learning_rate
-            ), f"Learning rate should be set to schedule value {metrics['hp/lr']} instead of {dqn.learning_rate}."
-            assert (
-                dqn.learning_rate < lr
-            ), f"Learning rate should decrease: {dqn.learning_rate} is not less than {lr}."
+            assert metrics["hp/lr"] == dqn.learning_rate, (
+                f"Learning rate should be set to schedule value {metrics['hp/lr']} instead of {dqn.learning_rate}."
+            )
+            assert dqn.learning_rate < lr, (
+                f"Learning rate should decrease: {dqn.learning_rate} is not less than {lr}."
+            )
             lr = dqn.learning_rate.copy()
         clean(output_dir)
 
@@ -47,10 +47,10 @@ class TestCosineLR:
             ],
         )
         dqn.run(6, 0)
-        assert (
-            dqn.meta_modules["CosineLRSchedule"].n_restarts == 1
-        ), "Restart counter should increase."
-        assert (
-            dqn.learning_rate >= dqn.meta_modules["CosineLRSchedule"].eta_max
-        ), f"Restart should increase learning rate: {dqn.learning_rate} is not {dqn.meta_modules['CosineLRSchedule'].eta_max}."
+        assert dqn.meta_modules["CosineLRSchedule"].n_restarts == 1, (
+            "Restart counter should increase."
+        )
+        assert dqn.learning_rate >= dqn.meta_modules["CosineLRSchedule"].eta_max, (
+            f"Restart should increase learning rate: {dqn.learning_rate} is not {dqn.meta_modules['CosineLRSchedule'].eta_max}."
+        )
         clean(output_dir)

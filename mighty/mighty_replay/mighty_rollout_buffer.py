@@ -188,6 +188,7 @@ class MightyRolloutBuffer(MightyBuffer):
         self.gae_lambda = gae_lambda
         self.discrete_action = discrete_action
         self.use_latents = use_latents  # Store for later use
+        self.rng = np.random.default_rng()
 
         # Shapes -----------------------------------------------------------
         if isinstance(obs_shape, int):
@@ -327,7 +328,7 @@ class MightyRolloutBuffer(MightyBuffer):
         logp_f = _flat(self.log_probs)
         val_f = _flat(self.values)
 
-        perm = np.random.permutation(total)
+        perm = self.rng.permutation(total)
         perm = perm[: (total // batch_size) * batch_size].reshape(-1, batch_size)
 
         minibatches: list[RolloutBatch] = []

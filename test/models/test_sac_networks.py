@@ -20,40 +20,40 @@ class TestSACModel:
 
         # Check network structure - updated for new architecture
         assert hasattr(sac, "feature_extractor"), "Should have feature extractor"
-        assert isinstance(
-            sac.policy_net, nn.Linear
-        ), "Policy network should be Linear (after feature extractor)"
+        assert isinstance(sac.policy_net, nn.Linear), (
+            "Policy network should be Linear (after feature extractor)"
+        )
         assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
         assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
-        assert isinstance(
-            sac.target_q_net1, nn.Sequential
-        ), "Target Q-network 1 should be Sequential"
-        assert isinstance(
-            sac.target_q_net2, nn.Sequential
-        ), "Target Q-network 2 should be Sequential"
-        assert hasattr(
-            sac, "value_function_module"
-        ), "Should have value function module wrapper"
+        assert isinstance(sac.target_q_net1, nn.Sequential), (
+            "Target Q-network 1 should be Sequential"
+        )
+        assert isinstance(sac.target_q_net2, nn.Sequential), (
+            "Target Q-network 2 should be Sequential"
+        )
+        assert hasattr(sac, "value_function_module"), (
+            "Should have value function module wrapper"
+        )
 
         # Check that target networks have gradients disabled
         for param in sac.target_q_net1.parameters():
-            assert (
-                not param.requires_grad
-            ), "Target Q-network 1 parameters should not require gradients"
+            assert not param.requires_grad, (
+                "Target Q-network 1 parameters should not require gradients"
+            )
         for param in sac.target_q_net2.parameters():
-            assert (
-                not param.requires_grad
-            ), "Target Q-network 2 parameters should not require gradients"
+            assert not param.requires_grad, (
+                "Target Q-network 2 parameters should not require gradients"
+            )
 
         # Check that live networks have gradients enabled
         for param in sac.q_net1.parameters():
-            assert (
-                param.requires_grad
-            ), "Q-network 1 parameters should require gradients"
+            assert param.requires_grad, (
+                "Q-network 1 parameters should require gradients"
+            )
         for param in sac.q_net2.parameters():
-            assert (
-                param.requires_grad
-            ), "Q-network 2 parameters should require gradients"
+            assert param.requires_grad, (
+                "Q-network 2 parameters should require gradients"
+            )
 
     def test_init_custom_params(self):
         """Test initialization with custom parameters."""
@@ -106,9 +106,9 @@ class TestSACModel:
         values_module = sac.value_function_module(dummy_state)
         values_direct = sac.forward_value(dummy_state)
 
-        assert torch.allclose(
-            values_module, values_direct
-        ), "Value function module should produce same output as forward_value"
+        assert torch.allclose(values_module, values_direct), (
+            "Value function module should produce same output as forward_value"
+        )
         assert values_module.shape == (
             8,
             1,
@@ -134,9 +134,9 @@ class TestSACModel:
         assert torch.all(torch.isfinite(log_std)), "Log_stds should be finite"
 
         # Check tanh constraint on actions
-        assert torch.all(action >= -1.0) and torch.all(
-            action <= 1.0
-        ), "Actions should be in [-1, 1] range"
+        assert torch.all(action >= -1.0) and torch.all(action <= 1.0), (
+            "Actions should be in [-1, 1] range"
+        )
 
         # Check log_std clamping
         assert torch.all(log_std >= sac.log_std_min), "Log_std should be >= log_std_min"
@@ -144,9 +144,9 @@ class TestSACModel:
 
         # Check relationship: action = tanh(z)
         expected_action = torch.tanh(z)
-        assert torch.allclose(
-            action, expected_action, atol=1e-6
-        ), "Action should equal tanh(z)"
+        assert torch.allclose(action, expected_action, atol=1e-6), (
+            "Action should equal tanh(z)"
+        )
 
     def test_forward_deterministic(self):
         """Test forward pass with deterministic policy."""
@@ -166,9 +166,9 @@ class TestSACModel:
 
         # Action should still be tanh(z) = tanh(mean)
         expected_action = torch.tanh(mean)
-        assert torch.allclose(
-            action, expected_action
-        ), "Action should equal tanh(mean) in deterministic mode"
+        assert torch.allclose(action, expected_action), (
+            "Action should equal tanh(mean) in deterministic mode"
+        )
 
     def test_stochastic_vs_deterministic(self):
         """Test that stochastic and deterministic modes produce different results."""
@@ -185,18 +185,18 @@ class TestSACModel:
 
         # Mean and log_std should be the same
         assert torch.allclose(mean_stoch, mean_det), "Means should be identical"
-        assert torch.allclose(
-            log_std_stoch, log_std_det
-        ), "Log_stds should be identical"
+        assert torch.allclose(log_std_stoch, log_std_det), (
+            "Log_stds should be identical"
+        )
 
         # In deterministic mode, z should equal mean
         assert torch.allclose(z_det, mean_det), "Deterministic z should equal mean"
 
         # Stochastic z should likely be different from mean (due to noise)
         # Note: There's a tiny chance they could be the same, but extremely unlikely
-        assert not torch.allclose(
-            z_stoch, mean_stoch
-        ), "Stochastic z should be different from mean"
+        assert not torch.allclose(z_stoch, mean_stoch), (
+            "Stochastic z should be different from mean"
+        )
 
     def test_policy_log_prob(self):
         """Test policy log probability calculation."""
@@ -215,9 +215,9 @@ class TestSACModel:
 
         # Test with deterministic actions (z = mean)
         log_prob_det = sac.policy_log_prob(mean, mean, log_std)
-        assert torch.all(
-            torch.isfinite(log_prob_det)
-        ), "Deterministic log probs should be finite"
+        assert torch.all(torch.isfinite(log_prob_det)), (
+            "Deterministic log probs should be finite"
+        )
 
     def test_q_networks(self):
         """Test Q-network forward passes."""
@@ -247,16 +247,16 @@ class TestSACModel:
         for p1, p_target1 in zip(
             sac.q_net1.parameters(), sac.target_q_net1.parameters()
         ):
-            assert torch.allclose(
-                p1, p_target1
-            ), "Target Q-net 1 should have same initial weights as Q-net 1"
+            assert torch.allclose(p1, p_target1), (
+                "Target Q-net 1 should have same initial weights as Q-net 1"
+            )
 
         for p2, p_target2 in zip(
             sac.q_net2.parameters(), sac.target_q_net2.parameters()
         ):
-            assert torch.allclose(
-                p2, p_target2
-            ), "Target Q-net 2 should have same initial weights as Q-net 2"
+            assert torch.allclose(p2, p_target2), (
+                "Target Q-net 2 should have same initial weights as Q-net 2"
+            )
 
     def test_twin_q_networks_independence(self):
         """Test that twin Q-networks are independent."""
@@ -264,9 +264,9 @@ class TestSACModel:
 
         # Check that Q-networks have different parameters (due to random initialization)
         assert sac.q_net1 is not sac.q_net2, "Q-networks should be separate objects"
-        assert (
-            sac.target_q_net1 is not sac.target_q_net2
-        ), "Target Q-networks should be separate objects"
+        assert sac.target_q_net1 is not sac.target_q_net2, (
+            "Target Q-networks should be separate objects"
+        )
 
     def test_log_std_bounds_enforcement(self):
         """Test that log_std bounds are properly enforced."""
@@ -279,12 +279,12 @@ class TestSACModel:
         dummy_state = torch.rand((10, 3))
         _, _, _, log_std = sac(dummy_state)
 
-        assert torch.all(
-            log_std >= log_std_min
-        ), "Log_std should be >= custom log_std_min"
-        assert torch.all(
-            log_std <= log_std_max
-        ), "Log_std should be <= custom log_std_max"
+        assert torch.all(log_std >= log_std_min), (
+            "Log_std should be >= custom log_std_min"
+        )
+        assert torch.all(log_std <= log_std_max), (
+            "Log_std should be <= custom log_std_max"
+        )
 
     def test_gradient_flow(self):
         """Test that gradients flow properly through networks."""
@@ -303,9 +303,9 @@ class TestSACModel:
         feature_has_grad = any(
             p.grad is not None for p in sac.feature_extractor.parameters()
         )
-        assert (
-            policy_has_grad or feature_has_grad
-        ), "Policy network or feature extractor should have gradients"
+        assert policy_has_grad or feature_has_grad, (
+            "Policy network or feature extractor should have gradients"
+        )
 
         # Test Q-network gradients
         sac.zero_grad()
@@ -333,9 +333,9 @@ class TestSACModel:
 
         # Test log probability calculation doesn't produce NaN or inf
         log_prob = sac.policy_log_prob(z, mean, log_std)
-        assert torch.all(
-            torch.isfinite(log_prob)
-        ), "Log probabilities should be finite even with extreme inputs"
+        assert torch.all(torch.isfinite(log_prob)), (
+            "Log probabilities should be finite even with extreme inputs"
+        )
 
         # Test with actions close to boundary values (-1, 1)
         boundary_z = torch.tensor(
@@ -347,6 +347,6 @@ class TestSACModel:
         boundary_log_prob = sac.policy_log_prob(
             boundary_z, boundary_mean, boundary_log_std
         )
-        assert torch.all(
-            torch.isfinite(boundary_log_prob)
-        ), "Log probabilities should be finite for boundary actions"
+        assert torch.all(torch.isfinite(boundary_log_prob)), (
+            "Log probabilities should be finite for boundary actions"
+        )
