@@ -5,6 +5,7 @@ One possible downside is if one of these modules ends up giving an actual
 error, such as OpenML failing to retrieve a dataset. I tried to make sure ERROR
 log message are still allowed through.
 """
+
 import logging
 import warnings
 from typing import Any

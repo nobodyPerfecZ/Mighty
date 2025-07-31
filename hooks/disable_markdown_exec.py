@@ -7,6 +7,7 @@ We hijack it and print a helpful message about how to run the code cell instead.
 
 https://github.com/pawamoy/markdown-exec/blob/adff40b2928dbb2d22f27684e085f02d39a07291/src/markdown_exec/formatters/python.py#L42-L70
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,7 +31,9 @@ def _print_msg(compiled_code: Any, code_block_id: int, exec_globals: dict) -> No
         " the code block and display output."
     )
 
+
 truthy_values = {"yes", "on", "true", "1"}
+
 
 @mkdocs.plugins.event_priority(100)
 def on_startup(**kwargs: Any):
