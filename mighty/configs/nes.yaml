@@ -18,9 +18,8 @@ rl_train_agent: false
 debug: false
 seed: 0
 output_dir: runs
-wandb_project: null
-tensorboard_file: null
 experiment_name: mighty_experiment
+log_wandb: false
 
 algorithm_kwargs: {}
 

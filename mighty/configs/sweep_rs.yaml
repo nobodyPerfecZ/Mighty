@@ -16,6 +16,7 @@ output_dir: sweep_rs
 wandb_project: null
 tensorboard_file: null
 experiment_name: dqn_sweep
+log_wandb: false
 
 algorithm_kwargs: {}
 

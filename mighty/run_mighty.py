@@ -21,7 +21,7 @@ def run_mighty(cfg: DictConfig) -> None:
     # Print stats
     print("Training finished!")
     print(
-        f"Reached a reward of {np.round(eval_result['mean_eval_reward'], decimals=2)} in {train_result['step']} steps and {np.round(end - start, decimals=2)}s."
+        f"Reached a reward of {np.round(eval_result['mean_eval_reward'], decimals=2)} in {train_result['env_step']} steps and {np.round(end - start, decimals=2)}s."
     )
     return eval_result["mean_eval_reward"]
 

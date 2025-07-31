@@ -16,6 +16,7 @@ output_dir: sweep_pbt
 wandb_project: null
 tensorboard_file: null
 experiment_name: mighty_experiment
+log_wandb: false
 
 algorithm_kwargs: {}
 
