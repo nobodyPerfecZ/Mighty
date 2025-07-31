@@ -25,6 +25,7 @@ class DQN(nn.Module):
             feature_extractor_kwargs.update(kwargs["feature_extractor_kwargs"])
 
         # Make feature extractor
+        print(obs_size)
         self.feature_extractor, self.output_size = make_feature_extractor(
             **feature_extractor_kwargs
         )

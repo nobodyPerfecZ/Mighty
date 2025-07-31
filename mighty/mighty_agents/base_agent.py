@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
+import wandb
 from omegaconf import DictConfig
 from rich import print
 from rich.layout import Layout
