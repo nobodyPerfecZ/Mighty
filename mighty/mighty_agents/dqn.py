@@ -121,8 +121,10 @@ class MightyDQNAgent(MightyAgent):
 
         # Policy Class
         policy_class = retrieve_class(cls=policy_class, default_cls=EpsilonGreedy)  # type: ignore
-        if policy_kwargs is None:
+        if policy_kwargs is None and isinstance(policy_class, EpsilonGreedy):
             policy_kwargs = {"epsilon": 0.1}  # type: ignore
+        else:
+            policy_kwargs = {}
         self.policy_class = policy_class
         self.policy_kwargs = policy_kwargs
 

@@ -86,7 +86,7 @@ Before you start training, however, please follow the installation instructions 
 Then use the same command as before, but provide the CARL environment, in this example CARLCartPoleEnv,
 and information about the context distribution as keywords:
 ```bash
-python mighty/run_mighty.py 'algorithm=dqn' 'env=CARLCartPole' 'num_envs=10' '+env_kwargs.num_contexts=10' '+env_kwargs.context_feature_args.gravity=[normal, 9.8, 1.0, -100.0, 100.0]' 'env_wrappers=[mighty.mighty_utils.wrappers.FlattenVecObs]'
+python mighty/run_mighty.py 'algorithm=ppo' 'env=CARLCartPole' '+env_kwargs.num_contexts=10' '+env_kwargs.context_feature_args.gravity=[normal, 9.8, 1.0, -100.0, 100.0]' 'env_wrappers=[mighty.mighty_utils.wrappers.FlattenVecObs]' 'algorithm_kwargs.rollout_buffer_kwargs.buffer_size=2048'
 ```
 
 For more complex configurations like this, we recommend making an environment configuration file. Check out our [CARL Ant](mighty/configs/environment/carl_walkers/ant_goals.yaml) file to see how this simplifies the process of working with configurable environments.
