@@ -4,4 +4,4 @@ num_steps: 1_000_000
 env: Pendulum-v1
 env_kwargs: {}
 env_wrappers: []
-num_envs: 64
+num_envs: 16

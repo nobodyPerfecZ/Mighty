@@ -31,7 +31,7 @@ algorithm_kwargs:
 
   n_gradient_steps: 1     # one gradient step per rollout
   n_epochs: 10            # ten update epochs per rollout
-  minibatch_size: 128     # 2048 ÷ 64 = 32 minibatches
+  minibatch_size: 128     # 2048 ÷ 16 = 128 minibatches
   kl_target: null         # disable KL‑based early stopping
   use_value_clip: true
 
