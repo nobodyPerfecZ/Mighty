@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - /cluster: local
   - algorithm: dqn
   - environment: pufferlib_ocean/bandit
   - search_space: dqn_gym_classic

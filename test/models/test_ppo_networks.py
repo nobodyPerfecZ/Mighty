@@ -17,21 +17,21 @@ class TestPPOModel:
         assert ppo.tanh_squash is False, "Default tanh_squash should be False"
 
         # Check network structure - updated for new architecture
-        assert hasattr(
-            ppo, "feature_extractor_policy"
-        ), "Should have policy feature extractor"
-        assert hasattr(
-            ppo, "feature_extractor_value"
-        ), "Should have value feature extractor"
-        assert isinstance(
-            ppo.policy_head, nn.Sequential
-        ), "Policy head should be Sequential"
-        assert isinstance(
-            ppo.value_head, nn.Sequential
-        ), "Value head should be Sequential"
-        assert hasattr(
-            ppo, "value_function_module"
-        ), "Should have value function module wrapper"
+        assert hasattr(ppo, "feature_extractor_policy"), (
+            "Should have policy feature extractor"
+        )
+        assert hasattr(ppo, "feature_extractor_value"), (
+            "Should have value feature extractor"
+        )
+        assert isinstance(ppo.policy_head, nn.Sequential), (
+            "Policy head should be Sequential"
+        )
+        assert isinstance(ppo.value_head, nn.Sequential), (
+            "Value head should be Sequential"
+        )
+        assert hasattr(ppo, "value_function_module"), (
+            "Should have value function module wrapper"
+        )
 
         # Test forward pass shapes
         dummy_input = torch.rand((10, 4))
@@ -72,9 +72,9 @@ class TestPPOModel:
         assert values.shape == (5, 1), "Values should have shape (5, 1)"
 
         # Check that actions are in [-1, 1] range due to tanh
-        assert torch.all(action >= -1.0) and torch.all(
-            action <= 1.0
-        ), "Actions should be in [-1, 1] range"
+        assert torch.all(action >= -1.0) and torch.all(action <= 1.0), (
+            "Actions should be in [-1, 1] range"
+        )
 
         # Check log_std clamping
         assert torch.all(log_std >= ppo.log_std_min), "Log_std should be >= log_std_min"
@@ -148,9 +148,9 @@ class TestPPOModel:
         values_direct = ppo.forward_value(dummy_input)
         values_module = ppo.value_function_module(dummy_input)
 
-        assert torch.allclose(
-            values_direct, values_module
-        ), "Value function module should produce same output as forward_value"
+        assert torch.allclose(values_direct, values_module), (
+            "Value function module should produce same output as forward_value"
+        )
         assert values_module.shape == (
             8,
             1,
@@ -190,15 +190,15 @@ class TestPPOModel:
         assert torch.all(torch.isfinite(log_std)), "Log_stds should be finite"
 
         # Check tanh constraint on actions
-        assert torch.all(action >= -1.0) and torch.all(
-            action <= 1.0
-        ), "Actions should be in [-1, 1]"
+        assert torch.all(action >= -1.0) and torch.all(action <= 1.0), (
+            "Actions should be in [-1, 1]"
+        )
 
         # Check relationship: action = tanh(z) where z = mean + std * eps
         expected_action = torch.tanh(z)
-        assert torch.allclose(
-            action, expected_action, atol=1e-6
-        ), "Action should equal tanh(z)"
+        assert torch.allclose(action, expected_action, atol=1e-6), (
+            "Action should equal tanh(z)"
+        )
 
     def test_forward_continuous_standard(self):
         """Test forward pass for continuous actions with standard PPO."""
@@ -218,11 +218,6 @@ class TestPPOModel:
         assert torch.all(torch.isfinite(action)), "Actions should be finite"
         assert torch.all(torch.isfinite(mean)), "Means should be finite"
         assert torch.all(torch.isfinite(log_std)), "Log_stds should be finite"
-
-        # Check relationship: action = mean + std * eps (no tanh)
-        std = torch.exp(log_std)
-        # We can't check exact relationship due to random sampling, but verify no tanh constraint
-        # Actions should not be constrained to [-1, 1] in standard PPO
 
     def test_forward_value(self):
         """Test value network forward pass."""
@@ -251,12 +246,12 @@ class TestPPOModel:
         dummy_input = torch.rand((10, 4))
         _, _, _, log_std = ppo_tanh(dummy_input)
 
-        assert torch.all(
-            log_std >= log_std_min
-        ), "Log_std should be >= custom log_std_min"
-        assert torch.all(
-            log_std <= log_std_max
-        ), "Log_std should be <= custom log_std_max"
+        assert torch.all(log_std >= log_std_min), (
+            "Log_std should be >= custom log_std_min"
+        )
+        assert torch.all(log_std <= log_std_max), (
+            "Log_std should be <= custom log_std_max"
+        )
 
         # Test with standard PPO
         ppo_std = PPOModel(
@@ -270,12 +265,12 @@ class TestPPOModel:
 
         _, _, log_std = ppo_std(dummy_input)
 
-        assert torch.all(
-            log_std >= log_std_min
-        ), "Log_std should be >= custom log_std_min (standard PPO)"
-        assert torch.all(
-            log_std <= log_std_max
-        ), "Log_std should be <= custom log_std_max (standard PPO)"
+        assert torch.all(log_std >= log_std_min), (
+            "Log_std should be >= custom log_std_min (standard PPO)"
+        )
+        assert torch.all(log_std <= log_std_max), (
+            "Log_std should be <= custom log_std_max (standard PPO)"
+        )
 
     def test_deterministic_with_same_input(self):
         """Test that same input produces different outputs due to sampling."""
@@ -294,12 +289,12 @@ class TestPPOModel:
         assert torch.allclose(log_std1, log_std2), "Log_stds should be identical"
 
         # Actions and z should be different due to random sampling
-        assert not torch.allclose(
-            action1, action2
-        ), "Actions should be different due to sampling"
-        assert not torch.allclose(
-            z1, z2
-        ), "Raw actions should be different due to sampling"
+        assert not torch.allclose(action1, action2), (
+            "Actions should be different due to sampling"
+        )
+        assert not torch.allclose(z1, z2), (
+            "Raw actions should be different due to sampling"
+        )
 
         # Test standard PPO mode
         ppo_std = PPOModel(
@@ -310,17 +305,17 @@ class TestPPOModel:
         action2_std, mean2_std, log_std2_std = ppo_std(dummy_input)
 
         # Mean and log_std should be the same (deterministic)
-        assert torch.allclose(
-            mean1_std, mean2_std
-        ), "Means should be identical (standard PPO)"
-        assert torch.allclose(
-            log_std1_std, log_std2_std
-        ), "Log_stds should be identical (standard PPO)"
+        assert torch.allclose(mean1_std, mean2_std), (
+            "Means should be identical (standard PPO)"
+        )
+        assert torch.allclose(log_std1_std, log_std2_std), (
+            "Log_stds should be identical (standard PPO)"
+        )
 
         # Actions should be different due to random sampling
-        assert not torch.allclose(
-            action1_std, action2_std
-        ), "Actions should be different due to sampling (standard PPO)"
+        assert not torch.allclose(action1_std, action2_std), (
+            "Actions should be different due to sampling (standard PPO)"
+        )
 
     def test_orthogonal_initialization(self):
         """Test that weights are initialized with orthogonal initialization."""
@@ -334,9 +329,9 @@ class TestPPOModel:
                     module.weight, torch.zeros_like(module.weight)
                 ), "Weights should not be all zeros"
                 # Check that biases are initialized to zero
-                assert torch.allclose(
-                    module.bias, torch.zeros_like(module.bias)
-                ), "Biases should be initialized to zero"
+                assert torch.allclose(module.bias, torch.zeros_like(module.bias)), (
+                    "Biases should be initialized to zero"
+                )
 
     def test_separate_feature_extractors(self):
         """Test that policy and value networks have separate feature extractors."""
@@ -348,14 +343,14 @@ class TestPPOModel:
         value_features = ppo.feature_extractor_value(dummy_input)
 
         # They should have the same shape but potentially different values
-        assert (
-            policy_features.shape == value_features.shape
-        ), "Feature extractors should output same shape"
+        assert policy_features.shape == value_features.shape, (
+            "Feature extractors should output same shape"
+        )
 
         # Verify they are separate networks by checking if they are different objects
-        assert (
-            ppo.feature_extractor_policy is not ppo.feature_extractor_value
-        ), "Policy and value feature extractors should be separate objects"
+        assert ppo.feature_extractor_policy is not ppo.feature_extractor_value, (
+            "Policy and value feature extractors should be separate objects"
+        )
 
     def test_different_architectures(self):
         """Test with different hidden layer configurations."""

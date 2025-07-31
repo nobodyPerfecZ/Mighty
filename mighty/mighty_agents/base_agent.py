@@ -34,52 +34,14 @@ from gymnasium.wrappers import RescaleAction
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
 
 
-def seed_everything(seed: int, env: gym.Env | None = None):
-    """
-    Seed Python, NumPy, Torch (including cuDNN), plus Gym (action_space, observation_space,
-    and the environment's own RNG). If `env` is vectorized (has `env.envs`), we dig into each
-    sub-env. Always call this before ANY network-building or RNG usage.
-    """
-    # 1) Python/NumPy/Torch/Hash
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(True)  # enforce strictly deterministic ops
-    os.environ["PYTHONHASHSEED"] = str(seed)
-
-    # 2) Gym environment seeding
-    if env is not None:
-        # If the env is wrapped, try to unwrap to the core
-        try:
-            core_env = env.unwrapped
-            core_env.seed(seed)
-        except Exception:
-            pass
-
-        # If vectorized (e.g. SyncVectorEnv), seed each sub‐env separately
-        if hasattr(env, "envs") and isinstance(env.envs, list):
-            sub_seeds = [seed for _ in range(len(env.envs))]
-            for sub_seed, subenv in zip(sub_seeds, env.envs):
-                subenv.action_space.seed(sub_seed)
-                subenv.observation_space.seed(sub_seed)
-                try:
-                    subenv.unwrapped.seed(sub_seed)
-                except Exception:
-                    pass
-            # Reset the vectorized env with explicit seeds
-            env.reset(seed=sub_seeds)
-        else:
-            # Single environment
-            env.action_space.seed(seed)
-            env.observation_space.seed(seed)
-            try:
-                env.unwrapped.seed(seed)
-            except Exception:
-                pass
-            env.reset(seed=seed)
+def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
+    env.action_space.seed(seed)
+    env.single_action_space.seed(seed)
+    env.observation_space.seed(seed)
+    env.single_observation_space.seed(seed)
+    for i in range(len(env.envs)):
+        env.envs[i].action_space.seed(seed)
+        env.envs[i].observation_space.seed(seed)
 
 
 def update_buffer(buffer, new_data):
@@ -218,27 +180,11 @@ class MightyAgent(ABC):
 
         self.seed = seed
         if self.seed is not None:
-            seed_everything(self.seed, env=None)  # type: ignore
-            # Re-seed Python/NumPy/Torch here again.
             random.seed(seed)
             np.random.seed(seed)
             torch.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
-            torch.backends.cudnn.deterministic = True
-            torch.backends.cudnn.benchmark = False
             os.environ["PYTHONHASHSEED"] = str(seed)
-
-            # Also seed any RNGs you will use later (e.g. for buffer / policy):
-            self.rng = np.random.default_rng(seed)  # for any numpy-based sampling
-            # If you ever use torch.Generator for sampling actions, you could do:
-            self.torch_gen = torch.Generator().manual_seed(seed)
-
-            # If you use Python’s random inside your policy, call random.seed(seed)
-            random.seed(seed)
-
-        else:
-            self.rng = np.random.default_rng()
-            self.seed = 0
 
         # Replay Buffer
         replay_buffer_class = retrieve_class(
@@ -279,6 +225,10 @@ class MightyAgent(ABC):
         else:
             self.eval_env = eval_env
 
+        if self.seed is not None:
+            seed_env_spaces(self.env, self.seed)
+            seed_env_spaces(self.eval_env, self.seed)
+
         self.render_progress = render_progress
         self.output_dir = output_dir
         if self.output_dir is not None:
@@ -288,9 +238,9 @@ class MightyAgent(ABC):
         self.meta_modules = {}
         for i, m in enumerate(meta_methods):
             meta_class = retrieve_class(cls=m, default_cls=None)  # type: ignore
-            assert (
-                meta_class is not None
-            ), f"Class {m} not found, did you specify the correct loading path?"
+            assert meta_class is not None, (
+                f"Class {m} not found, did you specify the correct loading path?"
+            )
             kwargs: Dict = {}
             if len(meta_kwargs) > i:
                 kwargs = meta_kwargs[i]
@@ -345,10 +295,12 @@ class MightyAgent(ABC):
             wandb.log(starting_hps)
 
         self.initialize_agent()
+        if self.seed is not None:
+            self.buffer.seed(self.seed)
+            self.policy.seed(self.seed)
+            for m in self.meta_modules.values():
+                m.seed(self.seed)
         self.steps = 0
-
-        seed_everything(self.seed, self.env)  # type: ignore
-        seed_everything(self.seed, self.eval_env)  # type: ignore
 
     def _initialize_agent(self) -> None:
         """Agent/algorithm specific initializations."""

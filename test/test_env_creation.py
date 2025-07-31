@@ -120,56 +120,56 @@ class TestEnvCreation:
 
     def check_vector_env(self, env):
         """Check if environment is a vector environment."""
-        assert hasattr(
-            env, "num_envs"
-        ), f"Vector environment should have num_envs attribute: {env}"
-        assert hasattr(
-            env, "reset"
-        ), f"Vector environment should have reset method: {env}."
-        assert hasattr(
-            env, "step"
-        ), f"Vector environment should have step method: {env}."
-        assert hasattr(
-            env, "close"
-        ), f"Vector environment should have close method: {env}."
-        assert hasattr(
-            env, "single_action_space"
-        ), f"Vector environment should have single action space view: {env}."
-        assert hasattr(
-            env, "single_observation_space"
-        ), f"Vector environment should have single observation space view: {env}."
-        assert hasattr(
-            env, "envs"
-        ), f"Environments should be kept in envs attribute: {env}."
+        assert hasattr(env, "num_envs"), (
+            f"Vector environment should have num_envs attribute: {env}"
+        )
+        assert hasattr(env, "reset"), (
+            f"Vector environment should have reset method: {env}."
+        )
+        assert hasattr(env, "step"), (
+            f"Vector environment should have step method: {env}."
+        )
+        assert hasattr(env, "close"), (
+            f"Vector environment should have close method: {env}."
+        )
+        assert hasattr(env, "single_action_space"), (
+            f"Vector environment should have single action space view: {env}."
+        )
+        assert hasattr(env, "single_observation_space"), (
+            f"Vector environment should have single observation space view: {env}."
+        )
+        assert hasattr(env, "envs"), (
+            f"Environments should be kept in envs attribute: {env}."
+        )
 
     def test_make_gym_env(self):
         """Test env creation with make_gym_env."""
         env, eval_env, eval_default = make_gym_env(self.gym_config)
         self.check_vector_env(env)
         self.check_vector_env(eval_env())
-        assert (
-            eval_default == self.gym_config.n_episodes_eval
-        ), "Default number of eval episodes should match config"
-        assert (
-            len(env.envs) == self.gym_config.num_envs
-        ), "Number of environments should match config."
-        assert (
-            len(eval_env().envs) == self.gym_config.n_episodes_eval
-        ), "Number of environments should match config."
+        assert eval_default == self.gym_config.n_episodes_eval, (
+            "Default number of eval episodes should match config"
+        )
+        assert len(env.envs) == self.gym_config.num_envs, (
+            "Number of environments should match config."
+        )
+        assert len(eval_env().envs) == self.gym_config.n_episodes_eval, (
+            "Number of environments should match config."
+        )
 
-        assert (
-            self.gym_config.env == env.envs[0].spec.id
-        ), "Environment should be created with the correct id."
-        assert (
-            self.gym_config.env == eval_env().envs[0].spec.id
-        ), "Eval environment should be created with the correct id."
+        assert self.gym_config.env == env.envs[0].spec.id, (
+            "Environment should be created with the correct id."
+        )
+        assert self.gym_config.env == eval_env().envs[0].spec.id, (
+            "Eval environment should be created with the correct id."
+        )
 
-        assert isinstance(
-            env, gym.vector.SyncVectorEnv
-        ), "Gym environment should be a SyncVectorEnv."
-        assert isinstance(
-            eval_env(), gym.vector.SyncVectorEnv
-        ), "Eval environment should be a SyncVectorEnv."
+        assert isinstance(env, gym.vector.SyncVectorEnv), (
+            "Gym environment should be a SyncVectorEnv."
+        )
+        assert isinstance(eval_env(), gym.vector.SyncVectorEnv), (
+            "Eval environment should be a SyncVectorEnv."
+        )
 
     def test_make_dacbench_env(self):
         """Test env creation with make_dacbench_env."""
@@ -180,32 +180,34 @@ class TestEnvCreation:
             eval_default
             == len(env.envs[0].instance_set.keys())
             * self.dacbench_config.n_episodes_eval
-        ), "Default number of eval episodes should instance set size times evaluation episodes."
-        assert (
-            len(env.envs) == self.dacbench_config.num_envs
-        ), "Number of environments should match config."
+        ), (
+            "Default number of eval episodes should instance set size times evaluation episodes."
+        )
+        assert len(env.envs) == self.dacbench_config.num_envs, (
+            "Number of environments should match config."
+        )
         assert (
             len(eval_env().envs)
             == len(env.envs[0].instance_set.keys())
             * self.dacbench_config.n_episodes_eval
         ), "Number of environments should match eval length."
 
-        assert isinstance(
-            env, gym.vector.SyncVectorEnv
-        ), "DACBench environment should be a SyncVectorEnv."
-        assert isinstance(
-            eval_env(), gym.vector.SyncVectorEnv
-        ), "Eval environment should be a SyncVectorEnv."
+        assert isinstance(env, gym.vector.SyncVectorEnv), (
+            "DACBench environment should be a SyncVectorEnv."
+        )
+        assert isinstance(eval_env(), gym.vector.SyncVectorEnv), (
+            "Eval environment should be a SyncVectorEnv."
+        )
 
         bench = getattr(benchmarks, self.dacbench_config.env)()
         for k in self.dacbench_config.env_kwargs:
             bench.config[k] = self.dacbench_config.env_kwargs[k]
-        assert isinstance(
-            env.envs[0], type(bench.get_environment())
-        ), "Environment should have correct type."
-        assert isinstance(
-            eval_env().envs[0], type(bench.get_environment())
-        ), "Eval environment should have correct type."
+        assert isinstance(env.envs[0], type(bench.get_environment())), (
+            "Environment should have correct type."
+        )
+        assert isinstance(eval_env().envs[0], type(bench.get_environment())), (
+            "Eval environment should have correct type."
+        )
         assert (
             env.envs[0].config.instance_set_path
             == self.dacbench_config.env_kwargs.instance_set_path
@@ -221,22 +223,24 @@ class TestEnvCreation:
             eval_default
             == len(env.envs[0].instance_set.keys())
             * self.dacbench_config_benchmark.n_episodes_eval
-        ), "Default number of eval episodes should instance set size times evaluation episodes."
-        assert (
-            len(env.envs) == self.dacbench_config_benchmark.num_envs
-        ), "Number of environments should match config."
+        ), (
+            "Default number of eval episodes should instance set size times evaluation episodes."
+        )
+        assert len(env.envs) == self.dacbench_config_benchmark.num_envs, (
+            "Number of environments should match config."
+        )
         assert (
             len(eval_env().envs)
             == len(env.envs[0].instance_set.keys())
             * self.dacbench_config_benchmark.n_episodes_eval
         ), "Number of environments should match eval length."
 
-        assert isinstance(
-            env, gym.vector.SyncVectorEnv
-        ), "DACBench environment should be a SyncVectorEnv."
-        assert isinstance(
-            eval_env(), gym.vector.SyncVectorEnv
-        ), "Eval environment should be a SyncVectorEnv."
+        assert isinstance(env, gym.vector.SyncVectorEnv), (
+            "DACBench environment should be a SyncVectorEnv."
+        )
+        assert isinstance(eval_env(), gym.vector.SyncVectorEnv), (
+            "Eval environment should be a SyncVectorEnv."
+        )
 
         benchmark_kwargs = OmegaConf.to_container(
             self.dacbench_config_benchmark.env_kwargs, resolve=True
@@ -245,12 +249,12 @@ class TestEnvCreation:
         del benchmark_kwargs["config_space"]
         bench = getattr(benchmarks, self.dacbench_config_benchmark.env)()
         benchmark_env = bench.get_benchmark(**benchmark_kwargs)
-        assert isinstance(
-            env.envs[0], type(benchmark_env)
-        ), "Environment should have correct type."
-        assert isinstance(
-            eval_env().envs[0], type(benchmark_env)
-        ), "Eval environment should have correct type."
+        assert isinstance(env.envs[0], type(benchmark_env)), (
+            "Environment should have correct type."
+        )
+        assert isinstance(eval_env().envs[0], type(benchmark_env)), (
+            "Eval environment should have correct type."
+        )
         assert eval_env().envs[0].test, "Eval environment should be in test mode."
         for k in env.envs[0].config.keys():
             if k == "observation_space_args":
@@ -260,19 +264,25 @@ class TestEnvCreation:
                     assert (
                         env.envs[0].config[k][i].functions[0].a
                         == benchmark_env.config[k][i].functions[0].a
-                    ), f"Environment should have matching instances, mismatch for function parameter a at instance {i}: {env.envs[0].config[k][i].functions[0].a} != {benchmark_env.config[k][i].functions[0].a}"
+                    ), (
+                        f"Environment should have matching instances, mismatch for function parameter a at instance {i}: {env.envs[0].config[k][i].functions[0].a} != {benchmark_env.config[k][i].functions[0].a}"
+                    )
                     assert (
                         env.envs[0].config[k][i].functions[0].b
                         == benchmark_env.config[k][i].functions[0].b
-                    ), f"Environment should have matching instances, mismatch for function parameter b at instance {i}: {env.envs[0].config[k][i].functions[0].b} != {benchmark_env.config[k][i].functions[0].b}"
+                    ), (
+                        f"Environment should have matching instances, mismatch for function parameter b at instance {i}: {env.envs[0].config[k][i].functions[0].b} != {benchmark_env.config[k][i].functions[0].b}"
+                    )
                     assert (
                         env.envs[0].config[k][i].omit_instance_type
                         == benchmark_env.config[k][i].omit_instance_type
-                    ), f"Environment should have matching instances, mismatch for omit_instance_type at instance {i}: {env.envs[0].config[k][i].omit_instance_type} != {benchmark_env.config[k][i].omit_instance_type}"
+                    ), (
+                        f"Environment should have matching instances, mismatch for omit_instance_type at instance {i}: {env.envs[0].config[k][i].omit_instance_type} != {benchmark_env.config[k][i].omit_instance_type}"
+                    )
             else:
-                assert (
-                    env.envs[0].config[k] == benchmark_env.config[k]
-                ), f"Environment should have correct config, mismatch at {k}: {env.envs[0].config[k]} != {benchmark_env.config[k]}"
+                assert env.envs[0].config[k] == benchmark_env.config[k], (
+                    f"Environment should have correct config, mismatch at {k}: {env.envs[0].config[k]} != {benchmark_env.config[k]}"
+                )
 
     def test_make_carl_env(self):
         """Test env creation with make_carl_env."""
@@ -284,19 +294,19 @@ class TestEnvCreation:
         ), "Default number of eval episodes should match config"
 
         env_class = getattr(carl.envs, self.carl_config.env)
-        assert isinstance(
-            env.envs[0], env_class
-        ), "Environment should have the correct type."
-        assert isinstance(
-            eval_env().envs[0], env_class
-        ), "Eval environment should have the correct type."
+        assert isinstance(env.envs[0], env_class), (
+            "Environment should have the correct type."
+        )
+        assert isinstance(eval_env().envs[0], env_class), (
+            "Eval environment should have the correct type."
+        )
 
-        assert isinstance(
-            env, CARLVectorEnvSimulator
-        ), "CARL environment should be wrapped."
-        assert isinstance(
-            eval_env(), CARLVectorEnvSimulator
-        ), "CARL eval environment should be wrapped."
+        assert isinstance(env, CARLVectorEnvSimulator), (
+            "CARL environment should be wrapped."
+        )
+        assert isinstance(eval_env(), CARLVectorEnvSimulator), (
+            "CARL eval environment should be wrapped."
+        )
 
     def test_make_carl_context(self):
         """Test env creation with make_carl_env."""
@@ -312,9 +322,9 @@ class TestEnvCreation:
         assert (
             len(train_contexts) == self.carl_config_context.env_kwargs.num_contexts
         ), "Number of training contexts should match config."
-        assert (
-            len(eval_contexts) == 100
-        ), "Number of eval contexts should match default."
+        assert len(eval_contexts) == 100, (
+            "Number of eval contexts should match default."
+        )
 
         assert not all(
             [
@@ -409,32 +419,36 @@ class TestEnvCreation:
         ), "Eval contexts lie above lower bound for gravity."
         assert isinstance(
             env.envs[0].context_selector, carl.context.selection.StaticSelector
-        ), f"Context selector should be switched to a StaticSelector based on keyword but is {type(env.envs[0].context_selector)}."
+        ), (
+            f"Context selector should be switched to a StaticSelector based on keyword but is {type(env.envs[0].context_selector)}."
+        )
         assert isinstance(
             eval_env().envs[0].context_selector,
             carl.context.selection.RoundRobinSelector,
-        ), f"Eval env context selector should stay round robin but is {type(eval_env().envs[0].context_selector)}."
+        ), (
+            f"Eval env context selector should stay round robin but is {type(eval_env().envs[0].context_selector)}."
+        )
 
     def test_make_procgen_env(self):
         """Test env creation with make_procgen_env."""
         if PROCGEN:
             env, eval_env, eval_default = make_procgen_env(self.procgen_config)
-            assert (
-                eval_default == self.procgen_config.n_episodes_eval
-            ), "Default number of eval episodes should match config"
+            assert eval_default == self.procgen_config.n_episodes_eval, (
+                "Default number of eval episodes should match config"
+            )
             self.check_vector_env(env)
             self.check_vector_env(eval_env())
             if ENVPOOL:
-                assert isinstance(
-                    env, envpool.VectorEnv
-                ), "Environment should be an envpool env if we create a gym env with envpool installed."
+                assert isinstance(env, envpool.VectorEnv), (
+                    "Environment should be an envpool env if we create a gym env with envpool installed."
+                )
             else:
-                assert isinstance(
-                    env, ProcgenVecEnv
-                ), "Environment should be ProcGen env if we create a gym env without envpool installed."
-            assert isinstance(
-                eval_env(), ProcgenVecEnv
-            ), "Eval env should be a ProcGen env."
+                assert isinstance(env, ProcgenVecEnv), (
+                    "Environment should be ProcGen env if we create a gym env without envpool installed."
+                )
+            assert isinstance(eval_env(), ProcgenVecEnv), (
+                "Eval env should be a ProcGen env."
+            )
         else:
             Warning("Procgen not installed, skipping test.")
 
@@ -443,57 +457,57 @@ class TestEnvCreation:
         env, eval_env, eval_default = make_pufferlib_env(self.pufferlib_config)
         self.check_vector_env(env)
         self.check_vector_env(eval_env())
-        assert (
-            eval_default == self.pufferlib_config.n_episodes_eval
-        ), "Default number of eval episodes should match config"
-        assert (
-            len(env.envs) == self.pufferlib_config.num_envs
-        ), "Number of environments should match config."
-        assert (
-            len(eval_env().envs) == self.pufferlib_config.n_episodes_eval
-        ), "Number of environments should match config."
+        assert eval_default == self.pufferlib_config.n_episodes_eval, (
+            "Default number of eval episodes should match config"
+        )
+        assert len(env.envs) == self.pufferlib_config.num_envs, (
+            "Number of environments should match config."
+        )
+        assert len(eval_env().envs) == self.pufferlib_config.n_episodes_eval, (
+            "Number of environments should match config."
+        )
 
         domain = ".".join(self.pufferlib_config.env.split(".")[:-1])
         name = self.pufferlib_config.env.split(".")[-1]
         get_env_func = importlib.import_module(domain).env_creator
         make_env = get_env_func(name)(**self.pufferlib_config.env_kwargs)
-        assert isinstance(
-            env.envs[0], type(make_env)
-        ), "Environment should have correct type."
-        assert isinstance(
-            eval_env().envs[0], type(make_env)
-        ), "Eval environment should have correct type."
+        assert isinstance(env.envs[0], type(make_env)), (
+            "Environment should have correct type."
+        )
+        assert isinstance(eval_env().envs[0], type(make_env)), (
+            "Eval environment should have correct type."
+        )
 
-        assert isinstance(
-            env, PufferlibToGymAdapter
-        ), "Pufferlib env should be wrapped."
-        assert isinstance(
-            eval_env(), PufferlibToGymAdapter
-        ), "Pufferlib eval env should be wrapped."
+        assert isinstance(env, PufferlibToGymAdapter), (
+            "Pufferlib env should be wrapped."
+        )
+        assert isinstance(eval_env(), PufferlibToGymAdapter), (
+            "Pufferlib eval env should be wrapped."
+        )
 
     def test_make_mighty_env(self):
         """Test correct typing of environments when creating with make_mighty_env."""
         env, eval_env, eval_default = make_mighty_env(self.gym_config)
-        assert (
-            eval_default == self.gym_config.n_episodes_eval
-        ), "Default number of eval episodes should match config"
+        assert eval_default == self.gym_config.n_episodes_eval, (
+            "Default number of eval episodes should match config"
+        )
         self.check_vector_env(env)
         self.check_vector_env(eval_env())
         if ENVPOOL:
-            assert isinstance(
-                env, envpool.VectorEnv
-            ), "Mighty environment should be an envpool env if we create a gym env with envpool installed."
-            assert isinstance(
-                eval_env(), gym.vector.SyncVectorEnv
-            ), "Eval env should be a SyncVectorEnv env if we create a gym env with envpool installed."
+            assert isinstance(env, envpool.VectorEnv), (
+                "Mighty environment should be an envpool env if we create a gym env with envpool installed."
+            )
+            assert isinstance(eval_env(), gym.vector.SyncVectorEnv), (
+                "Eval env should be a SyncVectorEnv env if we create a gym env with envpool installed."
+            )
         else:
             Warning("Envpool not installed, skipping test.")
-            assert isinstance(
-                env, gym.vector.SyncVectorEnv
-            ), "Mighty environment should be a SyncVectorEnv if we create a gym env without envpool installed."
-            assert isinstance(
-                env, gym.vector.SyncVectorEnv
-            ), "Eval environment should be a SyncVectorEnv if we create a gym env without envpool installed."
+            assert isinstance(env, gym.vector.SyncVectorEnv), (
+                "Mighty environment should be a SyncVectorEnv if we create a gym env without envpool installed."
+            )
+            assert isinstance(env, gym.vector.SyncVectorEnv), (
+                "Eval environment should be a SyncVectorEnv if we create a gym env without envpool installed."
+            )
 
         for config in [
             self.dacbench_config,

@@ -92,16 +92,16 @@ class TestRolloutBatch:
         assert isinstance(batch.rewards, torch.Tensor), "Rewards not tensor"
         assert isinstance(batch.advantages, torch.Tensor), "Advantages not tensor"
         assert isinstance(batch.returns, torch.Tensor), "Returns not tensor"
-        assert isinstance(
-            batch.episode_starts, torch.Tensor
-        ), "Episode starts not tensor"
+        assert isinstance(batch.episode_starts, torch.Tensor), (
+            "Episode starts not tensor"
+        )
         assert isinstance(batch.log_probs, torch.Tensor), "Log probs not tensor"
         assert isinstance(batch.values, torch.Tensor), "Values not tensor"
 
         # Check dimensions are promoted correctly
-        assert (
-            batch.observations.dim() >= 2
-        ), f"Obs dim too low: {batch.observations.shape}"
+        assert batch.observations.dim() >= 2, (
+            f"Obs dim too low: {batch.observations.shape}"
+        )
         assert batch.actions.dim() >= 1, f"Actions dim too low: {batch.actions.shape}"
 
         # For discrete actions, latents should be None
@@ -123,9 +123,9 @@ class TestRolloutBatch:
                 values=values,
             )
             assert batch_with_latents.latents is not None, "Latents should not be None"
-            assert isinstance(
-                batch_with_latents.latents, torch.Tensor
-            ), "Latents not tensor"
+            assert isinstance(batch_with_latents.latents, torch.Tensor), (
+                "Latents not tensor"
+            )
 
     @pytest.mark.parametrize(
         (
@@ -215,9 +215,9 @@ class TestRolloutBatch:
             if discrete:
                 assert lat is None, "Latent should be None for discrete"
             else:
-                assert lat is None or isinstance(
-                    lat, torch.Tensor
-                ), "Latent issue in iteration"
+                assert lat is None or isinstance(lat, torch.Tensor), (
+                    "Latent issue in iteration"
+                )
             elements += 1
 
         assert elements == size, f"Expected {size} elements, got {elements}"
@@ -391,16 +391,16 @@ class TestMaxiBatch:
         # Test stacked observations
         # After stacking: (2, 1, 1, 2), after reshape: (2, 1, 2)
         expected_obs = torch.tensor([[[1, 2]], [[3, 4]]], dtype=torch.float32)
-        assert torch.allclose(
-            maxi.observations, expected_obs
-        ), f"Observations not stacked correctly. Expected {expected_obs}, got {maxi.observations}"
+        assert torch.allclose(maxi.observations, expected_obs), (
+            f"Observations not stacked correctly. Expected {expected_obs}, got {maxi.observations}"
+        )
 
         # Test stacked actions
         # After stacking: (2, 1, 1), after reshape: (2, 1)
         expected_actions = torch.tensor([[0], [1]], dtype=torch.float32)
-        assert torch.allclose(
-            maxi.actions, expected_actions
-        ), f"Actions not stacked correctly. Expected {expected_actions}, got {maxi.actions}"
+        assert torch.allclose(maxi.actions, expected_actions), (
+            f"Actions not stacked correctly. Expected {expected_actions}, got {maxi.actions}"
+        )
 
     def test_latents_handling(self):
         """Test MaxiBatch handles latents correctly (None vs tensor)"""
@@ -426,9 +426,9 @@ class TestMaxiBatch:
         expected_latents_shape = torch.Size(
             [1]
         )  # zeros_like creates (1,1), stacked to (1,1,1), reshaped to (1,)
-        assert (
-            latents.shape == expected_latents_shape
-        ), f"Latents shape {latents.shape} should be {expected_latents_shape}"
+        assert latents.shape == expected_latents_shape, (
+            f"Latents shape {latents.shape} should be {expected_latents_shape}"
+        )
 
     def test_empty_tensor_for_empty_batch(self):
         """Test that empty MaxiBatch returns empty tensors"""
@@ -483,9 +483,9 @@ class TestMightyRolloutBuffer:
             1,
             2,
         ), "Wrong actions buffer shape (continuous)"
-        assert (
-            buffer.latents is not None
-        ), "Latents should not be None for continuous with use_latents=True"
+        assert buffer.latents is not None, (
+            "Latents should not be None for continuous with use_latents=True"
+        )
         assert buffer.latents.shape == (10, 1, 2), "Wrong latents buffer shape"
 
     def test_init_continuous_no_latents(self):
@@ -616,9 +616,9 @@ class TestMightyRolloutBuffer:
             )
             buffer.add(rb)
 
-        assert (
-            buffer.pos == 3
-        ), f"Position should be 3 after adding 3 steps, got {buffer.pos}"
+        assert buffer.pos == 3, (
+            f"Position should be 3 after adding 3 steps, got {buffer.pos}"
+        )
 
     def test_buffer_overflow(self):
         buffer = self.get_buffer(buffer_size=2)  # Small buffer
@@ -670,12 +670,12 @@ class TestMightyRolloutBuffer:
         buffer.compute_returns_and_advantage(last_values, dones)
 
         # Check that advantages and returns were computed (non-zero)
-        assert not torch.allclose(
-            buffer.advantages[:2], torch.zeros(2, 1)
-        ), "Advantages should be computed (non-zero)"
-        assert not torch.allclose(
-            buffer.returns[:2], torch.zeros(2, 1)
-        ), "Returns should be computed (non-zero)"
+        assert not torch.allclose(buffer.advantages[:2], torch.zeros(2, 1)), (
+            "Advantages should be computed (non-zero)"
+        )
+        assert not torch.allclose(buffer.returns[:2], torch.zeros(2, 1)), (
+            "Returns should be computed (non-zero)"
+        )
 
     def test_compute_returns_and_advantage_multi_env(self):
         """Test GAE computation with multiple environments"""
@@ -690,9 +690,7 @@ class TestMightyRolloutBuffer:
             advantages=np.array([[0.0, 0.0]]),  # (1, 2) ✓
             returns=np.array([[0.0, 0.0]]),  # (1, 2) ✓
             episode_starts=np.array([[1, 1]]),  # (1, 2) ✓
-            log_probs=np.array(
-                [[-0.5, -0.8]]
-            ),  # (1, 2)
+            log_probs=np.array([[-0.5, -0.8]]),  # (1, 2)
             values=np.array([[1.0, 0.5]]),  # (1, 2) ✓
         )
 
@@ -725,18 +723,18 @@ class TestMightyRolloutBuffer:
         print(f"Computed returns: {returns_computed}")
 
         # Basic sanity checks
-        assert not torch.allclose(
-            advantages_computed, torch.zeros(2)
-        ), "Advantages should be non-zero"
-        assert not torch.allclose(
-            returns_computed, torch.zeros(2)
-        ), "Returns should be non-zero"
+        assert not torch.allclose(advantages_computed, torch.zeros(2)), (
+            "Advantages should be non-zero"
+        )
+        assert not torch.allclose(returns_computed, torch.zeros(2)), (
+            "Returns should be non-zero"
+        )
 
         # For GAE, returns = advantages + values (at time t)
         expected_returns = advantages_computed + buffer.values[0]
-        assert torch.allclose(
-            returns_computed, expected_returns, atol=1e-6
-        ), f"Returns should equal advantages + values: {returns_computed} vs {expected_returns}"
+        assert torch.allclose(returns_computed, expected_returns, atol=1e-6), (
+            f"Returns should equal advantages + values: {returns_computed} vs {expected_returns}"
+        )
 
     def test_compute_returns_empty_buffer(self):
         """Test GAE computation on empty buffer"""
@@ -775,9 +773,9 @@ class TestMightyRolloutBuffer:
 
         # Try to sample batch_size=4 when only 1 transition available
         maxi_batch = buffer.sample(batch_size=4)
-        assert (
-            len(maxi_batch) == 0
-        ), "Should return empty MaxiBatch when insufficient data"
+        assert len(maxi_batch) == 0, (
+            "Should return empty MaxiBatch when insufficient data"
+        )
 
     def test_sample_with_data(self):
         buffer = self.get_buffer(buffer_size=10, n_envs=2, discrete=True)
@@ -822,12 +820,10 @@ class TestMightyRolloutBuffer:
             )
             buffer.add(rb)
 
-
         # We have 2 timesteps × 2 envs = 4 total transitions
-        assert (
-            len(buffer) == 4
-        ), f"Buffer should contain 4 transitions, got {len(buffer)}"
-
+        assert len(buffer) == 4, (
+            f"Buffer should contain 4 transitions, got {len(buffer)}"
+        )
 
         maxi_batch = buffer.sample(batch_size=2)
 
@@ -856,29 +852,29 @@ class TestMightyRolloutBuffer:
 
             # Test that each minibatch has valid data
             for i, mb in enumerate(minibatches):
-                assert (
-                    mb.observations is not None
-                ), f"Minibatch {i} observations should not be None"
-                assert (
-                    mb.log_probs is not None
-                ), f"Minibatch {i} log_probs should not be None"
-                assert (
-                    mb.observations.shape[0] > 0
-                ), f"Minibatch {i} should have some observations"
+                assert mb.observations is not None, (
+                    f"Minibatch {i} observations should not be None"
+                )
+                assert mb.log_probs is not None, (
+                    f"Minibatch {i} log_probs should not be None"
+                )
+                assert mb.observations.shape[0] > 0, (
+                    f"Minibatch {i} should have some observations"
+                )
                 print(f"Minibatch {i} validated: obs.shape={mb.observations.shape}")
         else:
             # Original expected behavior
-            assert (
-                len(maxi_batch) == 4
-            ), f"Should have 4 total sampled elements, got {len(maxi_batch)}"
-            assert (
-                len(minibatches) == 2
-            ), f"Should have 2 minibatches, got {len(minibatches)}"
+            assert len(maxi_batch) == 4, (
+                f"Should have 4 total sampled elements, got {len(maxi_batch)}"
+            )
+            assert len(minibatches) == 2, (
+                f"Should have 2 minibatches, got {len(minibatches)}"
+            )
 
             for i, mb in enumerate(minibatches):
-                assert (
-                    len(mb) == 2
-                ), f"Minibatch {i} should have 2 elements, got {len(mb)}"
+                assert len(mb) == 2, (
+                    f"Minibatch {i} should have 2 elements, got {len(mb)}"
+                )
 
     def test_len_and_bool(self):
         buffer = self.get_buffer(n_envs=2)
@@ -965,9 +961,9 @@ class TestMightyRolloutBuffer:
         assert loaded_buffer.n_envs == buffer.n_envs, "N envs mismatch"
         assert loaded_buffer.gamma == buffer.gamma, "Gamma mismatch"
         assert loaded_buffer.gae_lambda == buffer.gae_lambda, "GAE lambda mismatch"
-        assert torch.allclose(
-            loaded_buffer.observations, buffer.observations
-        ), "Observations mismatch"
+        assert torch.allclose(loaded_buffer.observations, buffer.observations), (
+            "Observations mismatch"
+        )
         assert torch.allclose(loaded_buffer.actions, buffer.actions), "Actions mismatch"
         assert torch.allclose(loaded_buffer.rewards, buffer.rewards), "Rewards mismatch"
 
@@ -1025,20 +1021,6 @@ class TestMightyRolloutBuffer:
 
         buffer.compute_returns_and_advantage(last_values, dones)
 
-        # Manually calculate expected values for verification
-        gamma = buffer.gamma
-        lam = buffer.gae_lambda
-
-        # Step 1 (t=1): delta = r1 + gamma * V(s2) * (1-done) - V(s1)
-        #                     = 2.0 + 0.99 * 1.5 * 1 - 1.0 = 2.485
-        # Step 0 (t=0): delta = r0 + gamma * V(s1) * (1-episode_start[1]) - V(s0)
-        #                     = 1.0 + 0.99 * 1.0 * 1 - 0.5 = 1.49
-
-        # GAE calculation (backward):
-        # gae_1 = delta_1 = 2.485
-        # gae_0 = delta_0 + gamma * lambda * (1-episode_start[1]) * gae_1
-        #       = 1.49 + 0.99 * 0.95 * 1 * 2.485 ≈ 3.82
-
         advantages = buffer.advantages[:2, 0].cpu().numpy()
         returns = buffer.returns[:2, 0].cpu().numpy()
 
@@ -1048,9 +1030,9 @@ class TestMightyRolloutBuffer:
 
         # Returns should be advantages + values
         expected_returns = advantages + np.array([0.5, 1.0])
-        assert np.allclose(
-            returns, expected_returns, atol=1e-5
-        ), f"Returns should equal advantages + values: {returns} vs {expected_returns}"
+        assert np.allclose(returns, expected_returns, atol=1e-5), (
+            f"Returns should equal advantages + values: {returns} vs {expected_returns}"
+        )
 
     def test_episode_boundary_handling(self):
         """Test that episode boundaries are handled correctly in GAE"""
@@ -1119,9 +1101,9 @@ class TestMightyRolloutBuffer:
         advantages = buffer.advantages[:3, 0].cpu().numpy()
 
         # All advantages should be computed (non-zero)
-        assert not np.allclose(
-            advantages, [0.0, 0.0, 0.0]
-        ), "All advantages should be computed"
+        assert not np.allclose(advantages, [0.0, 0.0, 0.0]), (
+            "All advantages should be computed"
+        )
 
     def test_multi_env_independence(self):
         """Test that multiple environments are handled independently"""
@@ -1137,9 +1119,7 @@ class TestMightyRolloutBuffer:
             advantages=np.array([[0.0, 0.0, 0.0]]),  # (1, 3)
             returns=np.array([[0.0, 0.0, 0.0]]),  # (1, 3)
             episode_starts=np.array([[1, 1, 1]]),  # (1, 3) - All start new episodes
-            log_probs=np.array(
-                [[-0.5, -0.8, -0.3]]
-            ),  # (1, 3)
+            log_probs=np.array([[-0.5, -0.8, -0.3]]),  # (1, 3)
             values=np.array([[0.5, 1.0, 0.3]]),  # (1, 3)
         )
 
@@ -1155,28 +1135,27 @@ class TestMightyRolloutBuffer:
 
         # All environments should have computed advantages
         assert len(advantages) == 3, "Should have advantages for all 3 envs"
-        assert not np.allclose(
-            advantages, [0.0, 0.0, 0.0]
-        ), "All advantages should be computed"
+        assert not np.allclose(advantages, [0.0, 0.0, 0.0]), (
+            "All advantages should be computed"
+        )
 
         # The done environment (env 1) should have different computation
         # (no bootstrap from next value)
-        assert (
-            advantages[1] != advantages[0]
-        ), "Done env should have different advantage"
-        assert (
-            advantages[1] != advantages[2]
-        ), "Done env should have different advantage"
-
+        assert advantages[1] != advantages[0], (
+            "Done env should have different advantage"
+        )
+        assert advantages[1] != advantages[2], (
+            "Done env should have different advantage"
+        )
 
         # Additional verification: returns should equal advantages + values for GAE
         returns = buffer.returns[0, :].cpu().numpy()
         values = buffer.values[0, :].cpu().numpy()
         expected_returns = advantages + values
 
-        assert np.allclose(
-            returns, expected_returns, atol=1e-6
-        ), f"Returns should equal advantages + values: {returns} vs {expected_returns}"
+        assert np.allclose(returns, expected_returns, atol=1e-6), (
+            f"Returns should equal advantages + values: {returns} vs {expected_returns}"
+        )
 
     def test_sampling_randomness(self):
         """Test that sampling produces different results when called multiple times"""
@@ -1218,9 +1197,9 @@ class TestMightyRolloutBuffer:
 
         # Should get some variety in samples (not all identical)
         unique_samples = set(samples)
-        assert (
-            len(unique_samples) > 1
-        ), f"Sampling should be random, got {len(unique_samples)} unique samples from: {samples}"
+        assert len(unique_samples) > 1, (
+            f"Sampling should be random, got {len(unique_samples)} unique samples from: {samples}"
+        )
 
     def test_mixed_data_types(self):
         """Test buffer handles different numpy data types correctly"""
@@ -1243,8 +1222,8 @@ class TestMightyRolloutBuffer:
         assert buffer.pos == 1, "Should successfully add data with mixed types"
 
         # All stored tensors should be float32
-        assert (
-            buffer.observations.dtype == torch.float32
-        ), "Observations should be float32"
+        assert buffer.observations.dtype == torch.float32, (
+            "Observations should be float32"
+        )
         assert buffer.actions.dtype == torch.float32, "Actions should be float32"
         assert buffer.rewards.dtype == torch.float32, "Rewards should be float32"

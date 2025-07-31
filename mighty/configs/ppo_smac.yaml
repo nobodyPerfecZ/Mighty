@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - /cluster: local
   - algorithm: ppo_mujoco
   - environment: gymnasium/pendulum
   - search_space: ppo_rs
@@ -45,6 +46,6 @@ hydra:
           output_directory: ${hydra.sweep.dir}
     search_space: ${search_space}
   run:
-    dir: ./tmp/branin_smac/
+    dir: ${output_dir}/${experiment_name}_${seed}
   sweep:
-    dir: ./tmp/branin_smac/
+    dir: ${output_dir}/${experiment_name}_${seed}

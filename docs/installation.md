@@ -1,5 +1,5 @@
 We recommend to using uv to install and run Mighty in a virtual environment.
-The code has been tested with python 3.10.
+The code has been tested with python 3.11 on Unix Systems.
 
 First create a clean python environment:
 

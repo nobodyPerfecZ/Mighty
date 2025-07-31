@@ -43,7 +43,6 @@ class PrioritizedLevelReplay(MightyMetaComponent):
         :return:
         """
         super().__init__()
-        self.rng = np.random.default_rng()
         self.alpha = alpha
         self.rho = rho
         self.staleness_coef = staleness_coeff

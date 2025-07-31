@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import shutil
 
-import pytest
 import gymnasium as gym
+import pytest
 from omegaconf import OmegaConf
 
 from mighty.mighty_agents import MightyAgent
 from mighty.mighty_runners import MightyOnlineRunner, MightyRunner
-from mighty.mighty_utils.wrappers import PufferlibToGymAdapter
 from mighty.mighty_utils.test_helpers import DummyEnv
+from mighty.mighty_utils.wrappers import PufferlibToGymAdapter
 
 
 class TestMightyRunner:
@@ -57,22 +57,22 @@ class TestMightyRunner:
 
     def test_init(self):
         runner = MightyOnlineRunner(self.runner_config)
-        assert isinstance(
-            runner, MightyRunner
-        ), "MightyOnlineRunner should be an instance of MightyRunner"
-        assert isinstance(
-            runner.agent, MightyAgent
-        ), "MightyOnlineRunner should have a MightyAgent"
-        assert isinstance(
-            runner.agent.eval_env, PufferlibToGymAdapter
-        ), "Eval env should be a PufferlibToGymAdapter"
+        assert isinstance(runner, MightyRunner), (
+            "MightyOnlineRunner should be an instance of MightyRunner"
+        )
+        assert isinstance(runner.agent, MightyAgent), (
+            "MightyOnlineRunner should have a MightyAgent"
+        )
+        assert isinstance(runner.agent.eval_env, PufferlibToGymAdapter), (
+            "Eval env should be a PufferlibToGymAdapter"
+        )
         assert runner.agent.env is not None, "Env should not be None"
-        assert (
-            runner.eval_every_n_steps == self.runner_config.eval_every_n_steps
-        ), "Eval every n steps should be set"
-        assert (
-            runner.num_steps == self.runner_config.num_steps
-        ), "Num steps should be set"
+        assert runner.eval_every_n_steps == self.runner_config.eval_every_n_steps, (
+            "Eval every n steps should be set"
+        )
+        assert runner.num_steps == self.runner_config.num_steps, (
+            "Num steps should be set"
+        )
 
     def test_train(self):
         runner = MightyOnlineRunner(self.runner_config)
@@ -96,14 +96,14 @@ class TestMightyRunner:
         train_results, eval_results = runner.run()
         assert isinstance(train_results, dict), "Train results should be a dictionary"
         assert isinstance(eval_results, dict), "Eval results should be a dictionary"
-        assert (
-            "mean_eval_reward" in eval_results
-        ), "Eval results should have mean_eval_reward"
+        assert "mean_eval_reward" in eval_results, (
+            "Eval results should have mean_eval_reward"
+        )
         shutil.rmtree("test_runner")
 
     def test_run_with_alternate_env(self):
         dummy_env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(3)])
-        dummy_eval_func = lambda: gym.vector.SyncVectorEnv( # noqa: E731
+        dummy_eval_func = lambda: gym.vector.SyncVectorEnv(  # noqa: E731
             [DummyEnv for _ in range(10)]
         )
         eval_default = 10

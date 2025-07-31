@@ -119,9 +119,9 @@ class TestSACAgent:
         print(f"Buffer size after manual collection: {len(agent.buffer)}")
 
         # Ensure we have enough data in buffer
-        assert (
-            len(agent.buffer) >= agent.batch_size
-        ), f"Buffer size {len(agent.buffer)} should be >= batch size {agent.batch_size}"
+        assert len(agent.buffer) >= agent.batch_size, (
+            f"Buffer size {len(agent.buffer)} should be >= batch size {agent.batch_size}"
+        )
 
         # Set agent.steps to satisfy learning_starts condition
         agent.steps = agent.learning_starts + 1
@@ -180,19 +180,18 @@ class TestSACAgent:
                 )
                 break
 
-
         # Modified assertions - warn instead of fail for debugging
-        assert (
-            policy_params_changed or q1_params_changed or q2_params_changed
-        ), "At least some parameters should change after update"
+        assert policy_params_changed or q1_params_changed or q2_params_changed, (
+            "At least some parameters should change after update"
+        )
         assert isinstance(result_metrics, dict), "Update should return metrics dict"
 
         # Check for expected SAC metrics in the result
         expected_metrics = [
-            "q_loss1",
-            "q_loss2",
-            "policy_loss",
-            "alpha_loss",
+            "Update/q_loss1",
+            "Update/q_loss2",
+            "Update/policy_loss",
+            "Update/alpha_loss",
         ]  # Added alpha_loss
         for metric in expected_metrics:
             if metric in result_metrics:
@@ -225,31 +224,31 @@ class TestSACAgent:
         params = agent.parameters
         assert isinstance(params, list), "Parameters should be a list"
         assert len(params) > 0, "Should have parameters"
-        assert all(
-            isinstance(p, torch.nn.Parameter) for p in params
-        ), "All should be Parameters"
+        assert all(isinstance(p, torch.nn.Parameter) for p in params), (
+            "All should be Parameters"
+        )
 
         # Test that parameters include all three networks (policy, q1, q2)
         policy_params = list(agent.model.policy_net.parameters())
         q1_params = list(agent.model.q_net1.parameters())
         q2_params = list(agent.model.q_net2.parameters())
         expected_param_count = len(policy_params) + len(q1_params) + len(q2_params)
-        assert (
-            len(params) == expected_param_count
-        ), f"Expected {expected_param_count} parameters, got {len(params)}"
+        assert len(params) == expected_param_count, (
+            f"Expected {expected_param_count} parameters, got {len(params)}"
+        )
 
         # Test value_function property
         value_fn = agent.value_function
-        assert isinstance(
-            value_fn, torch.nn.Module
-        ), "Value function should be a torch module"
+        assert isinstance(value_fn, torch.nn.Module), (
+            "Value function should be a torch module"
+        )
 
         # Test that value function can be called with a state
         dummy_state = torch.randn(1, agent.env.single_observation_space.shape[0])
         value_output = value_fn(dummy_state)
-        assert isinstance(
-            value_output, torch.Tensor
-        ), "Value function should return a tensor"
+        assert isinstance(value_output, torch.Tensor), (
+            "Value function should return a tensor"
+        )
         assert value_output.shape == (
             1,
             1,
@@ -257,8 +256,69 @@ class TestSACAgent:
 
         # Test that value function is the cached module
         value_fn2 = agent.value_function
-        assert (
-            value_fn is value_fn2
-        ), "Value function should be cached and return same instance"
+        assert value_fn is value_fn2, (
+            "Value function should be cached and return same instance"
+        )
 
+        clean(output_dir)
+
+    def test_reproducibility(self):
+        env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+        output_dir = Path("test_sac_agent")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        sac = MightySACAgent(
+            output_dir, env, seed=42, learning_starts=0, update_every=20
+        )
+        init_params = deepcopy(list(sac.model.parameters()))
+        sac.run(20, 1)
+        batch = sac.buffer.sample(20)
+        original_metrics = sac.update_agent(batch, 20)
+        original_params = deepcopy(list(sac.model.parameters()))
+
+        env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+        sac = MightySACAgent(output_dir, env, seed=42)
+        state, _ = sac.env.reset(seed=42)
+        step_state, _, _, _, _ = sac.env.step([0])
+        env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+        sac = MightySACAgent(output_dir, env, seed=42)
+        other_state, _ = sac.env.reset(seed=42)
+        other_step_state, _, _, _, _ = sac.env.step([0])
+        assert np.allclose(state, other_state), "States should be equal with same seed"
+        assert np.allclose(step_state, other_step_state), (
+            "Step states should be equal with same seed"
+        )
+
+        for _ in range(3):
+            env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+            output_dir = Path("test_sac_agent")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            sac = MightySACAgent(
+                output_dir, env, seed=42, learning_starts=0, update_every=20
+            )
+            for old, new in zip(
+                init_params[:10], list(sac.model.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Parameter initialization should be the same with same seed"
+                )
+            sac.run(20, 1)
+            batch = sac.buffer.sample(20)
+            new_metrics = sac.update_agent(batch, 20)
+            for old, new in zip(
+                original_params[:10], list(sac.model.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Model parameters should stay the same with same seed"
+                )
+
+            assert np.isclose(
+                original_metrics["Update/q_loss1"], new_metrics["Update/q_loss1"]
+            ), "Q1 loss should be the same with same seed"
+            assert np.isclose(
+                original_metrics["Update/q_loss2"], new_metrics["Update/q_loss2"]
+            ), "Q2 loss should be the same with same seed"
+            assert np.isclose(
+                original_metrics["Update/policy_loss"],
+                new_metrics["Update/policy_loss"],
+            ), "Policy loss should be the same with same seed"
         clean(output_dir)

@@ -28,6 +28,7 @@ class PrioritizedReplay(MightyReplay):
         self.beta = beta
         self.epsilon = epsilon
         self.device = torch.device(device)
+        self.rng = np.random.default_rng()
 
         super().__init__(capacity, keep_infos, flatten_infos, device)
 
@@ -134,7 +135,7 @@ class PrioritizedReplay(MightyReplay):
         for i in range(batch_size):
             a = segment * i
             b = segment * (i + 1)
-            s = np.random.uniform(a, b)
+            s = self.rng.uniform(a, b)
             leaf = self._retrieve(1, s)  # leaf index in [capacity..2*capacity-1]
             data_idx = leaf - self.capacity  # ring-buffer index
             batch_indices[i] = data_idx

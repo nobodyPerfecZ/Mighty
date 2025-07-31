@@ -120,11 +120,11 @@ class MightySACAgent(MightyAgent):
 
         # Initialize loss buffer for logging
         self.loss_buffer = {
-            "q_loss1": [],
-            "q_loss2": [],
-            "policy_loss": [],
-            "td_error1": [],
-            "td_error2": [],
+            "Update/q_loss1": [],
+            "Update/q_loss2": [],
+            "Update/policy_loss": [],
+            "Update/td_error1": [],
+            "Update/td_error2": [],
             "step": [],
         }
 

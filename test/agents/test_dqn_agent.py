@@ -24,12 +24,12 @@ class TestDQNAgent:
         dqn = MightyDQNAgent(output_dir, env, use_target=False)
         assert isinstance(dqn.q, DQN), "Model should be an instance of DQN"
         assert isinstance(dqn.value_function, DQN), "Vf should be an instance of DQN"
-        assert isinstance(
-            dqn.policy, EpsilonGreedy
-        ), "Policy should be an instance of EpsilonGreedy"
-        assert isinstance(
-            dqn.qlearning, QLearning
-        ), "Update should be an instance of QLearning"
+        assert isinstance(dqn.policy, EpsilonGreedy), (
+            "Policy should be an instance of EpsilonGreedy"
+        )
+        assert isinstance(dqn.qlearning, QLearning), (
+            "Update should be an instance of QLearning"
+        )
         assert dqn.q_target is None, "Q_target should be None"
 
         test_obs, _ = env.reset()
@@ -65,12 +65,12 @@ class TestDQNAgent:
         q_pred = dqn.q(test_obs)
         target_pred = dqn.q_target(test_obs)
         assert torch.allclose(q_pred, target_pred), "Q and Q_target should be equal"
-        assert isinstance(
-            dqn.buffer, PrioritizedReplay
-        ), "Replay buffer should be an instance of PrioritizedReplay"
-        assert isinstance(
-            dqn.qlearning, DoubleQLearning
-        ), "Update should be an instance of DoubleQLearning"
+        assert isinstance(dqn.buffer, PrioritizedReplay), (
+            "Replay buffer should be an instance of PrioritizedReplay"
+        )
+        assert isinstance(dqn.qlearning, DoubleQLearning), (
+            "Update should be an instance of DoubleQLearning"
+        )
         assert dqn._batch_size == 32, "Batch size should be 32"
         assert dqn.learning_rate == 0.01, "Learning rate should be 0.01"
         assert dqn._epsilon == 0.1, "Epsilon should be 0.1"
@@ -82,12 +82,12 @@ class TestDQNAgent:
         output_dir = Path("test_dqn_agent")
         output_dir.mkdir(parents=True, exist_ok=True)
         dqn = MightyDQNAgent(output_dir, env, batch_size=2)
-        dqn.run(10, 1)
+        dqn.run(20, 1)
         original_optimizer = torch.optim.Adam(dqn.q.parameters(), lr=dqn.learning_rate)
         original_params = deepcopy(list(dqn.q.parameters()))
         original_target_params = deepcopy(list(dqn.q_target.parameters()))
         original_feature_params = deepcopy(list(dqn.q.feature_extractor.parameters()))
-        batch = dqn.buffer.sample(2)
+        batch = dqn.buffer.sample(20)
         metrics = dqn.update_agent(batch, 0)
         new_params = deepcopy(list(dqn.q.parameters()))
         new_target_params = deepcopy(list(dqn.q_target.parameters()))
@@ -96,9 +96,9 @@ class TestDQNAgent:
         for old, new in zip(
             original_target_params[:10], new_target_params[:10], strict=False
         ):
-            assert not torch.allclose(
-                old, new
-            ), "Target model parameters should be changed"
+            assert not torch.allclose(old, new), (
+                "Target model parameters should be changed"
+            )
         for old, new in zip(
             original_feature_params, dqn.q.feature_extractor.parameters(), strict=False
         ):
@@ -106,16 +106,16 @@ class TestDQNAgent:
         for old, new, new_target in zip(
             original_params[:10], new_params[:10], new_target_params[:10], strict=False
         ):
-            assert not torch.allclose(
-                old * (1 - 0.01) + new * 0.01, new_target
-            ), "Target model parameters should be scaled correctly"
+            assert not torch.allclose(old * (1 - 0.01) + new * 0.01, new_target), (
+                "Target model parameters should be scaled correctly"
+            )
 
-        batch = dqn.buffer.sample(2)
+        batch = dqn.buffer.sample(20)
         preds, targets = dqn.qlearning.get_targets(batch, dqn.q, dqn.q_target)
 
-        assert (
-            np.mean(targets.detach().numpy() - metrics["Update/td_targets"]) < 0.1
-        ), "TD_targets should be equal"
+        assert np.mean(targets.detach().numpy() - metrics["Update/td_targets"]) < 0.1, (
+            "TD_targets should be equal"
+        )
         assert (
             np.mean((targets - preds).detach().numpy() - metrics["Update/td_errors"])
             < 0.1
@@ -123,16 +123,16 @@ class TestDQNAgent:
 
         original_optimizer.zero_grad()
         loss = F.mse_loss(preds, targets)
-        assert (
-            np.mean(loss.detach().numpy() - metrics["Update/loss"]) < 0.05
-        ), "Loss should be equal"
+        assert np.mean(loss.detach().numpy() - metrics["Update/loss"]) < 0.05, (
+            "Loss should be equal"
+        )
         loss.backward()
         original_optimizer.step()
         manual_params = deepcopy(list(dqn.q.parameters()))
         for manual, agent in zip(manual_params[:10], new_params[:10], strict=False):
-            assert torch.allclose(
-                manual, agent, atol=1e-2
-            ), "Model parameters should be equal to manual update"
+            assert torch.allclose(manual, agent, atol=1e-2), (
+                "Model parameters should be equal to manual update"
+            )
 
         clean(output_dir)
 
@@ -195,12 +195,12 @@ class TestDQNAgent:
             {},
         )
 
-        assert (
-            len(metrics["rollout_values"]) == 2
-        ), f"One value prediction per state, got: {metrics['rollout_values']}"
-        assert (
-            len(metrics["td_error"]) == 2
-        ), f"TD error should be computed per transition, got: {metrics['td_errors']}"
+        assert len(metrics["rollout_values"]) == 2, (
+            f"One value prediction per state, got: {metrics['rollout_values']}"
+        )
+        assert len(metrics["td_error"]) == 2, (
+            f"TD error should be computed per transition, got: {metrics['td_errors']}"
+        )
 
         state, _ = env.reset()
         action = dqn.policy(state, return_logp=False)
@@ -209,8 +209,66 @@ class TestDQNAgent:
         metrics = dqn.process_transition(
             state, action, reward, next_state, te or tr, 0, metrics
         )
-        assert (
-            len(metrics["rollout_values"]) == 3
-        ), "New value prediction should be added"
+        assert len(metrics["rollout_values"]) == 3, (
+            "New value prediction should be added"
+        )
         assert len(metrics["td_error"]) == 1, "TD error is overwritten"
+        clean(output_dir)
+
+    def test_reproducibility(self):
+        env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+        output_dir = Path("test_dqn_agent")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        dqn = MightyDQNAgent(output_dir, env, batch_size=2, seed=42)
+        init_params = deepcopy(list(dqn.q.parameters()))
+        dqn.run(20, 1)
+        original_batch = dqn.buffer.sample(20)
+        original_metrics = dqn.update_agent(original_batch, 0)
+        original_params = deepcopy(list(dqn.q.parameters()))
+
+        for _ in range(3):
+            env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+            output_dir = Path("test_dqn_agent")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            dqn = MightyDQNAgent(output_dir, env, batch_size=2, seed=42)
+            for old, new in zip(
+                init_params[:10], list(dqn.q.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Parameter initialization should be the same with same seed"
+                )
+            dqn.run(20, 1)
+            batch = dqn.buffer.sample(20)
+
+            for old, new in zip(
+                original_batch.observations, batch.observations, strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Batch observations should be the same with same seed"
+                )
+
+            assert torch.allclose(original_batch.actions, batch.actions), (
+                f"Batch actions should be the same with same seed: {torch.isclose(original_batch.actions, batch.actions)}"
+            )
+            assert torch.allclose(original_batch.rewards, batch.rewards), (
+                f"Batch rewards should be the same with same seed: {torch.isclose(original_batch.rewards, batch.rewards)}"
+            )
+
+            new_metrics = dqn.update_agent(batch, 0)
+            for old, new in zip(
+                original_params[:10], list(dqn.q.parameters())[:10], strict=False
+            ):
+                assert torch.allclose(old, new), (
+                    "Model parameters should stay the same with same seed"
+                )
+
+            assert np.allclose(
+                original_metrics["Update/td_targets"], new_metrics["Update/td_targets"]
+            ), "TD targets should be the same with same seed"
+            assert np.allclose(
+                original_metrics["Update/loss"], new_metrics["Update/loss"]
+            ), "Loss should be the same with same seed"
+            assert np.allclose(
+                original_metrics["Update/td_errors"], new_metrics["Update/td_errors"]
+            ), "TD errors should be the same with same seed"
         clean(output_dir)

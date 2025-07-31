@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 
 class MightyMetaComponent:
     """Component for registering meta-control methods."""
@@ -17,6 +19,7 @@ class MightyMetaComponent:
         self.post_update_methods = []
         self.pre_episode_methods = []
         self.post_episode_methods = []
+        self.rng = np.random.default_rng()
 
     def pre_step(self, metrics):
         """Execute methods before a step.
@@ -71,3 +74,7 @@ class MightyMetaComponent:
         """
         for m in self.post_episode_methods:
             m(metrics)
+
+    def seed(self, seed: int) -> None:
+        """Set the random seed for reproducibility."""
+        self.rng = np.random.default_rng(seed)
