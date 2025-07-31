@@ -125,7 +125,7 @@ class MightySACAgent(MightyAgent):
             "Update/policy_loss": [],
             "Update/td_error1": [],
             "Update/td_error2": [],
-            "step": [],
+            "update_at_step": [],
         }
 
     def _initialize_agent(self) -> None:
@@ -190,7 +190,7 @@ class MightySACAgent(MightyAgent):
             metrics_acc[k] /= self.n_gradient_steps
 
         # Log to buffer
-        stats = {**metrics_acc, "step": self.steps}
+        stats = {**metrics_acc, "update_at_step": self.steps}
         self.loss_buffer = update_buffer(self.loss_buffer, stats)
         return metrics_acc
 
