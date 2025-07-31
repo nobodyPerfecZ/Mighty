@@ -106,18 +106,20 @@ class MultiDiscreteActionWrapper(gym.Wrapper):
 
         """
         super().__init__(env)
-        self.n_actions = len(self.env.single_action_space.nvec)
-        self.single_action_space = gym.spaces.Discrete(
-            np.prod(self.env.single_action_space.nvec)
-        )
+        self.n_actions = len(self.env.action_space.nvec)
+        
         self.action_mapper = {}
         for idx, prod_idx in zip(
-            range(np.prod(self.env.single_action_space.nvec)),
+            range(np.prod(self.env.action_space.nvec)),
             itertools.product(
-                *[np.arange(val) for val in self.env.single_action_space.nvec]
+                *[np.arange(val) for val in self.env.action_space.nvec]
             ),
         ):
             self.action_mapper[idx] = prod_idx
+
+        self.action_space = gym.spaces.Discrete(
+            int(np.prod(self.env.action_space.nvec))
+        )
 
     def step(self, action):
         """Maps discrete action value to array."""
