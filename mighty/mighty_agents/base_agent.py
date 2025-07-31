@@ -52,34 +52,15 @@ def seed_everything(seed: int, env: gym.Env | None = None):
 
     # 2) Gym environment seeding
     if env is not None:
-        # If the env is wrapped, try to unwrap to the core
-        try:
-            core_env = env.unwrapped
-            core_env.seed(seed)
-        except Exception:
-            pass
-
-        # If vectorized (e.g. SyncVectorEnv), seed each sub‐env separately
-        if hasattr(env, "envs") and isinstance(env.envs, list):
-            sub_seeds = [seed for _ in range(len(env.envs))]
-            for sub_seed, subenv in zip(sub_seeds, env.envs):
-                subenv.action_space.seed(sub_seed)
-                subenv.observation_space.seed(sub_seed)
-                try:
-                    subenv.unwrapped.seed(sub_seed)
-                except Exception:
-                    pass
-            # Reset the vectorized env with explicit seeds
-            env.reset(seed=sub_seeds)
-        else:
-            # Single environment
-            env.action_space.seed(seed)
-            env.observation_space.seed(seed)
+        sub_seeds = [seed for _ in range(len(env.envs))]
+        for sub_seed, subenv in zip(sub_seeds, env.envs):
+            subenv.action_space.seed(sub_seed)
+            subenv.observation_space.seed(sub_seed)
             try:
-                env.unwrapped.seed(seed)
+                subenv.unwrapped.seed(sub_seed)
             except Exception:
                 pass
-            env.reset(seed=seed)
+            env.reset(seed=sub_seeds)
 
 
 def update_buffer(buffer, new_data):

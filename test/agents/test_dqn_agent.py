@@ -214,3 +214,33 @@ class TestDQNAgent:
         ), "New value prediction should be added"
         assert len(metrics["td_error"]) == 1, "TD error is overwritten"
         clean(output_dir)
+
+    def test_reproducibility(self):
+        env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+        output_dir = Path("test_dqn_agent")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        dqn = MightyDQNAgent(output_dir, env, batch_size=2, seed=42)
+        init_params = deepcopy(list(dqn.q.parameters()))
+        dqn.run(20, 1)
+        batch = dqn.buffer.sample(20)
+        original_metrics = dqn.update_agent(batch, 0)
+        original_params = deepcopy(list(dqn.q.parameters()))
+        
+        for _ in range(3):
+            env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+            output_dir = Path("test_dqn_agent")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            dqn = MightyDQNAgent(output_dir, env, batch_size=2, seed=42)
+            for old, new in zip(init_params[:10], list(dqn.q.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Parameter initialization should be the same with same seed"
+            dqn.run(20, 1)
+            batch = dqn.buffer.sample(20)
+            new_metrics = dqn.update_agent(batch, 0)
+            for old, new in zip(original_params[:10], list(dqn.q.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Model parameters should stay the same with same seed"
+
+            for old, new in zip(original_metrics["Update/td_targets"][:10], new_metrics["Update/td_targets"][:10], strict=False):
+                assert torch.allclose(old, new), "TD targets should be the same with same seed"
+            for old, new in zip(original_metrics["Update/td_errors"][:10], new_metrics["Update/td_errors"][:10], strict=False):
+                assert torch.allclose(old, new), "TD errors should be the same with same seed"
+        clean(output_dir)

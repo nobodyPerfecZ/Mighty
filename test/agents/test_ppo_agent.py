@@ -263,3 +263,108 @@ class TestPPOAgent:
         assert value_output.shape == (1, 1), "Value function should output shape (1, 1)"
 
         clean(output_dir)
+
+    def test_reproducibility(self):
+        env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+        output_dir = Path("test_ppo_agent")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        ppo = MightyPPOAgent(output_dir, env, batch_size=2, seed=42)
+        init_params = deepcopy(list(ppo.model.parameters()))
+
+        metrics = {
+            "env": ppo.env,
+            "step": 0,
+            "hp/lr": ppo.learning_rate,
+            "hp/pi_epsilon": ppo._epsilon,
+            "hp/batch_size": ppo._batch_size,
+            "hp/learning_starts": ppo._learning_starts,
+        }
+        curr_s, _ = env.reset(seed=42)
+        # Collect enough transitions to fill the buffer
+        for step in range(128):  # Fill buffer with 128 transitions
+            # Get action from agent
+            action, log_prob = ppo.step(curr_s, metrics)
+
+            # Take environment step
+            next_s, reward, terminated, truncated, _ = env.step(action)
+            dones = np.logical_or(terminated, truncated)
+
+            # Process the transition (this adds to buffer)
+            ppo.process_transition(
+                curr_s,
+                action,
+                reward,
+                next_s,
+                dones,
+                log_prob.detach().cpu().numpy(),
+                {"step": step},
+            )
+
+            # Update current state
+            curr_s = next_s
+
+            # Reset environment if done
+            if np.any(dones):
+                curr_s, _ = env.reset()
+
+        update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
+        original_metrics = ppo.update(metrics, update_kwargs)
+        original_params = deepcopy(list(ppo.model.parameters()))
+        
+        for _ in range(3):
+            env = gym.vector.SyncVectorEnv([DummyEnv for _ in range(1)])
+            output_dir = Path("test_ppo_agent")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            ppo = MightyPPOAgent(output_dir, env, batch_size=2, seed=42)
+            for old, new in zip(init_params[:10], list(ppo.model.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Parameter initialization should be the same with same seed"
+            
+            metrics = {
+                "env": ppo.env,
+                "step": 0,
+                "hp/lr": ppo.learning_rate,
+                "hp/pi_epsilon": ppo._epsilon,
+                "hp/batch_size": ppo._batch_size,
+                "hp/learning_starts": ppo._learning_starts,
+            }
+            curr_s, _ = env.reset(seed=42)
+            # Collect enough transitions to fill the buffer
+            for step in range(128):  # Fill buffer with 128 transitions
+                # Get action from agent
+                action, log_prob = ppo.step(curr_s, metrics)
+
+                # Take environment step
+                next_s, reward, terminated, truncated, _ = env.step(action)
+                dones = np.logical_or(terminated, truncated)
+
+                # Process the transition (this adds to buffer)
+                ppo.process_transition(
+                    curr_s,
+                    action,
+                    reward,
+                    next_s,
+                    dones,
+                    log_prob.detach().cpu().numpy(),
+                    {"step": step},
+                )
+
+                # Update current state
+                curr_s = next_s
+
+                # Reset environment if done
+                if np.any(dones):
+                    curr_s, _ = env.reset()
+
+            update_kwargs = {"next_s": curr_s, "dones": np.array([False])}
+            new_metrics = ppo.update(metrics, update_kwargs)
+
+            for old, new in zip(original_params[:10], list(ppo.model.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Model parameters should stay the same with same seed"
+
+            for old, new in zip(original_metrics["Update/value_loss"], new_metrics["Update/value_loss"], strict=False):
+                assert torch.allclose(old, new), "Value loss should be the same with same seed"
+            for old, new in zip(original_metrics["Update/policy_loss"], new_metrics["Update/policy_loss"], strict=False):
+                assert torch.allclose(old, new), "Policy loss should be the same with same seed"
+            for old, new in zip(original_metrics["Update/entropy"], new_metrics["Update/entropy"], strict=False):
+                assert torch.allclose(old, new), "Entropy should be the same with same seed"
+        clean(output_dir)

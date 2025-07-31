@@ -189,10 +189,10 @@ class TestSACAgent:
 
         # Check for expected SAC metrics in the result
         expected_metrics = [
-            "q_loss1",
-            "q_loss2",
-            "policy_loss",
-            "alpha_loss",
+            "Update/q_loss1",
+            "Update/q_loss2",
+            "Update/policy_loss",
+            "Update/alpha_loss",
         ]  # Added alpha_loss
         for metric in expected_metrics:
             if metric in result_metrics:
@@ -261,4 +261,36 @@ class TestSACAgent:
             value_fn is value_fn2
         ), "Value function should be cached and return same instance"
 
+        clean(output_dir)
+
+    def test_reproducibility(self):
+        env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+        output_dir = Path("test_sac_agent")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        sac = MightySACAgent(output_dir, env, seed=42)
+        init_params = deepcopy(list(sac.model.parameters()))
+        sac.run(20, 1)
+        batch = sac.buffer.sample(20)
+        original_metrics = sac.update_agent(batch, 0)
+        original_params = deepcopy(list(sac.model.parameters()))
+        
+        for _ in range(3):
+            env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
+            output_dir = Path("test_sac_agent")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            sac = MightySACAgent(output_dir, env, seed=42)
+            for old, new in zip(init_params[:10], list(sac.model.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Parameter initialization should be the same with same seed"
+            sac.run(20, 1)
+            batch = sac.buffer.sample(20)
+            new_metrics = sac.update_agent(batch, 0)
+            for old, new in zip(original_params[:10], list(sac.model.parameters())[:10], strict=False):
+                assert not torch.allclose(old, new), "Model parameters should stay the same with same seed"
+
+            for old, new in zip(original_metrics["Update/q_loss1"][:10], new_metrics["Update/q_loss1"][:10], strict=False):
+                assert torch.allclose(old, new), "Q1 loss should be the same with same seed"
+            for old, new in zip(original_metrics["Update/q_loss2"][:10], new_metrics["Update/q_loss2"][:10], strict=False):
+                assert torch.allclose(old, new), "Q2 loss should be the same with same seed"
+            for old, new in zip(original_metrics["Update/policy_loss"][:10], new_metrics["Update/policy_loss"][:10], strict=False):
+                assert torch.allclose(old, new), "Policy loss should be the same with same seed"
         clean(output_dir)
