@@ -366,9 +366,10 @@ class MightyAgent(ABC):
         if isinstance(self.buffer_class, type) and issubclass(
             self.buffer_class, PrioritizedReplay
         ):
-            self.buffer_kwargs = OmegaConf.to_container(
-                self.buffer_kwargs, resolve=True
-            )
+            if isinstance(self.buffer_kwargs, DictConfig):
+                self.buffer_kwargs = OmegaConf.to_container(
+                    self.buffer_kwargs, resolve=True
+                )
             # 1) Get observation-space shape
             try:
                 obs_space = self.env.single_observation_space
