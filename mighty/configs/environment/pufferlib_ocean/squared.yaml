@@ -3,5 +3,5 @@
 num_steps: 50_000 
 env: pufferlib.ocean.squared
 env_kwargs: {}
-env_wrappers: [mighty.utils.wrappers.FlattenVecObs]
-num_envs: 1
+env_wrappers: [mighty.mighty_utils.wrappers.FlattenVecObs]
+num_envs: 64
