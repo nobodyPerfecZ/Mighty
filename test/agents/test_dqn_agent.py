@@ -82,12 +82,12 @@ class TestDQNAgent:
         output_dir = Path("test_dqn_agent")
         output_dir.mkdir(parents=True, exist_ok=True)
         dqn = MightyDQNAgent(output_dir, env, batch_size=2)
-        dqn.run(10, 1)
+        dqn.run(20, 1)
         original_optimizer = torch.optim.Adam(dqn.q.parameters(), lr=dqn.learning_rate)
         original_params = deepcopy(list(dqn.q.parameters()))
         original_target_params = deepcopy(list(dqn.q_target.parameters()))
         original_feature_params = deepcopy(list(dqn.q.feature_extractor.parameters()))
-        batch = dqn.buffer.sample(2)
+        batch = dqn.buffer.sample(20)
         metrics = dqn.update_agent(batch, 0)
         new_params = deepcopy(list(dqn.q.parameters()))
         new_target_params = deepcopy(list(dqn.q_target.parameters()))
@@ -110,7 +110,7 @@ class TestDQNAgent:
                 old * (1 - 0.01) + new * 0.01, new_target
             ), "Target model parameters should be scaled correctly"
 
-        batch = dqn.buffer.sample(2)
+        batch = dqn.buffer.sample(20)
         preds, targets = dqn.qlearning.get_targets(batch, dqn.q, dqn.q_target)
 
         assert (
