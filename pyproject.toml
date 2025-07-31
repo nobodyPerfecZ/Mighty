@@ -38,19 +38,21 @@ dependencies = [
     "scipy",
     "rich~=12.4",
     "wandb~=0.12",
-    "torch",
+    "torch~=2.7",
     "dill",
     "imageio",
     "evosax==0.1.6",
     "rliable",
     "seaborn", 
-    "uniplot"
+    "uniplot",
+    "jax~=0.7",
+    "flax~=0.11"
 ]
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "build", "pytest", "pytest-cov"]
-carl = ["carl_bench==1.1.1", "brax==0.12.1"]
-dacbench = ["dacbench==0.4.0", "torchvision", "ioh"]
+carl = ["carl_bench[brax]==1.1.1"]
+dacbench = ["dacbench==0.4.0"]
 pufferlib = ["pufferlib==2.0.6"]
 docs = ["mkdocs", "mkdocs-material", "mkdocs-autorefs",
         "mkdocs-gen-files", "mkdocs-literate-nav",
