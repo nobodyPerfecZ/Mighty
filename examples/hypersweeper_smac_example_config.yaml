@@ -17,49 +17,46 @@ env_kwargs: {}
 env_wrappers: []
 num_envs: 64
 
-# @package _global_
 algorithm: PPO
 
 algorithm_kwargs:
-  # Hyperparameters
-  n_policy_units: 128
-  n_critic_units: 128
-  soft_update_weight: 0.01
+  rescale_action: False
+  tanh_squash: False
 
   rollout_buffer_class:
-    _target_: mighty.mighty_replay.MightyRolloutBuffer  # Using rollout buffer
+    _target_: mighty.mighty_replay.MightyRolloutBuffer
+
   rollout_buffer_kwargs:
-    buffer_size: 4096  # Size of the rollout buffer.
-    gamma: 0.99  # Discount factor for future rewards.
-    gae_lambda: 0.95  # GAE lambda.
-    obs_shape: ???  # Placeholder for observation shape
-    act_dim: ???  # Placeholder for action dimension
+    buffer_size: 128        # (16 × 128 = 2048 total)
+    gamma: 0.99
+    gae_lambda: 0.95
+    obs_shape: ???
+    act_dim: ???
     n_envs: ???
-    
+    discrete_action: ???
 
-  # Training
-  learning_rate:  3e-4
-  batch_size: 1024  # Batch size for training.
-  gamma: 0.99  # The amount by which to discount future rewards.
-  n_gradient_steps: 3  # Number of epochs for updating policy.
-  ppo_clip: 0.2  # Clipping parameter for PPO.
-  value_loss_coef: 0.5  # Coefficient for value loss.
-  entropy_coef: 0.01  # Coefficient for entropy loss.
-  max_grad_norm: 0.5  # Maximum value for gradient clipping.
-  
+  # Optimiser and update settings
+  learning_rate: 3e-4
+  batch_size: 2048        # 16 environments × 128 steps = 2048 total samples
+  gamma: 0.99
+  ppo_clip: 0.2
+  value_loss_coef: 0.5
+  entropy_coef: 0.01
+  max_grad_norm: 0.5      # gradient clipping
 
-  hidden_sizes: [64, 64]
-  activation: 'tanh'
+  hidden_sizes: [256, 256]
+  activation: "tanh"
 
-  n_epochs: 10
-  minibatch_size: 64
-  kl_target: 0.01
-  use_value_clip: True
-  value_clip_eps: 0.2
+  n_gradient_steps: 1     # one gradient step per rollout
+  n_epochs: 10            # ten update epochs per rollout
+  minibatch_size: 128     # 2048 ÷ 64 = 32 minibatches
+  kl_target: null         # disable KL‑based early stopping
+  use_value_clip: true
 
-  policy_class: mighty.mighty_exploration.StochasticPolicy  # Policy class for exploration
+  policy_class: mighty.mighty_exploration.StochasticPolicy
   policy_kwargs:
-    entropy_coefficient: 0.0  # Coefficient for entropy-based exploration.
+    entropy_coefficient: 0.0
+
 
 # Training
 eval_every_n_steps: 1e4  # After how many steps to evaluate.

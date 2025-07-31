@@ -73,7 +73,7 @@ python mighty/run_mighty.py 'env=CartPole-v1'
 We can also be more specific, e.g. by adding our desired number of interaction steps and the number of parallel environments we want to run:
 
 ```bash
-python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10'
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=16'
 ```
 For some environments, including CartPole-1, these details are pre-configured in the Mighty configs, meaning we can use the environment keyword to set them all at once:
 
@@ -98,7 +98,7 @@ python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' 'al
 Or to use e.g. an ez-greedy exploration policy for DQN:
 
 ```bash
-python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' '+algorithm_kwargs.policy_class=mighty.mighty_exploration.EZGreedy'
+python mighty/run_mighty.py 'environment=gymnasium/cartpole' 'algorithm=dqn' 'algorithm_kwargs.policy_class=mighty.mighty_exploration.EZGreedy' 'algorithm_kwargs.policy_kwargs=null'
 ```
 You can see that in this case, the value we pass to the script is a class name string which can take the value of any function you want, including custom ones as we'll see further down.
 </details>
@@ -109,7 +109,7 @@ You can see that in this case, the value we pass to the script is a class name s
 The meta components are a bit more complex, since they are a list of class names and optional keyword arguments:
 
 ```bash
-python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' '+algorithm_kwargs.meta_methods=[mighty.mighty_meta.RND]'
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=16' '+algorithm_kwargs.meta_methods=[mighty.mighty_meta.RND]'
 ```
 As this can become complex, we recommend configuring these in Hydra config files.
 </details>
@@ -121,7 +121,7 @@ Hydra has a multirun functionality with which you can specify a grid of argument
 Its best use is probably for easily running multiple seeds at once like this:
 
 ```bash
-python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=10' 'seed=0,1,2,3,4' 'output_dir=examples/multiple_runs' -m 
+python mighty/run_mighty.py 'env=CartPole-v1' 'num_steps=50_000' 'num_envs=16' 'seed=0,1,2,3,4' 'output_dir=examples/multiple_runs' -m 
 ```
 </details>
 
@@ -196,7 +196,7 @@ Compare their structure: the custom policy has a fixed set of methods inherited 
 
 If you want to run these custom modules, you can do so by adding them by their import path:
 ```bash
-python mighty/run_mighty.py 'algorithm=dqn' '+algorithm_kwargs.policy_class=examples.custom_policy.QValueUCB' '+algorithm_kwargs.policy_kwargs={}'
+python mighty/run_mighty.py 'algorithm=dqn' 'algorithm_kwargs.policy_class=examples.custom_policy.QValueUCB' 'algorithm_kwargs.policy_kwargs=null'
 ```
 For the meta-module, it works exactly the same way:
 ```bash
