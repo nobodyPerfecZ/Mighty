@@ -107,11 +107,13 @@ class MultiDiscreteActionWrapper(gym.Wrapper):
         """
         super().__init__(env)
         self.n_actions = len(self.env.action_space.nvec)
-
+        
         self.action_mapper = {}
         for idx, prod_idx in zip(
             range(np.prod(self.env.action_space.nvec)),
-            itertools.product(*[np.arange(val) for val in self.env.action_space.nvec]),
+            itertools.product(
+                *[np.arange(val) for val in self.env.action_space.nvec]
+            ),
         ):
             self.action_mapper[idx] = prod_idx
 
