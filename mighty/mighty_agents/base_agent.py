@@ -12,8 +12,7 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from rich import print
 from rich.layout import Layout
 from rich.live import Live
@@ -140,7 +139,20 @@ def log_to_wandb(metrics: Dict) -> None:
             except TypeError:
                 print(f"Skipping non-serializable metric: {k}")
 
-    wandb.log(serializable_metrics)
+    if "env_step" in metrics.keys():
+        steps = metrics["env_step"]
+    elif "eval_after_n_steps" in metrics.keys():
+        steps = metrics["eval_after_n_steps"]
+    elif "hps_after_n_steps" in metrics.keys():
+        steps = metrics["hps_after_n_steps"]
+    elif "update_at_step" in metrics.keys():
+        steps = metrics["update_at_step"]
+    else:
+        raise ValueError(
+            "No valid step key found in metrics. "
+            "Expected keys: 'env_step', 'eval_after_n_steps', 'hps_after_n_steps', 'update_at_step'."
+        )
+    wandb.log(serializable_metrics, step=steps)
 
 
 class MightyAgent(ABC):
