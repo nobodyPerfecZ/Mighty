@@ -27,17 +27,17 @@ hydra:
           output_directory: ${hydra.sweep.dir}
     search_space: ${search_space}
   run:
-    dir: ${output_dir}/${experiment_name}_${seed}
+    dir: hpo/SAC_SMAC/${env}/per_run_data/${now:%m-%d-%H-%M-%S}_seed
   sweep:
-    dir: ${output_dir}/${experiment_name}_${seed}
+    dir: hpo/SAC_SMAC/${env}/
 
 runner: standard
 debug: false
 seed: 0
-output_dir: hpo
+output_dir: .
 wandb_project: null
 tensorboard_file: null
-experiment_name: SAC_SMAC/${env}/seed
+experiment_name: ${hydra:run.dir}
 
 # Training
 eval_every_n_steps: 1e4  # After how many steps to evaluate.
