@@ -1,0 +1,29 @@
+/home/nhwpmoha/.profile: line 24: /home/nhwpmoha/.local/bin/env: No such file or directory
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/submitit/core/plugins.py:24: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/dacbench/envs/__init__.py:34: UserWarning: CMA-ES Benchmark not installed. If you want to use this benchmark, please follow the installation guide.
+  warnings.warn(  # noqa: B028
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/dacbench/benchmarks/__init__.py:26: UserWarning: CMA-ES Benchmark not installed. If you want to use this benchmark, please follow the installation guide.
+  warnings.warn(  # noqa: B028
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/envs/gymnasium/__init__.py:41: UserWarning: Module Box2D not found. If you want to use these environments, please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/envs/__init__.py:42: UserWarning: Module Box2D not found. If you want to use these environments, please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/envs/__init__.py:42: UserWarning: Module py4j not found. If you want to use these environments, please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/envs/__init__.py:42: UserWarning: Module dm_control not found. If you want to use these environments, please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/envs/__init__.py:42: UserWarning: Module distance not found. If you want to use these environments, please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/__init__.py:55: UserWarning: Module Box2D not found. If you want to use these environments,
+                    please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/__init__.py:55: UserWarning: Module dm_control not found. If you want to use these environments,
+                    please follow the installation guide.
+  warnings.warn(
+/bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/.venv/lib/python3.11/site-packages/carl/__init__.py:55: UserWarning: Module py4j not found. If you want to use these environments,
+                    please follow the installation guide.
+  warnings.warn(

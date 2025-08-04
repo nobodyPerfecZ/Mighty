@@ -1,0 +1,131 @@
+runner: standard
+debug: false
+seed: 0
+output_dir: hpo
+wandb_project: null
+tensorboard_file: null
+experiment_name: SAC_SMAC/${env}/seed
+eval_every_n_steps: 10000.0
+n_episodes_eval: 20
+checkpoint: null
+save_model_every_n_steps: 500000.0
+algorithm: SAC
+env_id: HalfCheetah-v4
+algorithm_kwargs:
+  normalize_obs: false
+  normalize_reward: false
+  n_policy_units: 128
+  soft_update_weight: 0.0029721049363
+  replay_buffer_class:
+    _target_: mighty.mighty_replay.MightyReplay
+  replay_buffer_kwargs:
+    capacity: 1000000
+  batch_size: 512
+  learning_starts: 5000
+  update_every: 2
+  n_gradient_steps: 2
+  policy_lr: 7.4460641e-05
+  q_lr: 3.40303605e-05
+  alpha_lr: 0.0001093421068
+  gamma: 0.9599722146783
+  alpha: 0.1664628766477
+  auto_alpha: true
+  target_entropy: -9.8451220020652
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+    discrete: false
+  policy_frequency: 2
+  target_network_frequency: 2
+num_envs: 1
+total_timesteps: 1000000
+max_episode_steps: 1000
+eval_frequency: 10000
+save_frequency: 50000
+num_steps: 100000
+env: HalfCheetah-v4
+env_kwargs: {}
+env_wrappers: []
+search_space:
+  hyperparameters:
+    algorithm_kwargs.policy_lr:
+      type: uniform_float
+      lower: 1.0e-05
+      upper: 0.01
+      log: true
+    algorithm_kwargs.q_lr:
+      type: uniform_float
+      lower: 1.0e-05
+      upper: 0.01
+      log: true
+    algorithm_kwargs.alpha_lr:
+      type: uniform_float
+      lower: 1.0e-05
+      upper: 0.01
+      log: true
+    algorithm_kwargs.batch_size:
+      type: categorical
+      choices:
+      - 128
+      - 256
+      - 512
+    algorithm_kwargs.n_gradient_steps:
+      type: uniform_int
+      lower: 1
+      upper: 4
+      log: false
+    algorithm_kwargs.update_every:
+      type: categorical
+      choices:
+      - 1
+      - 2
+      - 4
+    algorithm_kwargs.learning_starts:
+      type: categorical
+      choices:
+      - 2500
+      - 5000
+      - 10000
+    algorithm_kwargs.gamma:
+      type: uniform_float
+      lower: 0.95
+      upper: 0.999
+      log: false
+    algorithm_kwargs.alpha:
+      type: uniform_float
+      lower: 0.05
+      upper: 0.5
+      log: false
+    algorithm_kwargs.soft_update_weight:
+      type: uniform_float
+      lower: 0.001
+      upper: 0.02
+      log: true
+    algorithm_kwargs.target_entropy:
+      type: uniform_float
+      lower: -10.0
+      upper: -2.0
+      log: false
+    algorithm_kwargs.policy_frequency:
+      type: categorical
+      choices:
+      - 1
+      - 2
+      - 4
+    algorithm_kwargs.target_network_frequency:
+      type: categorical
+      choices:
+      - 1
+      - 2
+    algorithm_kwargs.n_policy_units:
+      type: categorical
+      choices:
+      - 128
+      - 256
+      - 512
+    algorithm_kwargs.replay_buffer_kwargs.capacity:
+      type: categorical
+      choices:
+      - 500000
+      - 1000000
+      - 2000000

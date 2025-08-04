@@ -1,0 +1,16 @@
+# @package _global_
+defaults:
+  - override /hydra/launcher: submitit_slurm
+
+cluster:
+  queue: ai,tnt
+
+hydra:
+  launcher:
+    partition: ai,tnt
+    cpus_per_task: 16
+    name: expl2
+    timeout_min: 1440
+    mem_gb: 40
+    setup:
+      -  source .venv/bin/activate

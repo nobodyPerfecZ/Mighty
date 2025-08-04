@@ -1,0 +1,139 @@
+submitit INFO (2025-08-03 11:22:00,580) - Starting with JobEnvironment(job_id=5856573_1, hostname=ai-n002, local_rank=0(1), node=0(1), global_rank=0(1))
+submitit INFO (2025-08-03 11:22:00,582) - Loading pickle: /bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/hpo/PPO_SMAC/Pendulum-v1/seed_0/.submitit/5856573_1/5856573_1_submitted.pkl
+Couldn't import CARP-S, the CARP-S Hypersweeper will not be available.
+Couldn't import DEHB, the DEHB Hypersweeper will not be available.
+Couldn't import HEBO, the HEBO Hypersweeper will not be available.
+Couldn't import NEPS, the NEPS Hypersweeper will not be available.
+Couldn't import Nevergrad, the Nevergrad Hypersweeper will not be available.
+[[36m2025-08-03 11:22:11,937[0m][[34mroot[0m][[32mINFO[0m] - ################################################################################[0m
+[[36m2025-08-03 11:22:11,937[0m][[34mroot[0m][[32mINFO[0m] - Using agent type "<mighty.mighty_agents.ppo.MightyPPOAgent object at 0x14bd646f5950>" to learn[0m
+[[36m2025-08-03 11:22:11,937[0m][[34mroot[0m][[32mINFO[0m] - ################################################################################[0m
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/5008
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/10016
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/15024
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/20032
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/25040
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/30048
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/35056
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/40064
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/45072
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/50080
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/55088
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/60096
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/65104
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/70112
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/75120
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/80128
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/85136
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/90144
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/95152
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/100160
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/105168
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/110176
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/115184
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/120192
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/125200
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/130208
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/135216
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/140224
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/145232
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/150240
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/155248
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/160256
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/165264
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/170272
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/175280
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/180288
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/185296
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/190304
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/195312
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/200320
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/205328
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/210336
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/215344
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/220352
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/225360
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/230368
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/235376
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/240384
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/245392
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/250400
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/255408
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/260416
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/265424
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/270432
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/275440
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/280448
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/285456
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/290464
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/295472
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/300480
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/305488
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/310496
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/315504
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/320512
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/325520
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/330528
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/335536
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/340544
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/345552
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/350560
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/355568
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/360576
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/365584
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/370592
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/375600
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/380608
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/385616
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/390624
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/395632
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/400640
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/405648
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/410656
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/415664
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/420672
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/425680
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/430688
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/435696
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/440704
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/445712
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/450720
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/455728
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/460736
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/465744
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/470752
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/475760
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/480768
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/485776
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/490784
+Saved checkpoint at hpo/PPO_SMAC/Pendulum-v1/seed_1/checkpoints/495792
+╭───────────────────────────── Training Progress ──────────────────────────────╮
+│                                                                              │
+│                                                                              │
+│  Train Steps ━━━━━━━━━━━━━━━━━━━━━ 100% Remaining: 0:00:00 Elapsed: 0:55:26  │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+             Training Stats                       Training Details              
+┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓    
+┃         ┃         ┃ Latest  ┃ Latest ┃┃      Name      ┃      Value      ┃    
+┃ Metric  ┃ At step ┃  Mean   ┃  Std   ┃┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩    
+┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩│ Training Steps │    500000.0     │    
+│  Mean   │ 500000  │ -412.18 │ 88.31  ││      Seed      │        1        │    
+│ Episode │         │         │        ││ Learning Rate  │ 0.0009727029887 │    
+│ Reward  │         │         │        ││   Batch Size   │      2048       │    
+╭──────────────────────────────────────╮╭──────────────────────────────────────╮
+│                        Training      ││                       Evaluation     │
+│ Reward                               ││ Reward                               │
+│ ┌─────────────────────────────────── ││ ┌─────────────────────────────────── │
+│ ─────────────────────────┐           ││ ─────────────────────────┐           │
+│ │▘▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ││ │▘▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │
+│ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔│ 0reward   ││ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔│ 0reward   │
+│ ││                                   ││ ││                 ▄▖             ▗▄ │
+╰──────────────────────────────────────╯╰──────────────────────────────────────╯Training finished!
+Reached a reward of -260.05 in 500000 steps and 3342.57s.
+submitit INFO (2025-08-03 12:17:54,503) - Job completed successfully
+[[36m2025-08-03 12:17:54,503[0m][[34msubmitit[0m][[32mINFO[0m] - Job completed successfully[0m
+submitit INFO (2025-08-03 12:17:54,518) - Exiting after successful completion
+[[36m2025-08-03 12:17:54,518[0m][[34msubmitit[0m][[32mINFO[0m] - Exiting after successful completion[0m

@@ -1,0 +1,56 @@
+# @package _global_
+# Walker2d-v4 SAC config with 64 parallel environments
+# Optimized for parallel training while maintaining good performance
+algorithm: SAC
+env_id: Walker2d-v4
+
+algorithm_kwargs:
+  # Network sizes - Increased for parallel stability
+  n_policy_units:     512       # Larger networks for parallel noise handling
+  soft_update_weight: 0.01      # Faster target updates for parallel
+
+  # Replay buffer - Parallel env optimized
+  replay_buffer_class:
+    _target_: mighty.mighty_replay.MightyReplay
+  replay_buffer_kwargs:
+    capacity: 3e6              # Larger buffer for 64 parallel envs
+
+  # Scheduling & batch-updates - 64 parallel envs optimized
+  batch_size:       1024        # Large batch to handle parallel noise
+  learning_starts:  64000       # 64 envs * 1000 steps (full episode coverage)
+  update_every:     1           # Update every step
+  n_gradient_steps: 2           # More gradient steps to compensate
+
+  # Learning rates - Reduced for parallel stability
+  policy_lr: 2e-4     # Lower than single env for stability
+  q_lr:      5e-4     # Lower than single env for stability
+  alpha_lr:  2e-4     # Match policy LR
+
+  # SAC hyperparameters - Parallel optimized
+  gamma: 0.995        # Slightly higher gamma for parallel
+  alpha: 0.1          # Lower initial alpha for more exploitation
+  auto_alpha: True    # Enable automatic entropy tuning
+  target_entropy: -3.0  # Less negative for parallel stability
+
+  # Policy configuration
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+    discrete: False
+
+  # Normalization - Important for parallel training
+  normalize_obs: True     # Critical for parallel environment stability
+  normalize_reward: False # Keep rewards unnormalized
+
+  # SAC specific frequencies - Parallel optimized
+  policy_frequency: 1           # No delay for parallel environments
+  target_network_frequency: 1   # Update targets every step
+
+# Environment and training configuration
+num_envs: 64                  # 64 parallel environments
+total_timesteps: 2000000      # 2M steps for 64 parallel envs
+max_episode_steps: 1000       # Walker2d episode length
+
+# Evaluation and logging
+eval_frequency: 25000         # Less frequent eval for parallel
+save_frequency: 100000        # Save every 100k steps

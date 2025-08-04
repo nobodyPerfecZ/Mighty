@@ -1,9 +1,73 @@
+# configs/search_space/sac_rs.yaml
 hyperparameters:
-  algorithm_kwargs.learning_rate:
+  # Learning rates
+  algorithm_kwargs.policy_lr:
     type: uniform_float
-    lower: 0.000001
+    lower: 0.00001
     upper: 0.01
     log: true
+  algorithm_kwargs.q_lr:
+    type: uniform_float
+    lower: 0.00001
+    upper: 0.01
+    log: true
+  algorithm_kwargs.alpha_lr:
+    type: uniform_float
+    lower: 0.00001
+    upper: 0.01
+    log: true
+    
+  # Training schedule
   algorithm_kwargs.batch_size:
     type: categorical
-    choices: [32, 64, 128, 256]
+    choices: [128, 256, 512]
+  algorithm_kwargs.n_gradient_steps:
+    type: uniform_int
+    lower: 1
+    upper: 4
+    log: false
+  algorithm_kwargs.update_every:
+    type: categorical
+    choices: [1, 2, 4]
+  algorithm_kwargs.learning_starts:
+    type: categorical
+    choices: [2500, 5000, 10000]
+    
+  # SAC core hyperparameters
+  algorithm_kwargs.gamma:
+    type: uniform_float
+    lower: 0.95
+    upper: 0.999
+    log: false
+  algorithm_kwargs.alpha:
+    type: uniform_float
+    lower: 0.05
+    upper: 0.5
+    log: false
+  algorithm_kwargs.soft_update_weight:
+    type: uniform_float
+    lower: 0.001
+    upper: 0.02
+    log: true
+  algorithm_kwargs.target_entropy:
+    type: uniform_float
+    lower: -10.0
+    upper: -2.0
+    log: false
+    
+  # SAC update frequencies
+  algorithm_kwargs.policy_frequency:
+    type: categorical
+    choices: [1, 2, 4]
+  algorithm_kwargs.target_network_frequency:
+    type: categorical
+    choices: [1, 2]
+    
+  # Network architecture (using n_policy_units as in your config)
+  algorithm_kwargs.n_policy_units:
+    type: categorical
+    choices: [128, 256, 512]
+  # Replay buffer
+  algorithm_kwargs.replay_buffer_kwargs.capacity:
+    type: categorical
+    choices: [500000, 1000000, 2000000]

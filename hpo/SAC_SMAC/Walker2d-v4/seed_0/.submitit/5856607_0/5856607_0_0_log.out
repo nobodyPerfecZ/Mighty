@@ -1,0 +1,40 @@
+submitit INFO (2025-08-03 11:50:32,943) - Starting with JobEnvironment(job_id=5856607_0, hostname=ai-n002, local_rank=0(1), node=0(1), global_rank=0(1))
+submitit INFO (2025-08-03 11:50:32,944) - Loading pickle: /bigwork/nhwpmoha/Mighty/Final_Evals/Mighty/hpo/SAC_SMAC/Walker2d-v4/seed_0/.submitit/5856607_0/5856607_0_submitted.pkl
+Couldn't import CARP-S, the CARP-S Hypersweeper will not be available.
+Couldn't import DEHB, the DEHB Hypersweeper will not be available.
+Couldn't import HEBO, the HEBO Hypersweeper will not be available.
+Couldn't import NEPS, the NEPS Hypersweeper will not be available.
+Couldn't import Nevergrad, the Nevergrad Hypersweeper will not be available.
+[[36m2025-08-03 11:50:44,012[0m][[34mroot[0m][[32mINFO[0m] - ################################################################################[0m
+[[36m2025-08-03 11:50:44,012[0m][[34mroot[0m][[32mINFO[0m] - Using agent type "<mighty.mighty_agents.sac.MightySACAgent object at 0x15128072e650>" to learn[0m
+[[36m2025-08-03 11:50:44,012[0m][[34mroot[0m][[32mINFO[0m] - ################################################################################[0m
+╭───────────────────────────── Training Progress ──────────────────────────────╮
+│                                                                              │
+│                                                                              │
+│  Train Steps ━━━━━━━━━━━━━━━━━━━━━ 100% Remaining: 0:00:00 Elapsed: 1:52:08  │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+                                                                                
+             Training Stats                       Training Details              
+┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓    
+┃         ┃         ┃ Latest  ┃ Latest ┃┃      Name      ┃      Value      ┃    
+┃ Metric  ┃ At step ┃  Mean   ┃  Std   ┃┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩    
+┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩│ Training Steps │     500000      │    
+│  Mean   │ 500032  │ 366.92  │  1.13  ││      Seed      │        0        │    
+│ Episode │         │         │        ││ Learning Rate  │ 0.0058936652953 │    
+│ Reward  │         │         │        ││   Batch Size   │       512       │    
+╭──────────────────────────────────────╮╭──────────────────────────────────────╮
+│                        Training      ││                       Evaluation     │
+│ Reward                               ││ Reward                               │
+│ ┌─────────────────────────────────── ││ ┌─────────────────────────────────── │
+│ ─────────────────────────┐           ││ ─────────────────────────┐           │
+│ ││           ▄▄▄▄▗▄▞▚▖▗▄▄▄▄▄▄▄▄▄▄▄▖  ││ ││             ▗▟▜   ▐▜              │
+│ ▄▄▄▄▄▄▄▄▄▄▖▗▖▄▄▗▄▄▄▄▄▄▄▄▄│           ││ ▗▀▌  ▗▄      │                       │
+│ ││        ▄▛▀▀▘  ▀   ▀▀▘             ││ ││    ▄▛▀▜   ▛▀▀                     │
+╰──────────────────────────────────────╯╰──────────────────────────────────────╯Training finished!
+Reached a reward of 351.47 in 500032 steps and 6754.05s.
+submitit INFO (2025-08-03 13:43:18,066) - Job completed successfully
+[[36m2025-08-03 13:43:18,066[0m][[34msubmitit[0m][[32mINFO[0m] - Job completed successfully[0m
+submitit INFO (2025-08-03 13:43:18,088) - Exiting after successful completion
+[[36m2025-08-03 13:43:18,088[0m][[34msubmitit[0m][[32mINFO[0m] - Exiting after successful completion[0m

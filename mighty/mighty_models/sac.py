@@ -17,7 +17,7 @@ class SACModel(nn.Module):
         self,
         obs_size: int,
         action_size: int,
-        log_std_min: float = -20,
+        log_std_min: float = -5,
         log_std_max: float = 2,
         **kwargs,
     ):

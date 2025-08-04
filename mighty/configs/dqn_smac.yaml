@@ -1,0 +1,50 @@
+defaults:
+  - _self_
+  - /cluster: cpu
+  - algorithm: dqn
+  - environment: gymnasium/cartpole
+  - search_space: dqn_rs
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+  - override hydra/sweeper: HyperSMAC        # use Hypersweeper’s RandomSearch
+
+hydra:
+  sweeper:
+    n_trials: 32
+    sweeper_kwargs:
+      maximize: true
+      job_array_size_limit: 1
+      seeds: [0, 1, 2]
+      optimizer_kwargs:
+        smac_facade: 
+          _target_: smac.facade.blackbox_facade.BlackBoxFacade
+          _partial_: true
+          logging_level: 20  # 10 DEBUG, 20 INFO
+        scenario:
+          seed: 42
+          n_trials: ${hydra.sweeper.n_trials}
+          deterministic: true
+          output_directory: ${hydra.sweep.dir}
+    search_space: ${search_space}
+  run:
+    dir: ${output_dir}/${experiment_name}_${seed}
+  sweep:
+    dir: ${output_dir}/${experiment_name}_${seed}
+
+runner: standard
+debug: false
+seed: 0
+output_dir: sweep_smac
+wandb_project: null
+tensorboard_file: null
+experiment_name: DQN_SMAC/${env}/seed
+
+algorithm_kwargs: {}
+
+# Training
+eval_every_n_steps: 1e4  # After how many steps to evaluate.
+n_episodes_eval: 20
+checkpoint: null  # Path to load model checkpoint
+save_model_every_n_steps: 5e5
+
+num_steps: 1e5

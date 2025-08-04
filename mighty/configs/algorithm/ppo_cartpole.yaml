@@ -1,0 +1,46 @@
+# @package _global_
+algorithm: PPO
+
+algorithm_kwargs:
+  rescale_action: False    # Not applicable for discrete actions
+  tanh_squash: False       # Not used for discrete actions
+
+  rollout_buffer_class:
+    _target_: mighty.mighty_replay.MightyRolloutBuffer
+
+  rollout_buffer_kwargs:
+    buffer_size: 128        # ← OPTIMIZED: 8 × 128 = 1024 total samples (good for CartPole)
+    gamma: 0.99             # Standard discount for CartPole
+    gae_lambda: 0.95        # Standard GAE lambda
+    use_latents: False      # No latents for discrete actions
+    obs_shape: ???
+    act_dim: ???
+    n_envs: ???
+    discrete_action: ???
+
+  # Optimiser and update settings - tuned for CartPole robustness
+  learning_rate: 2.5e-4   # ← OPTIMIZED: CleanRL's proven CartPole rate
+  batch_size: 1024        # ← OPTIMIZED: 8 × 128 = 1024 (matches buffer)
+  gamma: 0.99
+  ppo_clip: 0.2           # ← OPTIMIZED: Conservative clipping for stability
+  value_loss_coef: 0.5    # Standard value function weight
+  entropy_coef: 0.01      # ← OPTIMIZED: Small entropy bonus for exploration
+  max_grad_norm: 0.5      # Conservative gradient clipping
+
+  hidden_sizes: [64, 64]  # ← OPTIMIZED: Right size for CartPole complexity
+  activation: "tanh"      # Good for discrete control
+
+  n_gradient_steps: 1
+  n_epochs: 4             # ← OPTIMIZED: CleanRL uses 4 epochs for CartPole
+  minibatch_size: 32      # ← OPTIMIZED: 1024 ÷ 32 = 32 minibatches
+  kl_target: null         # Disable for robustness
+  use_value_clip: true    # Standard value clipping
+
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.01  # ← OPTIMIZED: Match entropy_coef for consistent exploration
+
+# Evaluation settings for monitoring
+eval_every_n_steps: 5000.0     # ← OPTIMIZED: Frequent evaluation to catch success
+n_episodes_eval: 10
+save_model_every_n_steps: 25000.0

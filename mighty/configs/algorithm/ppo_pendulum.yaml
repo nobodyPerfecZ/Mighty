@@ -1,0 +1,43 @@
+# @package _global_
+algorithm: PPO
+
+algorithm_kwargs:
+  rescale_action: False
+  tanh_squash: False
+
+  rollout_buffer_class:
+    _target_: mighty.mighty_replay.MightyRolloutBuffer
+
+  rollout_buffer_kwargs:
+    buffer_size: 256        # ← FIXED: 32 × 256 = 8192 total samples
+    gamma: 0.99
+    gae_lambda: 0.95
+    use_latents: False
+    obs_shape: ???
+    act_dim: ???
+    n_envs: ???
+    discrete_action: ???
+
+  learning_rate: 3e-4     
+  batch_size: 8192        # ← FIXED: Must match 32 × 256 = 8192
+  gamma: 0.99
+  ppo_clip: 0.2           # ← TUNED: Conservative with high parallelism
+  value_loss_coef: 0.5
+  entropy_coef: 0.01      # ← TUNED: Less exploration needed
+  max_grad_norm: 0.5
+
+  hidden_sizes: [128, 128]
+  activation: "tanh"
+
+  n_gradient_steps: 1
+  n_epochs: 8             
+  minibatch_size: 128     # 8192 ÷ 64 = 128 minibatches
+  kl_target: null
+  use_value_clip: true
+
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.01
+
+
+# python mighty/run_mighty.py algorithm=ppo env=Pendulum-v1 num_steps=1e6 num_envs=32

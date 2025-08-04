@@ -1,0 +1,45 @@
+defaults:
+  - _self_
+  - /cluster: cpu
+  - algorithm: ppo
+  - environment: gymnasium/pendulum
+  - search_space: ppo_rs
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+  - override hydra/sweeper: HyperSMAC
+
+hydra:
+  sweeper:
+    n_trials: 8  # Small for testing
+    sweeper_kwargs:
+      maximize: true
+      job_array_size_limit: 2  # Small parallel
+      seeds: [0]
+      optimizer_kwargs:
+        smac_facade: 
+          _target_: smac.facade.blackbox_facade.BlackBoxFacade
+          _partial_: true
+          logging_level: 10  # Debug level
+        scenario:
+          seed: 42
+          n_trials: ${hydra.sweeper.n_trials}
+          deterministic: true
+          output_directory: ${hydra.sweep.dir}
+    search_space: ${search_space}
+
+  run:
+    dir: ${output_dir}/${experiment_name}_${seed}
+  sweep:
+    dir: ${output_dir}/${experiment_name}_${seed}
+
+runner: standard
+debug: false
+seed: 0
+output_dir: sweep_smac_test
+experiment_name: PPO_test
+
+# Short training for testing
+num_steps: 10000
+eval_every_n_steps: 5000
+n_episodes_eval: 5
+checkpoint: null  # Path to load model checkpoint

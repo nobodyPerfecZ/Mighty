@@ -138,3 +138,5 @@ docs/build/*
 docs/api/*
 docs/examples/*
 site/*
+.pt
+.npz

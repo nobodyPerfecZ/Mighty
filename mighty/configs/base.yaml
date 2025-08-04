@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - /cluster: local
+  - /cluster: luis
   - algorithm: ppo
   - environment: pufferlib_ocean/bandit
   - override hydra/job_logging: colorlog
