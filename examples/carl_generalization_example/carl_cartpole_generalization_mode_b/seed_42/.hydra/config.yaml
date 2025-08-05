@@ -1,0 +1,53 @@
+runner: standard
+debug: false
+seed: 42
+output_dir: examples/carl_generalization_example
+wandb_project: null
+tensorboard_file: null
+experiment_name: carl_cartpole_generalization_mode_b/seed
+algorithm_kwargs:
+  rescale_action: false
+  tanh_squash: false
+  rollout_buffer_class:
+    _target_: mighty.mighty_replay.MightyRolloutBuffer
+  rollout_buffer_kwargs:
+    buffer_size: 2048
+    gamma: 0.99
+    gae_lambda: 0.95
+    obs_shape: ???
+    act_dim: ???
+    n_envs: ???
+    discrete_action: ???
+  learning_rate: 0.0003
+  batch_size: 2048
+  gamma: 0.99
+  ppo_clip: 0.2
+  value_loss_coef: 0.5
+  entropy_coef: 0.01
+  max_grad_norm: 0.5
+  hidden_sizes:
+  - 256
+  - 256
+  activation: tanh
+  n_gradient_steps: 1
+  n_epochs: 10
+  minibatch_size: 128
+  kl_target: null
+  use_value_clip: true
+  policy_class: mighty.mighty_exploration.StochasticPolicy
+  policy_kwargs:
+    entropy_coefficient: 0.0
+eval_every_n_steps: 5000.0
+n_episodes_eval: 10
+checkpoint: null
+save_model_every_n_steps: 1000
+cluster: {}
+algorithm: PPO
+num_steps: 250000
+env: CARLCartPole
+env_kwargs:
+  load_contexts: examples/carl_generalization_example/context_sets/train_contexts_b.json
+  load_eval_contexts: examples/carl_generalization_example/context_sets/eval_contexts_b.json
+env_wrappers:
+- mighty.mighty_utils.wrappers.FlattenVecObs
+num_envs: 64

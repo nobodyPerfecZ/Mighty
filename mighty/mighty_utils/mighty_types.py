@@ -16,21 +16,21 @@ MIGHTYENV = None
 dacbench = importlib.util.find_spec("dacbench")
 dacbench_found = dacbench is not None
 if dacbench_found:
-    import dacbench
+    from mighty.mighty_utils.wrappers import ContextualVecEnv
 
-    MIGHTYENV = dacbench.AbstractEnv
-    DACENV = dacbench.AbstractEnv
+    MIGHTYENV = ContextualVecEnv
+    DACENV = ContextualVecEnv
 else:
     DACENV = int
 
 carl = importlib.util.find_spec("carl")
 carl_found = carl is not None
 if carl_found:
-    from carl.envs.carl_env import CARLEnv
+    from mighty.mighty_utils.wrappers import CARLVectorEnvSimulator
 
     if MIGHTYENV is None:
-        MIGHTYENV = CARLEnv
-    CARLENV = CARLEnv
+        MIGHTYENV = CARLVectorEnvSimulator
+    CARLENV = CARLVectorEnvSimulator
 else:
     CARLENV = int
 

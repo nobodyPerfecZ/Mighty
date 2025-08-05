@@ -161,13 +161,9 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
             return self.env.step(actions)
         else:
             obs, reward, te, tr, info = self.env.step(actions[0])
-            return (
-                np.array([obs]),
-                np.array([reward]),
-                np.array([te]),
-                np.array([tr]),
-                np.array([info]),
-            )
+            if te or tr:
+                obs, info = self.env.reset()
+            return np.array([obs]), np.array([reward]), np.array([te]), np.array([tr]), np.array([info])
 
     @property
     def instance_id_list(self):

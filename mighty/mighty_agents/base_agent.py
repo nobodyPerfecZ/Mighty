@@ -180,10 +180,10 @@ class MightyAgent(ABC):
 
         self.seed = seed
         if self.seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
+            random.seed(int(seed))
+            np.random.seed(int(seed))
+            torch.manual_seed(int(seed))
+            torch.cuda.manual_seed_all(int(seed))
             os.environ["PYTHONHASHSEED"] = str(seed)
 
         # Replay Buffer
@@ -260,6 +260,17 @@ class MightyAgent(ABC):
             "truncated": [],
             "mean_episode_reward": [],
         }
+        if isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV):
+            self.result_buffer["instances"] = []
+            with open(
+                Path(self.output_dir) / "instance_set.json", "w+"
+            ) as f:
+                json.dump(self.env.instance_set, f)
+
+            with open(
+                Path(self.output_dir) / "test_set.json", "w+"
+            ) as f:
+                json.dump(self.eval_env.instance_set, f)
 
         self.eval_buffer = {
             "step": [],
@@ -267,8 +278,9 @@ class MightyAgent(ABC):
             "eval_episodes": [],
             "mean_eval_step_reward": [],
             "mean_eval_reward": [],
-            "instance": [],
+            "instances": [],
         }
+        self.eval_state = None
 
         self.hp_buffer = {
             "step": [],
@@ -624,6 +636,10 @@ class MightyAgent(ABC):
                     .numpy()
                     .item(),
                 }
+
+                if isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV):
+                    t["instances"] = self.env.inst_ids
+
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
                 metrics["transition"] = t
@@ -727,11 +743,6 @@ class MightyAgent(ABC):
                         recent_step_reward.pop(0)
                     episode_reward = np.where(dones, 0, episode_reward)  # type: ignore
                     # End episode
-                    if isinstance(self.env, DACENV) or isinstance(self.env, CARLENV):
-                        instance = self.env.instance  # type: ignore
-                    else:
-                        instance = None
-                    metrics["instance"] = instance
                     episodes += 1
                     for k in self.meta_modules:
                         self.meta_modules[k].post_episode(metrics)
@@ -782,22 +793,24 @@ class MightyAgent(ABC):
         if eval_env is None:
             eval_env = self.eval_env
 
-        state, _ = eval_env.reset(options=options, seed=self.seed)  # type: ignore
+        if self.eval_state is None:
+            self.eval_state, _ = eval_env.reset(options=options, seed=self.seed)  # type: ignore
+
         rewards = np.zeros(eval_env.num_envs)  # type: ignore
         steps = np.zeros(eval_env.num_envs)  # type: ignore
         mask = np.zeros(eval_env.num_envs)  # type: ignore
         while not np.all(mask):
-            action = self.policy(state, evaluate=True)  # type: ignore
-            state, reward, terminated, truncated, _ = eval_env.step(action)  # type: ignore
+            action = self.policy(self.eval_state, evaluate=True)  # type: ignore
+            self.eval_state, reward, terminated, truncated, _ = eval_env.step(action)  # type: ignore
             rewards += reward * (1 - mask)
             steps += 1 * (1 - mask)
             dones = np.logical_or(terminated, truncated)
             mask = np.where(dones, 1, mask)
 
-        if isinstance(self.eval_env, DACENV) or isinstance(self.env, CARLENV):
-            instance = eval_env.instance  # type: ignore
+        if isinstance(self.eval_env.unwrapped, DACENV) or isinstance(self.eval_env.unwrapped, CARLENV):
+            instances = eval_env.inst_ids  # type: ignore
         else:
-            instance = "None"
+            instances = "None"
 
         eval_metrics = {
             "step": self.steps,
@@ -805,7 +818,7 @@ class MightyAgent(ABC):
             "eval_episodes": np.array(rewards) / steps,
             "mean_eval_step_reward": np.mean(rewards) / steps,
             "mean_eval_reward": np.mean(rewards),
-            "instance": instance,
+            "instances": instances,
             "eval_rewards": rewards,
         }
         self.eval_buffer = update_buffer(self.eval_buffer, eval_metrics)

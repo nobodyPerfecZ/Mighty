@@ -234,4 +234,9 @@ python mighty/run_mighty.py --config-path=../examples --config-name=hypersweeper
 ## Logging & Plotting
 We have an example notebook that shows you how to load and plot the default Mighty logs. Apart from these, you can also use Tensorboard or W&B for your plotting needs, though for these you should refer to their own documentations.
 You can run this notebook to produce new runs for plotting, use randomly generated example data or load your own data into it.
-For now these examples are focused on single-task learning instead of generalization or multi-task RL, but we plan on expanding them.
+
+We also include an example on how to examine generalization behavior. This example can be run using the following command:
+```bash
+sh examples/run_generalization_protocol.sh
+```
+You can also simply inspect the existing runs in the associated [notebook](./plot_carl_generalization_example.ipynb). There you'll see a comparison of different training distributions on a larger test context distribution for two context features of CARLCartPole. 

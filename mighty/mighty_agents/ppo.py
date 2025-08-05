@@ -350,11 +350,8 @@ class MightyPPOAgent(MightyAgent):
         base_path = Path(path)
         self.model.policy_head.load_state_dict(torch.load(base_path / "policy_head.pt"))  # type: ignore
         self.model.value_head.load_state_dict(torch.load(base_path / "value_head.pt"))  # type: ignore
-        self.update_fn.policy_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "policy_optimizer.pt")
-        )
-        self.update_fn.value_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "value_optimizer.pt")
+        self.update_fn.optimizer.load_state_dict(  # type: ignore
+            torch.load(base_path / "optimizer.pt")
         )
 
         if self.verbose:
