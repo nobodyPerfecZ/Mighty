@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import importlib
 import json
 from functools import partial
