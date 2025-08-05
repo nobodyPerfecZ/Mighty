@@ -260,7 +260,7 @@ class MightyAgent(ABC):
             "truncated": [],
             "mean_episode_reward": [],
         }
-        if isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV):
+        if hasattr(self.env, "unwrapped") and (isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV)):
             self.result_buffer["instances"] = []
             with open(
                 Path(self.output_dir) / "instance_set.json", "w+"
@@ -637,7 +637,7 @@ class MightyAgent(ABC):
                     .item(),
                 }
 
-                if isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV):
+                if hasattr(self.env, "unwrapped") and (isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV)):
                     t["instances"] = self.env.inst_ids
 
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
@@ -807,7 +807,7 @@ class MightyAgent(ABC):
             dones = np.logical_or(terminated, truncated)
             mask = np.where(dones, 1, mask)
 
-        if isinstance(self.eval_env.unwrapped, DACENV) or isinstance(self.eval_env.unwrapped, CARLENV):
+        if hasattr(self.eval_env, "unwrapped") and (isinstance(self.eval_env.unwrapped, DACENV) or isinstance(self.eval_env.unwrapped, CARLENV)):
             instances = eval_env.inst_ids  # type: ignore
         else:
             instances = "None"
