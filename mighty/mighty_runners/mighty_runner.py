@@ -67,6 +67,7 @@ class MightyRunner(ABC):
             seed=cfg.seed,
             log_wandb=log_wandb,
             wandb_kwargs=wandb_kwargs,
+            log_infos=cfg.log_infos,
             **args_agent,
         )
 
