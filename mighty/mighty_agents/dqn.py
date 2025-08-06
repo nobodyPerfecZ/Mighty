@@ -49,6 +49,7 @@ class MightyDQNAgent(MightyAgent):
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
+        log_infos: bool = False,
         replay_buffer_class: str | DictConfig | type[MightyReplay] | None = None,
         replay_buffer_kwargs: TypeKwargs | None = None,
         meta_methods: list[str | type] | None = None,
@@ -156,6 +157,7 @@ class MightyDQNAgent(MightyAgent):
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
             rescale_action=rescale_action,
+            log_infos=log_infos,
         )
 
         self.loss_buffer = {

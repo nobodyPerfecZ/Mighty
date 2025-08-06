@@ -30,6 +30,7 @@ class MightyPPOAgent(MightyAgent):
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
+        log_infos: bool = False,
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
         ] = MightyRolloutBuffer,
@@ -143,6 +144,7 @@ class MightyPPOAgent(MightyAgent):
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
             rescale_action=rescale_action,
+            log_infos=log_infos,
         )
 
         self.loss_buffer = {

@@ -26,6 +26,7 @@ class MightySACAgent(MightyAgent):
         learning_starts: int = 10000,
         update_every: int = 50,
         n_gradient_steps: int = 1,
+        log_infos: bool = False,
         # --- Learning rates ---
         policy_lr: float = 3e-4,
         q_lr: float = 3e-4,
@@ -116,6 +117,7 @@ class MightySACAgent(MightyAgent):
             rescale_action=rescale_action,
             batch_size=batch_size,
             learning_rate=policy_lr,  # For compatibility with base class
+            log_infos=log_infos,
         )
 
         # Initialize loss buffer for logging

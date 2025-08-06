@@ -62,6 +62,7 @@ class MightyRunner(ABC):
             eval_env=eval_env,
             output_dir=output_dir,
             seed=cfg.seed,
+            log_infos=cfg.log_infos,
             **args_agent,
         )
 
@@ -84,8 +85,8 @@ class MightyRunner(ABC):
             n_steps=num_steps, env=env, eval_every_n_steps=self.eval_every_n_steps
         )
 
-    def evaluate(self, eval_env=None) -> Any:  # type: ignore
-        return self.agent.evaluate(eval_env)
+    def evaluate(self, eval_env=None, log_infos=False) -> Any:  # type: ignore
+        return self.agent.evaluate(eval_env, log_infos=log_infos)
 
     def run(self) -> Tuple[Dict, Dict]:
         raise NotImplementedError
