@@ -177,12 +177,9 @@ class StochasticPolicy(MightyExplorationPolicy):
             # Special handling for SACModel
             elif isinstance(self.model, SACModel):
                 action, z, mean, log_std = self.model(state, deterministic=False)
-                std = torch.exp(log_std)
-                dist = Normal(mean, std)
-
-                log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)
-                weighted_log_prob = log_pz * self.entropy_coefficient
-                return action.detach().cpu().numpy(), weighted_log_prob
+                # CRITICAL: Use the model's policy_log_prob which includes tanh correction
+                log_prob = self.model.policy_log_prob(z, mean, log_std)
+                return action.detach().cpu().numpy(), log_prob
 
             else:
                 raise RuntimeError(

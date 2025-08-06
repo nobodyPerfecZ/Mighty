@@ -17,7 +17,7 @@ class SACModel(nn.Module):
         self,
         obs_size: int,
         action_size: int,
-        log_std_min: float = -20,
+        log_std_min: float = -5,
         log_std_max: float = 2,
         **kwargs,
     ):
@@ -124,7 +124,17 @@ class SACModel(nn.Module):
         feats = self.feature_extractor(state)
         x = self.policy_net(feats)
         mean, log_std = x.chunk(2, dim=-1)
-        log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+        # log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+        
+        # NEW - Soft clamping
+        log_std = torch.tanh(log_std)
+        log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (log_std + 1)
+        
+        # This maps tanh output [-1, 1] to [log_std_min, log_std_max]
+        # When tanh(x) = -1: log_std = log_std_min + 0.5 * range * 0 = log_std_min
+        # When tanh(x) = 0:  log_std = log_std_min + 0.5 * range * 1 = (log_std_min + log_std_max) / 2
+        # When tanh(x) = 1:  log_std = log_std_min + 0.5 * range * 2 = log_std_max
+        
         std = torch.exp(log_std)
 
         if deterministic:

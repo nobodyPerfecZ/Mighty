@@ -127,36 +127,36 @@ class SACUpdate:
         alpha_loss = torch.tensor(0.0)
         if self.update_step % self.policy_frequency == 0:
             # do multiple policy updates to compensate for delay
-            for _ in range(self.policy_frequency):
-                # recompute alpha after q update
-                current_alpha = (
-                    self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
-                )
+            # for _ in range(self.policy_frequency):
+            # recompute alpha after q update
+            current_alpha = (
+                self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+            )
 
-                a, z, mean, log_std = self.model(states)
-                logp = self.model.policy_log_prob(z, mean, log_std)
-                sa_pi = torch.cat([states, a], dim=-1)
-                q1_pi = self.model.q_net1(sa_pi)
-                q2_pi = self.model.q_net2(sa_pi)
-                q_pi = torch.min(q1_pi, q2_pi)
-                policy_loss = (current_alpha * logp - q_pi).mean()
+            a, z, mean, log_std = self.model(states)
+            logp = self.model.policy_log_prob(z, mean, log_std)
+            sa_pi = torch.cat([states, a], dim=-1)
+            q1_pi = self.model.q_net1(sa_pi)
+            q2_pi = self.model.q_net2(sa_pi)
+            q_pi = torch.min(q1_pi, q2_pi)
+            policy_loss = (current_alpha * logp - q_pi).mean()
 
-                self.policy_optimizer.zero_grad()
-                policy_loss.backward()
-                self.policy_optimizer.step()
+            self.policy_optimizer.zero_grad()
+            policy_loss.backward()
+            self.policy_optimizer.step()
 
-                # --- Entropy coefficient (alpha) update ---
-                if self.auto_alpha:
-                    with torch.no_grad():
-                        _, _, _, _ = self.model(states)
-                        # Use the logp from the policy update above
-                    alpha_loss = -(
-                        self.log_alpha * (logp.detach() + self.target_entropy)
-                    ).mean()
-                    self.alpha_optimizer.zero_grad()
-                    alpha_loss.backward()
-                    self.alpha_optimizer.step()
-                    self.alpha = self.log_alpha.exp().item()
+            # --- Entropy coefficient (alpha) update ---
+            if self.auto_alpha:
+                with torch.no_grad():
+                    _, _, _, _ = self.model(states)
+                    # Use the logp from the policy update above
+                alpha_loss = -(
+                    self.log_alpha * (logp.detach() + self.target_entropy)
+                ).mean()
+                self.alpha_optimizer.zero_grad()
+                alpha_loss.backward()
+                self.alpha_optimizer.step()
+                self.alpha = self.log_alpha.exp().item()
 
         # --- Soft update targets ---
         if self.update_step % self.target_network_frequency == 0:

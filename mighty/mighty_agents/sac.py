@@ -39,7 +39,7 @@ class MightySACAgent(MightyAgent):
         # --- Network architecture (optional override) ---
         hidden_sizes: Optional[List[int]] = None,
         activation: str = "relu",
-        log_std_min: float = -20,
+        log_std_min: float = -5,
         log_std_max: float = 2,
         # --- Logging & buffer ---
         render_progress: bool = True,
