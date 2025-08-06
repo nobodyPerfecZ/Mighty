@@ -127,11 +127,11 @@ class SACUpdate:
         alpha_loss = torch.tensor(0.0)
         if self.update_step % self.policy_frequency == 0:
             # do multiple policy updates to compensate for delay
-            for _ in range(self.policy_frequency):
-                # recompute alpha after q update
-                current_alpha = (
-                    self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
-                )
+            # for _ in range(self.policy_frequency):
+            # recompute alpha after q update
+            current_alpha = (
+                self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
+            )
 
                 # Sample fresh actions for each policy update iteration
                 # This ensures stochasticity across iterations
@@ -144,9 +144,9 @@ class SACUpdate:
                 q_pi = torch.min(q1_pi, q2_pi)
                 policy_loss = (current_alpha * logp - q_pi).mean()
 
-                self.policy_optimizer.zero_grad()
-                policy_loss.backward()
-                self.policy_optimizer.step()
+            self.policy_optimizer.zero_grad()
+            policy_loss.backward()
+            self.policy_optimizer.step()
 
                 # --- Entropy coefficient (alpha) update ---
                 if self.auto_alpha:
