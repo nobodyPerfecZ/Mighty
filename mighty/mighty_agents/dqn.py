@@ -70,6 +70,7 @@ class MightyDQNAgent(MightyAgent):
         normalize_obs: bool = False,
         normalize_reward: bool = False,
         rescale_action: bool = False,  # type: ignore
+        handle_timeout_termination: bool = False,
     ):
         """DQN initialization.
 
@@ -157,7 +158,6 @@ class MightyDQNAgent(MightyAgent):
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
             rescale_action=rescale_action,
-            handle_timeout_termination=handle_timeout_termination
             log_infos=log_infos,
         )
 
