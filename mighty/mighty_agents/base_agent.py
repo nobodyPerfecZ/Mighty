@@ -170,6 +170,7 @@ class MightyAgent(ABC):
         normalize_reward: bool = False,
         rescale_action: bool = False,
         log_infos: bool = False,
+        handle_timeout_termination: bool = False,
     ):
         """Base agent initialization.
 
@@ -342,6 +343,8 @@ class MightyAgent(ABC):
             for m in self.meta_modules.values():
                 m.seed(self.seed)
         self.steps = 0
+        
+        self.handle_timeout_termination = handle_timeout_termination
 
     def _initialize_agent(self) -> None:
         """Agent/algorithm specific initializations."""
@@ -654,7 +657,7 @@ class MightyAgent(ABC):
                 metrics["episode_reward"] = episode_reward
 
                 action, log_prob = self.step(curr_s, metrics)
-                # step the env as usual
+                # 1) step the env as usual
                 next_s, reward, terminated, truncated, infos = self.env.step(action)
 
                 # decide which samples are true “done”
