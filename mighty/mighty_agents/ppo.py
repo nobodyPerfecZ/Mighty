@@ -61,6 +61,7 @@ class MightyPPOAgent(MightyAgent):
         normalize_reward: bool = False,
         rescale_action: bool = False,
         tanh_squash: bool = False,
+        handle_timeout_termination: bool = False,
     ):
         """Initialize the PPO agent.
 
