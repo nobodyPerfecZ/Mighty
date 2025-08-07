@@ -19,13 +19,14 @@ algorithm_kwargs:
   replay_buffer_kwargs:
     capacity: 1e6
 
+
   # Scheduling & batch-updates
   batch_size: 256
   learning_starts: 5000  # Good, matches CleanRL
   update_every: 1        # Good, update every step
   n_gradient_steps: 1    # Good
 
-  # Learning rates - CRITICAL CHANGE
+  # Learning rates
   policy_lr: 3e-4
   q_lr: 1e-3      # This is correct now (was 3e-4)
   alpha_lr: 3e-4  # 3e-4 is better than 1e-3 for alpha
