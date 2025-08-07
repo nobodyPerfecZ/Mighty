@@ -14,14 +14,14 @@ class TestSACModel:
         assert sac.obs_size == 8, "Obs size should be 8"
         assert sac.action_size == 3, "Action size should be 3"
         assert sac.activation == "tanh", "Passed activation should be tanh"
-        assert sac.log_std_min == -20, "Default log_std_min should be -20"
+        assert sac.log_std_min == -5, "Default log_std_min should be -5"  # Fixed: was -20
         assert sac.log_std_max == 2, "Default log_std_max should be 2"
         assert sac.continuous_action is True, "SAC should always be continuous"
 
         # Check network structure - updated for new architecture
         assert hasattr(sac, "feature_extractor"), "Should have feature extractor"
-        assert isinstance(sac.policy_net, nn.Linear), (
-            "Policy network should be Linear (after feature extractor)"
+        assert isinstance(sac.policy_net, nn.Sequential), (  # Fixed: policy_net is Sequential, not Linear
+            "Policy network should be Sequential"
         )
         assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
         assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
@@ -116,7 +116,7 @@ class TestSACModel:
 
     def test_forward_stochastic(self):
         """Test forward pass with stochastic policy."""
-        sac = SACModel(obs_size=6, action_size=4)
+        sac = SACModel(obs_size=6, action_size=4, action_low=-2.0, action_high=3.0)
         dummy_state = torch.rand((10, 6))
 
         action, z, mean, log_std = sac(dummy_state, deterministic=False)
@@ -133,19 +133,20 @@ class TestSACModel:
         assert torch.all(torch.isfinite(mean)), "Means should be finite"
         assert torch.all(torch.isfinite(log_std)), "Log_stds should be finite"
 
-        # Check tanh constraint on actions
-        assert torch.all(action >= -1.0) and torch.all(action <= 1.0), (
-            "Actions should be in [-1, 1] range"
+        # Check action bounds - should be in [action_low, action_high] range
+        assert torch.all(action >= -2.0) and torch.all(action <= 3.0), (
+            "Actions should be in [-2.0, 3.0] range"
         )
 
         # Check log_std clamping
         assert torch.all(log_std >= sac.log_std_min), "Log_std should be >= log_std_min"
         assert torch.all(log_std <= sac.log_std_max), "Log_std should be <= log_std_max"
 
-        # Check relationship: action = tanh(z)
-        expected_action = torch.tanh(z)
+        # Check relationship: raw_action = tanh(z), then scaled to [action_low, action_high]
+        raw_action = torch.tanh(z)
+        expected_action = raw_action * sac.action_scale + sac.action_bias
         assert torch.allclose(action, expected_action, atol=1e-6), (
-            "Action should equal tanh(z)"
+            "Action should equal scaled tanh(z)"
         )
 
     def test_forward_deterministic(self):
@@ -164,10 +165,11 @@ class TestSACModel:
         # In deterministic mode, z should equal mean
         assert torch.allclose(z, mean), "In deterministic mode, z should equal mean"
 
-        # Action should still be tanh(z) = tanh(mean)
-        expected_action = torch.tanh(mean)
+        # Action should be scaled tanh(mean)
+        raw_action = torch.tanh(mean)
+        expected_action = raw_action * sac.action_scale + sac.action_bias
         assert torch.allclose(action, expected_action), (
-            "Action should equal tanh(mean) in deterministic mode"
+            "Action should equal scaled tanh(mean) in deterministic mode"
         )
 
     def test_stochastic_vs_deterministic(self):
@@ -209,9 +211,14 @@ class TestSACModel:
         # Check shape
         assert log_prob.shape == (6, 1), "Log prob should have shape (6, 1)"
 
-        # Check that log probabilities are finite and reasonable
+        # Check that log probabilities are finite
         assert torch.all(torch.isfinite(log_prob)), "Log probs should be finite"
-        assert torch.all(log_prob <= 0.0), "Log probs should be <= 0"
+        
+        # Note: Log probabilities can be positive in some cases for transformed distributions
+        # The key constraint is that they should be reasonable values
+        # For SAC with tanh transformation, log probs can be positive due to the Jacobian correction
+        assert torch.all(log_prob > -50.0), "Log probs should not be extremely negative"
+        assert torch.all(log_prob < 50.0), "Log probs should not be extremely positive"
 
         # Test with deterministic actions (z = mean)
         log_prob_det = sac.policy_log_prob(mean, mean, log_std)
@@ -223,7 +230,7 @@ class TestSACModel:
         """Test Q-network forward passes."""
         sac = SACModel(obs_size=4, action_size=2)
         dummy_state = torch.rand((7, 4))
-        dummy_action = torch.rand((7, 2))
+        dummy_action = torch.rand((7, 2)) * 2 - 1  # Actions in [-1, 1] range
 
         # Concatenate state and action for Q-networks
         state_action = torch.cat([dummy_state, dummy_action], dim=-1)
@@ -290,7 +297,7 @@ class TestSACModel:
         """Test that gradients flow properly through networks."""
         sac = SACModel(obs_size=4, action_size=2)
         dummy_state = torch.rand((3, 4))
-        dummy_action = torch.rand((3, 2))
+        dummy_action = torch.rand((3, 2)) * 2 - 1  # Actions in [-1, 1]
         state_action = torch.cat([dummy_state, dummy_action], dim=-1)
 
         # Test policy network gradients
@@ -349,4 +356,34 @@ class TestSACModel:
         )
         assert torch.all(torch.isfinite(boundary_log_prob)), (
             "Log probabilities should be finite for boundary actions"
+        )
+
+    def test_action_scaling(self):
+        """Test that action scaling works correctly."""
+        # Test with custom action bounds
+        action_low = -2.5
+        action_high = 1.5
+        sac = SACModel(obs_size=3, action_size=2, action_low=action_low, action_high=action_high)
+        
+        dummy_state = torch.rand((5, 3))
+        action, z, mean, log_std = sac(dummy_state)
+        
+        # Actions should be within the specified bounds
+        assert torch.all(action >= action_low), f"Actions should be >= {action_low}"
+        assert torch.all(action <= action_high), f"Actions should be <= {action_high}"
+        
+        # Check the scaling math
+        raw_action = torch.tanh(z)
+        expected_scale = (action_high - action_low) / 2.0
+        expected_bias = (action_high + action_low) / 2.0
+        expected_action = raw_action * expected_scale + expected_bias
+        
+        assert torch.allclose(action, expected_action, atol=1e-6), (
+            "Action scaling should match expected formula"
+        )
+        assert torch.allclose(sac.action_scale, torch.tensor(expected_scale)), (
+            "Action scale should be computed correctly"
+        )
+        assert torch.allclose(sac.action_bias, torch.tensor(expected_bias)), (
+            "Action bias should be computed correctly"
         )

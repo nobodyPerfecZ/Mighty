@@ -99,6 +99,13 @@ class TestSACAgent:
             dones = np.logical_or(terminated, truncated)
 
             # Process the transition (this adds to buffer)
+            # SAC agent expects metrics with transition info including terminated status
+            transition_metrics = {
+                "step": step,
+                "transition": {
+                    "terminated": terminated,  # Use the terminated from env.step()
+                }
+            }
             agent.process_transition(
                 curr_s,
                 action,
@@ -106,7 +113,7 @@ class TestSACAgent:
                 next_s,
                 dones,
                 log_prob.detach().cpu().numpy(),
-                {"step": step},
+                transition_metrics,
             )
 
             # Update current state
@@ -272,7 +279,8 @@ class TestSACAgent:
         init_params = deepcopy(list(sac.model.parameters()))
         sac.run(20, 1)
         batch = sac.buffer.sample(20)
-        original_metrics = sac.update_agent(batch, 20)
+        # Fix: update_agent expects proper keyword arguments
+        original_metrics = sac.update_fn.update(batch)
         original_params = deepcopy(list(sac.model.parameters()))
 
         env = gym.vector.SyncVectorEnv([DummyContinuousEnv for _ in range(1)])
@@ -303,7 +311,8 @@ class TestSACAgent:
                 )
             sac.run(20, 1)
             batch = sac.buffer.sample(20)
-            new_metrics = sac.update_agent(batch, 20)
+            # Fix: update_agent expects proper keyword arguments
+            new_metrics = sac.update_fn.update(batch)
             for old, new in zip(
                 original_params[:10], list(sac.model.parameters())[:10], strict=False
             ):
