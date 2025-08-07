@@ -138,7 +138,6 @@ class TestSACModel:
     def test_forward_stochastic(self):
         """Test forward pass with stochastic policy."""
         sac = SACModel(obs_size=6, action_size=4, action_low=-2.0, action_high=3.0)
-        sac = SACModel(obs_size=6, action_size=4, action_low=-2.0, action_high=3.0)
         dummy_state = torch.rand((10, 6))
 
         action, z, mean, log_std = sac(dummy_state, deterministic=False)
