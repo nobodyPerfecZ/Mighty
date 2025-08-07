@@ -133,7 +133,7 @@ class SACUpdate:
                     self.log_alpha.exp().detach() if self.auto_alpha else self.alpha
                 )
 
-                # FIX: Sample fresh actions for each policy update iteration
+                # Sample fresh actions for each policy update iteration
                 # This ensures stochasticity across iterations
                 a, z, mean, log_std = self.model(states)
                 logp = self.model.policy_log_prob(z, mean, log_std)
@@ -150,7 +150,7 @@ class SACUpdate:
 
                 # --- Entropy coefficient (alpha) update ---
                 if self.auto_alpha:
-                    # CRITICAL FIX: Get fresh sample for alpha update
+                    # Get fresh sample for alpha update
                     with torch.no_grad():
                         _, z_alpha, mean_alpha, log_std_alpha = self.model(states)
                         logp_alpha = self.model.policy_log_prob(z_alpha, mean_alpha, log_std_alpha)
