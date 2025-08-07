@@ -104,7 +104,7 @@ class TestSACAgent:
                 "step": step,
                 "transition": {
                     "terminated": terminated,  # Use the terminated from env.step()
-                },
+                }
             }
             agent.process_transition(
                 curr_s,

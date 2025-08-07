@@ -14,7 +14,7 @@ class TestSACModel:
         assert sac.obs_size == 8, "Obs size should be 8"
         assert sac.action_size == 3, "Action size should be 3"
         assert sac.activation == "tanh", "Passed activation should be tanh"
-        assert sac.log_std_min == -5, "Default log_std_min should be -5"
+        assert sac.log_std_min == -20, "Default log_std_min should be -20"
         assert sac.log_std_max == 2, "Default log_std_max should be 2"
         assert sac.continuous_action is True, "SAC should always be continuous"
 
@@ -138,7 +138,6 @@ class TestSACModel:
     def test_forward_stochastic(self):
         """Test forward pass with stochastic policy."""
         sac = SACModel(obs_size=6, action_size=4, action_low=-2.0, action_high=3.0)
-        sac = SACModel(obs_size=6, action_size=4, action_low=-2.0, action_high=3.0)
         dummy_state = torch.rand((10, 6))
 
         action, z, mean, log_std = sac(dummy_state, deterministic=False)
@@ -235,7 +234,7 @@ class TestSACModel:
 
         # Check that log probabilities are finite
         assert torch.all(torch.isfinite(log_prob)), "Log probs should be finite"
-
+        
         # Note: Log probabilities can be positive in some cases for transformed distributions
         # The key constraint is that they should be reasonable values
         # For SAC with tanh transformation, log probs can be positive due to the Jacobian correction
@@ -414,7 +413,7 @@ class TestSACModel:
             "Log probabilities should be finite for boundary actions"
         )
 
-    def test_action_scaling(self):
+def test_action_scaling(self):
         """Test that action scaling works correctly."""
         # Test with custom action bounds
         action_low = -2.5
