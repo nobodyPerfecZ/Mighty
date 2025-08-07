@@ -51,7 +51,7 @@ algorithm_kwargs:
 
   # SAC specific frequencies
   policy_frequency: 2           # Can also try 1 for even better performance
-  target_network_frequency: 1   # Update targets every step
+  target_network_frequency: 2   # Update targets every step
 
 # Environment and training configuration
 num_envs: 1                   # Single environment
