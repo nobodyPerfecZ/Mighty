@@ -73,7 +73,12 @@ class SACModel(nn.Module):
         )
 
         # Policy network outputs mean and log_std
-        self.policy_net = nn.Linear(out_dim, action_size * 2)
+        # CHANGE: Create separate policy network (actor) similar to CleanRL
+        self.policy_net = make_policy_head(
+            in_size=self.obs_size,
+            out_size=self.action_size * 2,  # mean and log_std
+            **head_kwargs
+        )
 
         # Twin Q-networks
         # — live Q-nets —
@@ -133,19 +138,12 @@ class SACModel(nn.Module):
           mean: Gaussian mean
           log_std: Gaussian log std
         """
-        feats = self.feature_extractor(state)
-        x = self.policy_net(feats)
+        x = self.policy_net(state)
         mean, log_std = x.chunk(2, dim=-1)
-        # log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
         
-        # NEW - Soft clamping
+        # Soft clamping
         log_std = torch.tanh(log_std)
         log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (log_std + 1)
-        
-        # This maps tanh output [-1, 1] to [log_std_min, log_std_max]
-        # When tanh(x) = -1: log_std = log_std_min + 0.5 * range * 0 = log_std_min
-        # When tanh(x) = 0:  log_std = log_std_min + 0.5 * range * 1 = (log_std_min + log_std_max) / 2
-        # When tanh(x) = 1:  log_std = log_std_min + 0.5 * range * 2 = log_std_max
         
         std = torch.exp(log_std)
 
@@ -206,4 +204,23 @@ def make_q_head(in_size, hidden_sizes=None, activation="relu"):
         last_size = size
 
     layers.append(nn.Linear(last_size, 1))
+    return nn.Sequential(*layers)
+
+
+def make_policy_head(in_size, out_size, hidden_sizes=None, activation="relu"):
+    """Make policy head network (actor)."""
+    if hidden_sizes is None:
+        hidden_sizes = []
+
+    layers = []
+    last_size = in_size
+    if isinstance(last_size, list):
+        last_size = last_size[0]
+
+    for size in hidden_sizes:
+        layers.append(nn.Linear(last_size, size))
+        layers.append(ACTIVATIONS[activation]())
+        last_size = size
+
+    layers.append(nn.Linear(last_size, out_size))
     return nn.Sequential(*layers)
