@@ -189,7 +189,7 @@ class SACModel(nn.Module):
         """
         x = self.policy_net(state)
         mean, log_std = x.chunk(2, dim=-1)
-
+        
         # Soft clamping
         log_std = torch.tanh(log_std)
         log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (
