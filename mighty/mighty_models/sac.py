@@ -21,8 +21,6 @@ class SACModel(nn.Module):
         log_std_max: float = 2,
         action_low: float = -1,
         action_high: float = +1,
-        action_low: float = -1,
-        action_high: float = +1,
         **kwargs,
     ):
         super().__init__()
