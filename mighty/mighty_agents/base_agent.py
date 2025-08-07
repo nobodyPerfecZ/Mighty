@@ -343,6 +343,8 @@ class MightyAgent(ABC):
             for m in self.meta_modules.values():
                 m.seed(self.seed)
         self.steps = 0
+        
+        self.handle_timeout_termination = handle_timeout_termination
 
     def _initialize_agent(self) -> None:
         """Agent/algorithm specific initializations."""
@@ -651,8 +653,23 @@ class MightyAgent(ABC):
                 metrics["episode_reward"] = episode_reward
 
                 action, log_prob = self.step(curr_s, metrics)
-                next_s, reward, terminated, truncated, infos = self.env.step(action)  # type: ignore
-                dones = np.logical_or(terminated, truncated)
+                # 1) step the env as usual
+                next_s, reward, terminated, truncated, infos = self.env.step(action)
+
+                # 2) decide which samples are true “done”
+                replay_dones = terminated          # physics‐failure only
+                dones    = np.logical_or(terminated, truncated)
+                
+
+                # 3) optionally overwrite next_s on truncation
+                if self.handle_timeout_termination:
+                    real_next_s = next_s.copy()
+                    # infos["final_observation"] is a list/array of the last real obs
+                    for i, tr in enumerate(truncated):
+                        if tr:
+                            real_next_s[i] = infos["final_observation"][i]
+                else:
+                    real_next_s = next_s
 
                 episode_reward += reward
 
@@ -663,10 +680,10 @@ class MightyAgent(ABC):
                     "reward": reward,
                     "action": action,
                     "state": curr_s,
-                    "next_state": next_s,
+                    "next_state": real_next_s,
                     "terminated": terminated.astype(int),
                     "truncated": truncated.astype(int),
-                    "dones": dones.astype(int),
+                    "dones": replay_dones.astype(int),
                     "mean_episode_reward": last_episode_reward.mean()
                     .cpu()
                     .numpy()
