@@ -27,9 +27,9 @@ class StochasticPolicy(MightyExplorationPolicy):
         :param entropy_coefficient: weight on entropy term
         :param discrete: whether the action space is discrete
         """
-
+        
         self.model = model
-
+        
         super().__init__(algo, model, discrete)
         self.entropy_coefficient = entropy_coefficient
         self.discrete = discrete
@@ -87,8 +87,9 @@ class StochasticPolicy(MightyExplorationPolicy):
             # 4-tuple case (Tanh squashing): (action, z, mean, log_std)
             elif isinstance(model_output, tuple) and len(model_output) == 4:
                 action, z, mean, log_std = model_output
-
-                if not self.algo == "sac":
+                
+                if not isinstance(self.model, SACModel):
+                
                     log_prob = sample_nondeterministic_logprobs(
                         z=z,
                         mean=mean,
@@ -101,7 +102,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                 if return_logp:
                     return action.detach().cpu().numpy(), log_prob
                 else:
-                    weighted_log_prob = log_prob * self.entropy_coefficient
+                    weighted_log_prob = log_prob
                     return action.detach().cpu().numpy(), weighted_log_prob
 
             # Check for model attribute-based approaches
@@ -119,7 +120,8 @@ class StochasticPolicy(MightyExplorationPolicy):
                 elif len(model_output) == 4:
                     # Tanh squashing mode: (action, z, mean, log_std)
                     action, z, mean, log_std = model_output
-                    if not self.algo == "sac":
+                    if not isinstance(self.model, SACModel):
+                
                         log_prob = sample_nondeterministic_logprobs(
                             z=z,
                             mean=mean,
@@ -144,7 +146,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                 if self.model.output_style == "squashed_gaussian":
                     # Should be 4-tuple: (action, z, mean, log_std)
                     action, z, mean, log_std = model_output
-                    if not self.algo == "sac":
+                    if not isinstance(self.model, SACModel):
                         log_prob = sample_nondeterministic_logprobs(
                             z=z,
                             mean=mean,
@@ -167,7 +169,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                     z = dist.rsample()
                     action = torch.tanh(z)
 
-                    if not self.algo == "sac":
+                    if not isinstance(self.model, SACModel):
                         log_prob = sample_nondeterministic_logprobs(
                             z=z,
                             mean=mean,
@@ -176,7 +178,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                         )
                     else:
                         log_prob = self.model.policy_log_prob(z, mean, log_std)
-
+                        
                     entropy = dist.entropy().sum(dim=-1, keepdim=True)
                     weighted_log_prob = log_prob * entropy
                     return action.detach().cpu().numpy(), weighted_log_prob
