@@ -355,8 +355,6 @@ class MightyAgent(ABC):
             for m in self.meta_modules.values():
                 m.seed(self.seed)
         self.steps = 0
-        
-        self.handle_timeout_termination = handle_timeout_termination
 
     def _initialize_agent(self) -> None:
         """Agent/algorithm specific initializations."""
