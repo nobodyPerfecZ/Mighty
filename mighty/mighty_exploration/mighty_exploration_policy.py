@@ -10,10 +10,7 @@ from mighty.mighty_models import SACModel
 
 
 def sample_nondeterministic_logprobs(
-    z: torch.Tensor,
-    mean: torch.Tensor,
-    log_std: torch.Tensor,
-    sac: bool = False
+    z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor, sac: bool = False
 ) -> torch.Tensor:
     """
     Compute log-prob of a Gaussian sample z ~ N(mean, exp(log_std)),
@@ -113,9 +110,9 @@ class MightyExplorationPolicy:
 
         # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
         elif isinstance(out, tuple) and len(out) == 4:
-            action = out[0]  # [batch, action_dim]           
+            action = out[0]  # [batch, action_dim]
             log_prob = sample_nondeterministic_logprobs(
-                z=out[1], mean=out[2], log_std=out[3], sac= self.ago == "sac"
+                z=out[1], mean=out[2], log_std=out[3], sac=self.ago == "sac"
             )
             return action.detach().cpu().numpy(), log_prob
 
