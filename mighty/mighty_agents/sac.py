@@ -58,7 +58,6 @@ class MightySACAgent(MightyAgent):
         rescale_action: bool = False,  # ← NEW Whether to rescale actions to the environment's action space
         policy_frequency: int = 2,  # Frequency of policy updates
         target_network_frequency: int = 1,  # Frequency of target network updates
-        handle_timeout_termination: bool = True,
     ):
         """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
         if hidden_sizes is None:
