@@ -103,7 +103,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                 if return_logp:
                     return action.detach().cpu().numpy(), log_prob
                 else:
-                    weighted_log_prob = log_prob
+                    weighted_log_prob = log_prob * self.entropy_coefficient
                     return action.detach().cpu().numpy(), weighted_log_prob
 
             # Check for model attribute-based approaches

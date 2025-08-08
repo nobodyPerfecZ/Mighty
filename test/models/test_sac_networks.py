@@ -14,17 +14,22 @@ class TestSACModel:
         assert sac.obs_size == 8, "Obs size should be 8"
         assert sac.action_size == 3, "Action size should be 3"
         assert sac.activation == "tanh", "Passed activation should be tanh"
-        assert sac.log_std_min == -5, "Default log_std_min should be -5"  # Fixed: was -20
+        assert sac.log_std_min == -5, "Default log_std_min should be -5"
         assert sac.log_std_max == 2, "Default log_std_max should be 2"
         assert sac.continuous_action is True, "SAC should always be continuous"
 
-        # Check network structure - updated for new architecture
-        assert hasattr(sac, "feature_extractor"), "Should have feature extractor"
-        assert isinstance(sac.policy_net, nn.Sequential), (  # Fixed: policy_net is Sequential, not Linear
-            "Policy network should be Sequential"
-        )
+        # Check network structure - updated for feature extractor + head architecture
+        assert hasattr(sac, "policy_feature_extractor"), "Should have policy feature extractor"
+        assert hasattr(sac, "policy_head"), "Should have policy head"
+        assert isinstance(sac.policy_net, nn.Sequential), "Policy network should be Sequential"
+        
+        # Check Q-networks
+        assert hasattr(sac, "q_feature_extractor1"), "Should have Q1 feature extractor"
+        assert hasattr(sac, "q_head1"), "Should have Q1 head"
         assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
         assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
+        
+        # Check target networks
         assert isinstance(sac.target_q_net1, nn.Sequential), (
             "Target Q-network 1 should be Sequential"
         )
@@ -36,23 +41,39 @@ class TestSACModel:
         )
 
         # Check that target networks have gradients disabled
-        for param in sac.target_q_net1.parameters():
+        for param in sac.target_q_feature_extractor1.parameters():
             assert not param.requires_grad, (
-                "Target Q-network 1 parameters should not require gradients"
+                "Target Q1 feature extractor parameters should not require gradients"
             )
-        for param in sac.target_q_net2.parameters():
+        for param in sac.target_q_head1.parameters():
             assert not param.requires_grad, (
-                "Target Q-network 2 parameters should not require gradients"
+                "Target Q1 head parameters should not require gradients"
+            )
+        for param in sac.target_q_feature_extractor2.parameters():
+            assert not param.requires_grad, (
+                "Target Q2 feature extractor parameters should not require gradients"
+            )
+        for param in sac.target_q_head2.parameters():
+            assert not param.requires_grad, (
+                "Target Q2 head parameters should not require gradients"
             )
 
         # Check that live networks have gradients enabled
-        for param in sac.q_net1.parameters():
+        for param in sac.q_feature_extractor1.parameters():
             assert param.requires_grad, (
-                "Q-network 1 parameters should require gradients"
+                "Q1 feature extractor parameters should require gradients"
             )
-        for param in sac.q_net2.parameters():
+        for param in sac.q_head1.parameters():
             assert param.requires_grad, (
-                "Q-network 2 parameters should require gradients"
+                "Q1 head parameters should require gradients"
+            )
+        for param in sac.q_feature_extractor2.parameters():
+            assert param.requires_grad, (
+                "Q2 feature extractor parameters should require gradients"
+            )
+        for param in sac.q_head2.parameters():
+            assert param.requires_grad, (
+                "Q2 head parameters should require gradients"
             )
 
     def test_init_custom_params(self):
@@ -250,26 +271,45 @@ class TestSACModel:
         """Test that target networks are initialized with same weights as live networks."""
         sac = SACModel(obs_size=3, action_size=2)
 
-        # Check that target networks have same weights as live networks initially
+        # Check that target feature extractors have same weights as live ones
         for p1, p_target1 in zip(
-            sac.q_net1.parameters(), sac.target_q_net1.parameters()
+            sac.q_feature_extractor1.parameters(), sac.target_q_feature_extractor1.parameters()
         ):
             assert torch.allclose(p1, p_target1), (
-                "Target Q-net 1 should have same initial weights as Q-net 1"
+                "Target Q1 feature extractor should have same initial weights"
             )
 
         for p2, p_target2 in zip(
-            sac.q_net2.parameters(), sac.target_q_net2.parameters()
+            sac.q_feature_extractor2.parameters(), sac.target_q_feature_extractor2.parameters()
         ):
             assert torch.allclose(p2, p_target2), (
-                "Target Q-net 2 should have same initial weights as Q-net 2"
+                "Target Q2 feature extractor should have same initial weights"
+            )
+
+        # Check that target heads have same weights as live heads
+        for p1, p_target1 in zip(
+            sac.q_head1.parameters(), sac.target_q_head1.parameters()
+        ):
+            assert torch.allclose(p1, p_target1), (
+                "Target Q1 head should have same initial weights as Q1 head"
+            )
+
+        for p2, p_target2 in zip(
+            sac.q_head2.parameters(), sac.target_q_head2.parameters()
+        ):
+            assert torch.allclose(p2, p_target2), (
+                "Target Q2 head should have same initial weights as Q2 head"
             )
 
     def test_twin_q_networks_independence(self):
         """Test that twin Q-networks are independent."""
         sac = SACModel(obs_size=4, action_size=2)
 
-        # Check that Q-networks have different parameters (due to random initialization)
+        # Check that Q-networks have different objects (due to separate creation)
+        assert sac.q_feature_extractor1 is not sac.q_feature_extractor2, (
+            "Q feature extractors should be separate objects"
+        )
+        assert sac.q_head1 is not sac.q_head2, "Q heads should be separate objects"
         assert sac.q_net1 is not sac.q_net2, "Q-networks should be separate objects"
         assert sac.target_q_net1 is not sac.target_q_net2, (
             "Target Q-networks should be separate objects"
@@ -305,13 +345,15 @@ class TestSACModel:
         policy_loss = action.mean()  # Dummy loss
         policy_loss.backward(retain_graph=True)
 
-        # Check that policy network has gradients
-        policy_has_grad = any(p.grad is not None for p in sac.policy_net.parameters())
-        feature_has_grad = any(
-            p.grad is not None for p in sac.feature_extractor.parameters()
+        # Check that policy components have gradients
+        policy_feat_has_grad = any(
+            p.grad is not None for p in sac.policy_feature_extractor.parameters()
         )
-        assert policy_has_grad or feature_has_grad, (
-            "Policy network or feature extractor should have gradients"
+        policy_head_has_grad = any(
+            p.grad is not None for p in sac.policy_head.parameters()
+        )
+        assert policy_feat_has_grad or policy_head_has_grad, (
+            "Policy feature extractor or head should have gradients"
         )
 
         # Test Q-network gradients
@@ -320,15 +362,30 @@ class TestSACModel:
         q_loss = q1_value.mean()  # Dummy loss
         q_loss.backward()
 
-        # Check that Q-network 1 has gradients
-        q1_has_grad = any(p.grad is not None for p in sac.q_net1.parameters())
-        assert q1_has_grad, "Q-network 1 should have gradients"
+        # Check that Q1 components have gradients
+        q1_feat_has_grad = any(
+            p.grad is not None for p in sac.q_feature_extractor1.parameters()
+        )
+        q1_head_has_grad = any(
+            p.grad is not None for p in sac.q_head1.parameters()
+        )
+        assert q1_feat_has_grad or q1_head_has_grad, (
+            "Q1 feature extractor or head should have gradients"
+        )
 
         # Check that target networks don't have gradients
-        target_q1_has_grad = any(
-            p.grad is not None for p in sac.target_q_net1.parameters()
+        target_q1_feat_has_grad = any(
+            p.grad is not None for p in sac.target_q_feature_extractor1.parameters()
         )
-        assert not target_q1_has_grad, "Target Q-network 1 should not have gradients"
+        target_q1_head_has_grad = any(
+            p.grad is not None for p in sac.target_q_head1.parameters()
+        )
+        assert not target_q1_feat_has_grad, (
+            "Target Q1 feature extractor should not have gradients"
+        )
+        assert not target_q1_head_has_grad, (
+            "Target Q1 head should not have gradients"
+        )
 
     def test_numerical_stability(self):
         """Test numerical stability of log probability calculation."""

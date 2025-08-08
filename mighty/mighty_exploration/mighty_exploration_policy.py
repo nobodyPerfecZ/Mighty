@@ -115,11 +115,9 @@ class MightyExplorationPolicy:
 
         # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
         elif isinstance(out, tuple) and len(out) == 4:
-            action = out[0]  # [batch, action_dim]
-            
-            print(f'Self Model : {self.model}')
+            action = out[0]  # [batch, action_dim]           
             log_prob = sample_nondeterministic_logprobs(
-                z=out[1], mean=out[2], log_std=out[3], sac=isinstance(self.model, SACModel)
+                z=out[1], mean=out[2], log_std=out[3], sac= self.ago == "sac"
             )
             return action.detach().cpu().numpy(), log_prob
 
