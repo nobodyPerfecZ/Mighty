@@ -38,7 +38,7 @@ class MightySACAgent(MightyAgent):
         # --- Network architecture (optional override) ---
         hidden_sizes: Optional[List[int]] = None,
         activation: str = "relu",
-        log_std_min: float = -20,
+        log_std_min: float = -5,
         log_std_max: float = 2,
         # --- Logging & buffer ---
         render_progress: bool = True,
@@ -145,7 +145,7 @@ class MightySACAgent(MightyAgent):
 
         # Exploration policy wrapper
         self.policy = self.policy_class(
-            algo=self, model=self.model, **self.policy_kwargs
+            algo="sac", model=self.model, **self.policy_kwargs
         )
 
         # Updater
@@ -207,8 +207,13 @@ class MightySACAgent(MightyAgent):
         # Ensure metrics dict
         if metrics is None:
             metrics = {}
+
         # Pack transition
-        transition = TransitionBatch(curr_s, action, reward, next_s, dones)
+        terminated = metrics["transition"]["terminated"]  # physics‐failures
+        transition = TransitionBatch(
+            curr_s, action, reward, next_s, terminated.astype(int)
+        )
+
         # Compute per-transition TD errors for logging
         td1, td2 = self.update_fn.calculate_td_error(transition)
         metrics["td_error1"] = td1.detach().cpu().numpy()

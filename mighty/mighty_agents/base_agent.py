@@ -603,9 +603,21 @@ class MightyAgent(ABC):
                 metrics["episode_reward"] = episode_reward
 
                 action, log_prob = self.step(curr_s, metrics)
-                next_s, reward, terminated, truncated, _ = self.env.step(action)  # type: ignore
-                dones = np.logical_or(terminated, truncated)
+                # step the env as usual
+                next_s, reward, terminated, truncated, infos = self.env.step(action)
 
+                # decide which samples are true “done”
+                replay_dones = terminated          # physics‐failure only
+                dones = np.logical_or(terminated, truncated)
+                
+
+                # Overwrite next_s on truncation
+                # Based on https://github.com/DLR-RM/stable-baselines3/issues/284    
+                real_next_s = next_s.copy()
+                # infos["final_observation"] is a list/array of the last real obs
+                for i, tr in enumerate(truncated):
+                    if tr:
+                        real_next_s[i] = infos["final_observation"][i]
                 episode_reward += reward
 
                 # Log everything
@@ -615,10 +627,10 @@ class MightyAgent(ABC):
                     "reward": reward,
                     "action": action,
                     "state": curr_s,
-                    "next_state": next_s,
+                    "next_state": real_next_s,
                     "terminated": terminated.astype(int),
                     "truncated": truncated.astype(int),
-                    "dones": dones.astype(int),
+                    "dones": replay_dones.astype(int),
                     "mean_episode_reward": last_episode_reward.mean()
                     .cpu()
                     .numpy()

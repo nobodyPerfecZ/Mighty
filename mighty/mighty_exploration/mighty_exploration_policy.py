@@ -8,29 +8,31 @@ import numpy as np
 import torch
 from torch.distributions import Categorical, Normal
 
+from mighty.mighty_models import SACModel
+
 
 def sample_nondeterministic_logprobs(
     z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor, sac: bool = False
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> torch.Tensor:
+    """
+    Compute log-prob of a Gaussian sample z ~ N(mean, exp(log_std)),
+    and if sac=True apply the tanh-squash correction to get log π(a).
+    """
     std = torch.exp(log_std)  # [batch, action_dim]
     dist = Normal(mean, std)
+    # base Gaussian log‐prob of z
+    log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
 
-    # For SAC, don't apply correction
     if sac:
-        return dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
-    # If not SAC, we need to apply the tanh correction
-    else:
-        log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
-
-        # 2b) tanh‐correction = ∑ᵢ log(1 − tanh(zᵢ)² + ε)
-        eps = 1e-6
+        # subtract the ∑_i log(d tanh/dz_i) = ∑ log(1 - tanh(z)^2)
+        eps = 1e-4
         log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
             dim=-1, keepdim=True
         )  # [batch, 1]
-
-        # 2c) final log_prob of a = tanh(z)
-        log_prob = log_pz - log_correction  # [batch, 1]
-        return log_prob
+        return log_pz - log_correction
+    else:
+        # PPO-style or other: no squash correction
+        return log_pz
 
 
 class MightyExplorationPolicy:
@@ -112,7 +114,7 @@ class MightyExplorationPolicy:
         elif isinstance(out, tuple) and len(out) == 4:
             action = out[0]  # [batch, action_dim]
             log_prob = sample_nondeterministic_logprobs(
-                z=out[1], mean=out[2], log_std=out[3], sac=self.algo == "sac"
+                z=out[1], mean=out[2], log_std=out[3], sac=self.ago == "sac"
             )
             return action.detach().cpu().numpy(), log_prob
 
