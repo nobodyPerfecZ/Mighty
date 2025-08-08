@@ -57,7 +57,6 @@ class MightySACAgent(MightyAgent):
         rescale_action: bool = False,  # ← NEW Whether to rescale actions to the environment's action space
         policy_frequency: int = 2,  # Frequency of policy updates
         target_network_frequency: int = 1,  # Frequency of target network updates
-        handle_timeout_termination: bool = True,
     ):
         """Initialize SAC agent with tunable hyperparameters and backward-compatible names."""
         if hidden_sizes is None:
@@ -117,7 +116,6 @@ class MightySACAgent(MightyAgent):
             rescale_action=rescale_action,
             batch_size=batch_size,
             learning_rate=policy_lr,  # For compatibility with base class
-            handle_timeout_termination=handle_timeout_termination,
         )
 
         # Initialize loss buffer for logging
@@ -209,9 +207,8 @@ class MightySACAgent(MightyAgent):
         # Ensure metrics dict
         if metrics is None:
             metrics = {}
+        
         # Pack transition    
-        # `terminated` is used for physics failures in environments like `MightyEnv`
-        # Based on https://github.com/DLR-RM/stable-baselines3/issues/284    
         terminated = metrics["transition"]["terminated"]  # physics‐failures
         transition = TransitionBatch(curr_s, action, reward, next_s, terminated.astype(int))
         
