@@ -848,6 +848,7 @@ class MightyAgent(ABC):
             "instances": instances,
             "eval_rewards": rewards,
         }
+
         if log_infos:
             eval_metrics.update(infos)
             for k in eval_metrics.keys():
