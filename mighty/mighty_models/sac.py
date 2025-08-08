@@ -32,7 +32,7 @@ class SACModel(nn.Module):
         # This model is continuous only
         self.continuous_action = True
         
-        # PR: register the per-dim scale and bias so we can rescale [-1,1]→[low,high].
+        # Register the per-dim scale and bias so we can rescale [-1,1]→[low,high].
         action_low = torch.as_tensor(action_low, dtype=torch.float32)
         action_high = torch.as_tensor(action_high, dtype=torch.float32)
         self.register_buffer(
@@ -206,7 +206,7 @@ class SACModel(nn.Module):
         # tanh→[-1,1]
         raw_action = torch.tanh(z)
 
-        # **HERE** we rescale into [low,high]
+        # Rescale into [action_low, action_high]
         action = raw_action * self.action_scale + self.action_bias
         
         return action, z, mean, log_std
