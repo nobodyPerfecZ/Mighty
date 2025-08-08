@@ -14,7 +14,7 @@ class TestSACModel:
         assert sac.obs_size == 8, "Obs size should be 8"
         assert sac.action_size == 3, "Action size should be 3"
         assert sac.activation == "tanh", "Passed activation should be tanh"
-        assert sac.log_std_min == -5, "Default log_std_min should be -5"  # Fixed: was -20
+        assert sac.log_std_min == -5, "Default log_std_min should be -5"
         assert sac.log_std_max == 2, "Default log_std_max should be 2"
         assert sac.continuous_action is True, "SAC should always be continuous"
 
