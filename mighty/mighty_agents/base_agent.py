@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import torch
 import wandb
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from rich import print
 from rich.layout import Layout
 from rich.live import Live
@@ -323,6 +323,10 @@ class MightyAgent(ABC):
         if isinstance(self.buffer_class, type) and issubclass(
             self.buffer_class, PrioritizedReplay
         ):
+            if isinstance(self.buffer_kwargs, DictConfig):
+                self.buffer_kwargs = OmegaConf.to_container(
+                    self.buffer_kwargs, resolve=True
+                )
             # 1) Get observation-space shape
             try:
                 obs_space = self.env.single_observation_space
