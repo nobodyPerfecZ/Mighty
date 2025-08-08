@@ -111,7 +111,6 @@ class MightyExplorationPolicy:
             action = out[0]  # [batch, action_dim]           
             log_prob = sample_nondeterministic_logprobs(
                 z=out[1], mean=out[2], log_std=out[3], sac= self.ago == "sac"
-                z=out[1], mean=out[2], log_std=out[3], sac= self.ago == "sac"
             )
             return action.detach().cpu().numpy(), log_prob
 
