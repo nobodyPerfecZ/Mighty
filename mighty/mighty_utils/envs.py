@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import importlib
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Tuple
@@ -144,6 +145,11 @@ def make_carl_env(
         eval_contexts = context_sampler.sample_contexts(
             env_kwargs["num_evaluation_contexts"]  # type: ignore
         )
+    elif "load_contexts" in env_kwargs:  # type: ignore
+        with open(env_kwargs["load_contexts"], "r") as f:  # type: ignore
+            contexts = json.load(f)
+        with open(env_kwargs["load_eval_contexts"], "r") as f:  # type: ignore
+            eval_contexts = json.load(f)
     else:
         contexts = {0: env_class.get_default_context()}
         eval_contexts = {0: env_class.get_default_context()}

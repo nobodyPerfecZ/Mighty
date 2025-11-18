@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.patches import Rectangle
 from PIL import Image
 from rliable import library as rly
 from rliable import metrics, plot_utils
@@ -421,3 +422,102 @@ def plot_deepcave(
         if save_path is not None:
             fig.savefig(save_path, bbox_inches="tight", dpi=600)
         return plotly_fig2array(fig)
+
+
+def get_performance_patches(test_performances: pd.DataFrame, context_feature_names: list, context_feature_limits: dict, num_bins: int = 10):
+    c1s = []
+    c2s = []
+    performances = []
+    modes = []
+
+    if "context_id" in test_performances.columns:
+        test_performances = test_performances.drop(columns=["context_id"])
+    if "instances" in test_performances.columns:
+        test_performances = test_performances.drop(columns=["instances"])
+
+    cf1_interval_borders = np.linspace(context_feature_limits[context_feature_names[0]][0], context_feature_limits[context_feature_names[0]][1], num_bins + 1)
+    cf2_interval_borders = np.linspace(context_feature_limits[context_feature_names[1]][0], context_feature_limits[context_feature_names[1]][1], num_bins + 1)
+    cf1_intervals = [(cf1_interval_borders[i], cf1_interval_borders[i+1]) for i in range(len(cf1_interval_borders)-1)]
+    cf2_intervals = [(cf2_interval_borders[i], cf2_interval_borders[i+1]) for i in range(len(cf2_interval_borders)-1)]
+
+    for mode in ["a", "b", "c"]:
+        mode_df = test_performances[test_performances["mode"] == mode]
+        for c1 in cf1_intervals:
+            for c2 in cf2_intervals:
+                subset = mode_df[(mode_df["gravity"] > c1[0]) & (mode_df["gravity"] <= c1[1]) & (mode_df["length"] > c2[0]) & (mode_df["length"] <= c2[1])]
+                if not subset.empty:
+                    c2s.append((np.round(c2[0], 1), np.round(c2[1], 1)))
+                    c1s.append((np.round(c1[0], 1), np.round(c1[1], 1)))
+                    performances.append(subset["mean_eval_reward"].mean())
+                    modes.append(mode)
+    patched_performances = pd.DataFrame({
+        f"{context_feature_names[1]}": c2s,
+        f"{context_feature_names[0]}": c1s,
+        "mean_eval_reward": performances,
+        "mode": modes
+    })
+    return patched_performances, cf1_intervals, cf2_intervals
+
+def get_patch_positions(contexts, context_feature_name, intervals):
+    cf_min = [contexts[context_feature_name].min() > c[0] and contexts[context_feature_name].min() <= c[1] for c in intervals].index(True)
+    cf_max = [contexts[context_feature_name].max() > c[0] and contexts[context_feature_name].max() <= c[1] for c in intervals].index(True)
+    return cf_min, cf_max
+
+
+def make_generalization_plot(test_performances: pd.DataFrame, context_feature_names: list, context_feature_limits: dict, train_contexts: pd.DataFrame, num_bins: int = 10):
+    patched_performances, cf1_intervals, cf2_intervals = get_performance_patches(test_performances, context_feature_names, context_feature_limits, num_bins)
+
+    f, axes = plt.subplots(1, 3, figsize=(21, 6), dpi=300)
+    df_mode_a = patched_performances[patched_performances["mode"] == "a"].drop(columns=["mode"])
+    train_mode_a = train_contexts[train_contexts["mode"] == "a"]
+    sns.heatmap(df_mode_a.pivot(index="gravity", columns="length", values="mean_eval_reward"), fmt=".2f", cmap="rocket", ax=axes[0])
+    axes[0].set_title("Mode A")
+    cf1_min, cf1_max = get_patch_positions(train_mode_a, context_feature_names[0], cf1_intervals)
+    cf2_min, cf2_max = get_patch_positions(train_mode_a, context_feature_names[1], cf2_intervals)
+
+    xy = (cf1_min, cf2_min)
+    height = cf1_max + 1 - cf1_min
+    width = cf2_max + 1 - cf2_min
+    patch = Rectangle(xy=xy, width=width, height=height, facecolor="none", edgecolor='tab:blue', lw=5)
+    axes[0].add_patch(patch)
+
+    df_mode_b = patched_performances[patched_performances["mode"] == "b"].drop(columns=["mode"])
+    train_mode_b = train_contexts[train_contexts["mode"] == "b"]
+    sns.heatmap(df_mode_b.pivot(index="gravity", columns="length", values="mean_eval_reward"), fmt=".2f", cmap="rocket", ax=axes[1])
+    axes[1].set_title("Mode B")
+    cf1_min, cf1_max = get_patch_positions(train_mode_b, context_feature_names[0], cf1_intervals)
+    cf2_min, cf2_max = get_patch_positions(train_mode_b, context_feature_names[1], cf2_intervals)
+    cf1_constraint = [context_feature_limits[context_feature_names[0]][2] >= g[0] and context_feature_limits[context_feature_names[0]][2] <= g[1] for g in cf1_intervals].index(True)
+    cf2_constraint = [context_feature_limits[context_feature_names[1]][2] >= l[0] and context_feature_limits[context_feature_names[1]][2] <= l[1] for l in cf2_intervals].index(True)
+
+    xy = (cf1_min, cf2_min)
+    height = cf1_max + 1 - cf1_min
+    width = cf2_constraint + 1 - cf2_min
+    patch = Rectangle(xy=xy, width=width, height=height, facecolor="none", edgecolor='tab:blue', lw=5)
+    axes[1].add_patch(patch)
+    height = cf1_constraint + 1 - cf1_min
+    width = cf2_max + 1 - cf2_min
+    patch = Rectangle(xy=xy, width=width, height=height, facecolor="none", edgecolor='tab:blue', lw=5)
+    axes[1].add_patch(patch)
+
+    df_mode_c = patched_performances[patched_performances["mode"] == "c"].drop(columns=["mode"])
+    train_mode_c = train_contexts[train_contexts["mode"] == "c"]
+    sns.heatmap(df_mode_c.pivot(index="gravity", columns="length", values="mean_eval_reward"), fmt=".2f", cmap="rocket", ax=axes[2])
+    axes[2].set_title("Mode C")
+    cf1_min, cf1_max = get_patch_positions(train_mode_c, context_feature_names[0], cf1_intervals)
+    cf2_min, cf2_max = get_patch_positions(train_mode_c, context_feature_names[1], cf2_intervals)
+    cf1_limit = context_feature_limits[context_feature_names[0]][3]
+    cf2_limit = context_feature_limits[context_feature_names[1]][3]
+
+    xy = ([cf1_limit >= g[0] and cf1_limit <= g[1] for g in cf1_intervals].index(True), cf1_min)
+    height = cf1_max + 1 - cf1_min
+    width = 1
+    patch = Rectangle(xy=xy, width=width, height=height, facecolor="none", edgecolor='tab:blue', lw=5)
+    axes[2].add_patch(patch)
+    xy = (cf1_min, [cf2_limit >= l[0] and cf2_limit <= l[1] for l in cf2_intervals].index(True))
+    height = 1
+    width = cf2_max + 1 - cf2_min
+    patch = Rectangle(xy=xy, width=width, height=height, facecolor="none", edgecolor='tab:blue', lw=5)
+    axes[2].add_patch(patch)
+    return f
+

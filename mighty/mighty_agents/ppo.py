@@ -28,6 +28,7 @@ class MightyPPOAgent(MightyAgent):
         render_progress: bool = True,
         log_wandb: bool = False,
         wandb_kwargs: dict | None = None,
+        log_infos: bool = False,
         rollout_buffer_class: Optional[
             str | DictConfig | Type[MightyRolloutBuffer]
         ] = MightyRolloutBuffer,
@@ -141,6 +142,7 @@ class MightyPPOAgent(MightyAgent):
             normalize_obs=normalize_obs,
             normalize_reward=normalize_reward,
             rescale_action=rescale_action,
+            log_infos=log_infos,
         )
 
         self.loss_buffer = {
@@ -333,11 +335,8 @@ class MightyPPOAgent(MightyAgent):
         base_path = Path(path)
         self.model.policy_head.load_state_dict(torch.load(base_path / "policy_head.pt"))  # type: ignore
         self.model.value_head.load_state_dict(torch.load(base_path / "value_head.pt"))  # type: ignore
-        self.update_fn.policy_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "policy_optimizer.pt")
-        )
-        self.update_fn.value_optimizer.load_state_dict(  # type: ignore
-            torch.load(base_path / "value_optimizer.pt")
+        self.update_fn.optimizer.load_state_dict(  # type: ignore
+            torch.load(base_path / "optimizer.pt")
         )
 
         if self.verbose:
