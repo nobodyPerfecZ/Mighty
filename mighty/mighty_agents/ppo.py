@@ -1,10 +1,8 @@
-import json
 from pathlib import Path
 from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 import torch
-import wandb
 from omegaconf import DictConfig
 
 from mighty.mighty_agents.base_agent import MightyAgent, retrieve_class
@@ -152,11 +150,8 @@ class MightyPPOAgent(MightyAgent):
             "Update/value_loss": [],
             "Update/entropy": [],
             "Update/approx_kl": [],
-            "step": [],
+            "update_at_step": [],
         }
-
-        if self.log_wandb:
-            wandb.init(**(wandb_kwargs or {}))
 
     def _initialize_agent(self) -> None:
         """Initialize PPO specific components."""
@@ -230,19 +225,7 @@ class MightyPPOAgent(MightyAgent):
 
         for key, value in metrics.items():
             self.loss_buffer[key].append(value)
-        self.loss_buffer["step"].append(self.steps)
-
-        # Wandb logging
-        if self.log_wandb:
-            serializable_metrics = {}
-            for k, v in metrics.items():
-                try:
-                    json.dumps(v)
-                    serializable_metrics[k] = v
-                except TypeError:
-                    print(f"Skipping non-serializable metric: {k}")
-
-            wandb.log(serializable_metrics, step=self.steps)
+        self.loss_buffer["update_at_step"].append(self.steps)
 
         if batches_left == 0:
             self.buffer.reset()  # type: ignore

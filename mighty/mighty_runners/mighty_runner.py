@@ -58,12 +58,15 @@ class MightyRunner(ABC):
         # Setup agent
         agent_class = get_agent_class(cfg.algorithm)
         args_agent = dict(cfg.algorithm_kwargs)
+        log_wandb = cfg.get("log_wandb", False)
+        wandb_kwargs = cfg.get("wandb_kwargs", {})
         self.agent = agent_class(  # type: ignore
             env=env,
             eval_env=eval_env,
             output_dir=output_dir,
             seed=cfg.seed,
-            log_infos=log_infos,
+            log_wandb=log_wandb,
+            wandb_kwargs=wandb_kwargs,
             **args_agent,
         )
 
