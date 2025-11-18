@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
 from omegaconf import DictConfig
 from rich import print
 from rich.layout import Layout
@@ -32,6 +31,20 @@ if TYPE_CHECKING:
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
+
+try:
+    import logging
+
+    import trackio as wandb
+
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    print("Found trackio, using it for logging.")
+except ImportError:
+    import wandb
+
+    print(
+        "Using default wandb logging. If you prefer trackio, please install it with `pip install trackio`."
+    )
 
 
 def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
@@ -81,12 +94,27 @@ def log_to_wandb(metrics: Dict) -> None:
     """Wandb logging"""
     # Only log relevant, serializable keys
     log_keys = [
-        "step",
+        "env_step",
         "episode_reward",
         "Update/policy_loss",
         "Update/value_loss",
         "Update/entropy",
         "Update/approx_kl",
+        "Update/q_loss1",
+        "Update/q_loss2",
+        "Update/policy_loss",
+        "Update/alpha_loss",
+        "Update/td_error1",
+        "Update/td_error2",
+        "Update/loss",
+        "Update/td_errors",
+        "eval_episodes",
+        "mean_eval_step_reward",
+        "mean_eval_reward",
+        "instance",
+        "eval_rewards",
+        "eval_after_n_steps",
+        "update_at_step",
     ]
     serializable_metrics = {}
     for k in log_keys:
@@ -111,7 +139,7 @@ def log_to_wandb(metrics: Dict) -> None:
             except TypeError:
                 print(f"Skipping non-serializable metric: {k}")
 
-    wandb.log(serializable_metrics, step=metrics["step"])
+    wandb.log(serializable_metrics)
 
 
 class MightyAgent(ABC):
@@ -251,7 +279,7 @@ class MightyAgent(ABC):
 
         self.result_buffer = {
             "seed": [],
-            "step": [],
+            "env_step": [],
             "reward": [],
             "action": [],
             "state": [],
@@ -262,7 +290,7 @@ class MightyAgent(ABC):
         }
 
         self.eval_buffer = {
-            "step": [],
+            "eval_after_n_steps": [],
             "seed": [],
             "eval_episodes": [],
             "mean_eval_step_reward": [],
@@ -271,7 +299,7 @@ class MightyAgent(ABC):
         }
 
         self.hp_buffer = {
-            "step": [],
+            "hps_after_n_steps": [],
             "hp/lr": [],
             "hp/pi_epsilon": [],
             "hp/batch_size": [],
@@ -280,7 +308,7 @@ class MightyAgent(ABC):
         }
         self.loss_buffer = None
         starting_hps = {
-            "step": 0,
+            "hps_after_n_steps": 0,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -355,7 +383,7 @@ class MightyAgent(ABC):
     def adapt_hps(self, metrics: Dict) -> None:
         """Set hyperparameters."""
         old_hps = {
-            "step": self.steps,
+            "hps_after_n_steps": self.steps,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -368,7 +396,7 @@ class MightyAgent(ABC):
         self._learning_starts = metrics["hp/learning_starts"]
 
         updated_hps = {
-            "step": self.steps,
+            "hps_after_n_steps": self.steps,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -418,7 +446,7 @@ class MightyAgent(ABC):
             )
 
             metrics.update(agent_update_metrics)
-            metrics["step"] = self.steps
+            metrics["env_step"] = self.steps
 
             if self.log_wandb:
                 log_to_wandb(metrics=metrics)
@@ -563,7 +591,7 @@ class MightyAgent(ABC):
                 "env": self.env,
                 "vf": self.value_function,  # type: ignore
                 "policy": self.policy,
-                "step": self.steps,
+                "env_step": self.steps,
                 "hp/lr": self.learning_rate,
                 "hp/pi_epsilon": self._epsilon,
                 "hp/batch_size": self._batch_size,
@@ -611,7 +639,7 @@ class MightyAgent(ABC):
                 # Log everything
                 t = {
                     "seed": self.seed,
-                    "step": self.steps,
+                    "env_step": self.steps,
                     "reward": reward,
                     "action": action,
                     "state": curr_s,
@@ -648,10 +676,10 @@ class MightyAgent(ABC):
                 self.result_buffer = update_buffer(self.result_buffer, t)
 
                 if self.log_wandb:
-                    wandb.log(t)
+                    log_to_wandb(metrics)
 
                 self.steps += len(action)
-                metrics["step"] = self.steps
+                metrics["env_step"] = self.steps
                 steps_since_eval += len(action)
                 steps_since_log += len(action)
                 for _ in range(len(action)):
@@ -800,7 +828,7 @@ class MightyAgent(ABC):
             instance = "None"
 
         eval_metrics = {
-            "step": self.steps,
+            "eval_after_n_steps": self.steps,
             "seed": self.seed,
             "eval_episodes": np.array(rewards) / steps,
             "mean_eval_step_reward": np.mean(rewards) / steps,
@@ -811,7 +839,7 @@ class MightyAgent(ABC):
         self.eval_buffer = update_buffer(self.eval_buffer, eval_metrics)
 
         if self.log_wandb:
-            wandb.log(eval_metrics)
+            log_to_wandb(eval_metrics)
 
         return eval_metrics
 

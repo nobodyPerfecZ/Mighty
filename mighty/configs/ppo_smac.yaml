@@ -13,9 +13,8 @@ runner: standard
 debug: false
 seed: 0
 output_dir: sweep_smac
-wandb_project: null
-tensorboard_file: null
 experiment_name: ppo_smac
+log_wandb: false
 
 budget: 200000  # Budget for the hyperparameter search
 

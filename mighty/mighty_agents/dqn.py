@@ -161,7 +161,7 @@ class MightyDQNAgent(MightyAgent):
         self.loss_buffer = {
             "Update/loss": [],
             "Update/td_errors": [],
-            "step": [],
+            "update_at_step": [],
         }
 
     @property
@@ -221,7 +221,7 @@ class MightyDQNAgent(MightyAgent):
         metrics_q["Update/td_targets"] = targets.detach().numpy()
         metrics_q["Update/td_errors"] = (targets - preds).detach().numpy()
         loss_stats = {
-            "step": self.steps,
+            "update_at_step": self.steps,
             "Update/loss": metrics_q["Update/loss"],
             "Update/td_errors": metrics_q["Update/td_errors"].mean().item(),
             "batch_predictions": preds.mean(axis=1).detach().numpy().tolist(),
