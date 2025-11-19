@@ -21,8 +21,6 @@ class SACModel(nn.Module):
         log_std_max: float = 2,
         action_low: float = -1,
         action_high: float = +1,
-        action_low: float = -1,
-        action_high: float = +1,
         **kwargs,
     ):
         super().__init__()
@@ -33,16 +31,12 @@ class SACModel(nn.Module):
 
         # This model is continuous only
         self.continuous_action = True
-        
-        # PR: register the per-dim scale and bias so we can rescale [-1,1]→[low,high].
+
+        # Register the per-dim scale and bias so we can rescale [-1,1]→[low,high].
         action_low = torch.as_tensor(action_low, dtype=torch.float32)
         action_high = torch.as_tensor(action_high, dtype=torch.float32)
-        self.register_buffer(
-            "action_scale", (action_high - action_low) / 2.0
-        )
-        self.register_buffer(
-            "action_bias", (action_high + action_low) / 2.0
-        )
+        self.register_buffer("action_scale", (action_high - action_low) / 2.0)
+        self.register_buffer("action_bias", (action_high + action_low) / 2.0)
 
         head_kwargs = {"hidden_sizes": [256, 256], "activation": "relu"}
         feature_extractor_kwargs = {
@@ -191,7 +185,7 @@ class SACModel(nn.Module):
         """
         x = self.policy_net(state)
         mean, log_std = x.chunk(2, dim=-1)
-        
+
         # Soft clamping
         log_std = torch.tanh(log_std)
         log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (
@@ -204,13 +198,13 @@ class SACModel(nn.Module):
             z = mean
         else:
             z = mean + std * torch.randn_like(mean)
-        
+
         # tanh→[-1,1]
         raw_action = torch.tanh(z)
 
         # **HERE** we rescale into [low,high]
         action = raw_action * self.action_scale + self.action_bias
-        
+
         return action, z, mean, log_std
 
     def policy_log_prob(

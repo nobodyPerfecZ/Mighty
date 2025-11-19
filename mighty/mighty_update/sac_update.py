@@ -153,10 +153,13 @@ class SACUpdate:
                     # Get fresh sample for alpha update
                     with torch.no_grad():
                         _, z_alpha, mean_alpha, log_std_alpha = self.model(states)
-                        logp_alpha = self.model.policy_log_prob(z_alpha, mean_alpha, log_std_alpha)
-                    
+                        logp_alpha = self.model.policy_log_prob(
+                            z_alpha, mean_alpha, log_std_alpha
+                        )
+
                     alpha_loss = -(
-                        self.log_alpha.exp() * (logp_alpha.detach() + self.target_entropy)
+                        self.log_alpha.exp()
+                        * (logp_alpha.detach() + self.target_entropy)
                     ).mean()
                     self.alpha_optimizer.zero_grad()
                     alpha_loss.backward()
