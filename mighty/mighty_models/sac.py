@@ -31,12 +31,16 @@ class SACModel(nn.Module):
 
         # This model is continuous only
         self.continuous_action = True
-
+        
         # Register the per-dim scale and bias so we can rescale [-1,1]→[low,high].
         action_low = torch.as_tensor(action_low, dtype=torch.float32)
         action_high = torch.as_tensor(action_high, dtype=torch.float32)
-        self.register_buffer("action_scale", (action_high - action_low) / 2.0)
-        self.register_buffer("action_bias", (action_high + action_low) / 2.0)
+        self.register_buffer(
+            "action_scale", (action_high - action_low) / 2.0
+        )
+        self.register_buffer(
+            "action_bias", (action_high + action_low) / 2.0
+        )
 
         head_kwargs = {"hidden_sizes": [256, 256], "activation": "relu"}
         feature_extractor_kwargs = {
@@ -67,13 +71,13 @@ class SACModel(nn.Module):
         self.policy_feature_extractor, policy_feat_dim = make_feature_extractor(
             **feature_extractor_kwargs
         )
-
+        
         # Policy head: just the final output layer
         self.policy_head = make_policy_head(
             in_size=policy_feat_dim,
             out_size=self.action_size * 2,  # mean and log_std
             hidden_sizes=[],  # No hidden layers, just final linear layer
-            activation=head_kwargs["activation"],
+            activation=head_kwargs["activation"]
         )
 
         # Create policy_net for backward compatibility
@@ -82,62 +86,46 @@ class SACModel(nn.Module):
         # Q-networks: feature extractors + heads
         q_feature_extractor_kwargs = feature_extractor_kwargs.copy()
         q_feature_extractor_kwargs["obs_shape"] = self.obs_size + self.action_size
-
+        
         # Q-network 1
-        self.q_feature_extractor1, q_feat_dim = make_feature_extractor(
-            **q_feature_extractor_kwargs
-        )
+        self.q_feature_extractor1, q_feat_dim = make_feature_extractor(**q_feature_extractor_kwargs)
         self.q_head1 = make_q_head(
             in_size=q_feat_dim,
             hidden_sizes=[],  # No hidden layers, just final linear layer
-            activation=head_kwargs["activation"],
+            activation=head_kwargs["activation"]
         )
         self.q_net1 = nn.Sequential(self.q_feature_extractor1, self.q_head1)
 
         # Q-network 2
-        self.q_feature_extractor2, _ = make_feature_extractor(
-            **q_feature_extractor_kwargs
-        )
+        self.q_feature_extractor2, _ = make_feature_extractor(**q_feature_extractor_kwargs)
         self.q_head2 = make_q_head(
             in_size=q_feat_dim,
             hidden_sizes=[],  # No hidden layers, just final linear layer
-            activation=head_kwargs["activation"],
+            activation=head_kwargs["activation"]
         )
         self.q_net2 = nn.Sequential(self.q_feature_extractor2, self.q_head2)
 
         # Target Q-networks
-        self.target_q_feature_extractor1, _ = make_feature_extractor(
-            **q_feature_extractor_kwargs
-        )
+        self.target_q_feature_extractor1, _ = make_feature_extractor(**q_feature_extractor_kwargs)
         self.target_q_head1 = make_q_head(
             in_size=q_feat_dim,
             hidden_sizes=[],  # No hidden layers, just final linear layer
-            activation=head_kwargs["activation"],
+            activation=head_kwargs["activation"]
         )
-        self.target_q_net1 = nn.Sequential(
-            self.target_q_feature_extractor1, self.target_q_head1
-        )
+        self.target_q_net1 = nn.Sequential(self.target_q_feature_extractor1, self.target_q_head1)
 
-        self.target_q_feature_extractor2, _ = make_feature_extractor(
-            **q_feature_extractor_kwargs
-        )
+        self.target_q_feature_extractor2, _ = make_feature_extractor(**q_feature_extractor_kwargs)
         self.target_q_head2 = make_q_head(
             in_size=q_feat_dim,
             hidden_sizes=[],  # No hidden layers, just final linear layer
-            activation=head_kwargs["activation"],
+            activation=head_kwargs["activation"]
         )
-        self.target_q_net2 = nn.Sequential(
-            self.target_q_feature_extractor2, self.target_q_head2
-        )
+        self.target_q_net2 = nn.Sequential(self.target_q_feature_extractor2, self.target_q_head2)
 
         # Copy weights from live to target networks
-        self.target_q_feature_extractor1.load_state_dict(
-            self.q_feature_extractor1.state_dict()
-        )
+        self.target_q_feature_extractor1.load_state_dict(self.q_feature_extractor1.state_dict())
         self.target_q_head1.load_state_dict(self.q_head1.state_dict())
-        self.target_q_feature_extractor2.load_state_dict(
-            self.q_feature_extractor2.state_dict()
-        )
+        self.target_q_feature_extractor2.load_state_dict(self.q_feature_extractor2.state_dict())
         self.target_q_head2.load_state_dict(self.q_head2.state_dict())
 
         # Freeze target networks
@@ -185,26 +173,24 @@ class SACModel(nn.Module):
         """
         x = self.policy_net(state)
         mean, log_std = x.chunk(2, dim=-1)
-
+        
         # Soft clamping
         log_std = torch.tanh(log_std)
-        log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (
-            log_std + 1
-        )
-
+        log_std = self.log_std_min + 0.5 * (self.log_std_max - self.log_std_min) * (log_std + 1)
+        
         std = torch.exp(log_std)
 
         if deterministic:
             z = mean
         else:
             z = mean + std * torch.randn_like(mean)
-
+        
         # tanh→[-1,1]
         raw_action = torch.tanh(z)
 
         # Rescale into [action_low, action_high]
         action = raw_action * self.action_scale + self.action_bias
-
+        
         return action, z, mean, log_std
 
     def policy_log_prob(

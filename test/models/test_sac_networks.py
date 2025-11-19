@@ -19,20 +19,16 @@ class TestSACModel:
         assert sac.continuous_action is True, "SAC should always be continuous"
 
         # Check network structure - updated for feature extractor + head architecture
-        assert hasattr(sac, "policy_feature_extractor"), (
-            "Should have policy feature extractor"
-        )
+        assert hasattr(sac, "policy_feature_extractor"), "Should have policy feature extractor"
         assert hasattr(sac, "policy_head"), "Should have policy head"
-        assert isinstance(sac.policy_net, nn.Sequential), (
-            "Policy network should be Sequential"
-        )
-
+        assert isinstance(sac.policy_net, nn.Sequential), "Policy network should be Sequential"
+        
         # Check Q-networks
         assert hasattr(sac, "q_feature_extractor1"), "Should have Q1 feature extractor"
         assert hasattr(sac, "q_head1"), "Should have Q1 head"
         assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
         assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
-
+        
         # Check target networks
         assert isinstance(sac.target_q_net1, nn.Sequential), (
             "Target Q-network 1 should be Sequential"
@@ -68,10 +64,16 @@ class TestSACModel:
                 "Q1 feature extractor parameters should require gradients"
             )
         for param in sac.q_head1.parameters():
-            assert param.requires_grad, "Q1 head parameters should require gradients"
+            assert param.requires_grad, (
+                "Q1 head parameters should require gradients"
+            )
         for param in sac.q_feature_extractor2.parameters():
             assert param.requires_grad, (
                 "Q2 feature extractor parameters should require gradients"
+            )
+        for param in sac.q_head2.parameters():
+            assert param.requires_grad, (
+                "Q2 head parameters should require gradients"
             )
         for param in sac.q_head2.parameters():
             assert param.requires_grad, "Q2 head parameters should require gradients"
@@ -234,7 +236,7 @@ class TestSACModel:
 
         # Check that log probabilities are finite
         assert torch.all(torch.isfinite(log_prob)), "Log probs should be finite"
-
+        
         # Note: Log probabilities can be positive in some cases for transformed distributions
         # The key constraint is that they should be reasonable values
         # For SAC with tanh transformation, log probs can be positive due to the Jacobian correction
@@ -273,16 +275,14 @@ class TestSACModel:
 
         # Check that target feature extractors have same weights as live ones
         for p1, p_target1 in zip(
-            sac.q_feature_extractor1.parameters(),
-            sac.target_q_feature_extractor1.parameters(),
+            sac.q_feature_extractor1.parameters(), sac.target_q_feature_extractor1.parameters()
         ):
             assert torch.allclose(p1, p_target1), (
                 "Target Q1 feature extractor should have same initial weights"
             )
 
         for p2, p_target2 in zip(
-            sac.q_feature_extractor2.parameters(),
-            sac.target_q_feature_extractor2.parameters(),
+            sac.q_feature_extractor2.parameters(), sac.target_q_feature_extractor2.parameters()
         ):
             assert torch.allclose(p2, p_target2), (
                 "Target Q2 feature extractor should have same initial weights"
@@ -368,7 +368,9 @@ class TestSACModel:
         q1_feat_has_grad = any(
             p.grad is not None for p in sac.q_feature_extractor1.parameters()
         )
-        q1_head_has_grad = any(p.grad is not None for p in sac.q_head1.parameters())
+        q1_head_has_grad = any(
+            p.grad is not None for p in sac.q_head1.parameters()
+        )
         assert q1_feat_has_grad or q1_head_has_grad, (
             "Q1 feature extractor or head should have gradients"
         )
@@ -383,7 +385,9 @@ class TestSACModel:
         assert not target_q1_feat_has_grad, (
             "Target Q1 feature extractor should not have gradients"
         )
-        assert not target_q1_head_has_grad, "Target Q1 head should not have gradients"
+        assert not target_q1_head_has_grad, (
+            "Target Q1 head should not have gradients"
+        )
 
     def test_numerical_stability(self):
         """Test numerical stability of log probability calculation."""

@@ -89,6 +89,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                 action, z, mean, log_std = model_output
 
                 if not self.algo == "sac":
+
                     log_prob = sample_nondeterministic_logprobs(
                         z=z,
                         mean=mean,
@@ -120,6 +121,7 @@ class StochasticPolicy(MightyExplorationPolicy):
                     # Tanh squashing mode: (action, z, mean, log_std)
                     action, z, mean, log_std = model_output
                     if not self.algo == "sac":
+
                         log_prob = sample_nondeterministic_logprobs(
                             z=z,
                             mean=mean,
