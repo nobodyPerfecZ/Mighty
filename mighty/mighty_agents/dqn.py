@@ -159,7 +159,6 @@ class MightyDQNAgent(MightyAgent):
             rescale_action=rescale_action,
             handle_timeout_termination=handle_timeout_termination
             log_infos=log_infos,
-            handle_timeout_termination=handle_timeout_termination
         )
 
         self.loss_buffer = {

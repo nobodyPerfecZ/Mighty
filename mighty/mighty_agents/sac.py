@@ -118,7 +118,6 @@ class MightySACAgent(MightyAgent):
             batch_size=batch_size,
             learning_rate=policy_lr,  # For compatibility with base class
             log_infos=log_infos,
-            handle_timeout_termination=handle_timeout_termination,
         )
 
         # Initialize loss buffer for logging

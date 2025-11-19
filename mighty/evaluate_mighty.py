@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import hydra
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from omegaconf import DictConfig
 
 from mighty.mighty_runners.factory import get_runner_class

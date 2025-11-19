@@ -12,8 +12,7 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from rich import print
 from rich.layout import Layout
 from rich.live import Live
@@ -171,7 +170,6 @@ class MightyAgent(ABC):
         normalize_reward: bool = False,
         rescale_action: bool = False,
         log_infos: bool = False,
-        handle_timeout_termination: bool = False,
     ):
         """Base agent initialization.
 
@@ -292,16 +290,15 @@ class MightyAgent(ABC):
             "truncated": [],
             "mean_episode_reward": [],
         }
-        if hasattr(self.env, "unwrapped") and (isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV)):
+        if hasattr(self.env, "unwrapped") and (
+            isinstance(self.env.unwrapped, DACENV)
+            or isinstance(self.env.unwrapped, CARLENV)
+        ):
             self.result_buffer["instances"] = []
-            with open(
-                Path(self.output_dir) / "instance_set.json", "w+"
-            ) as f:
+            with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
                 json.dump(self.env.instance_set, f)
 
-            with open(
-                Path(self.output_dir) / "test_set.json", "w+"
-            ) as f:
+            with open(Path(self.output_dir) / "test_set.json", "w+") as f:
                 json.dump(self.eval_env.instance_set, f)
 
         self.eval_buffer = {
@@ -661,12 +658,11 @@ class MightyAgent(ABC):
                 next_s, reward, terminated, truncated, infos = self.env.step(action)
 
                 # decide which samples are true “done”
-                replay_dones = terminated          # physics‐failure only
+                replay_dones = terminated  # physics‐failure only
                 dones = np.logical_or(terminated, truncated)
-                
 
                 # Overwrite next_s on truncation
-                # Based on https://github.com/DLR-RM/stable-baselines3/issues/284    
+                # Based on https://github.com/DLR-RM/stable-baselines3/issues/284
                 real_next_s = next_s.copy()
                 # infos["final_observation"] is a list/array of the last real obs
                 for i, tr in enumerate(truncated):
@@ -690,9 +686,22 @@ class MightyAgent(ABC):
                     .numpy()
                     .item(),
                 }
+                if isinstance(infos, list):
+                    if len(infos) > 0:
+                        infos = {
+                            k: infos[i][k]
+                            for k in list(infos[0].keys())
+                            for i in range(len(infos))
+                        }
+                    else:
+                        infos = {}
+
                 t.update(infos)
 
-                if hasattr(self.env, "unwrapped") and (isinstance(self.env.unwrapped, DACENV) or isinstance(self.env.unwrapped, CARLENV)):
+                if hasattr(self.env, "unwrapped") and (
+                    isinstance(self.env.unwrapped, DACENV)
+                    or isinstance(self.env.unwrapped, CARLENV)
+                ):
                     t["instances"] = self.env.inst_ids
 
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
@@ -835,7 +844,9 @@ class MightyAgent(ABC):
             else:
                 print(f"Trying to set hyperparameter {algo_name} which does not exist.")
 
-    def evaluate(self, eval_env: MIGHTYENV | None = None, log_infos: bool = False) -> Dict:  # type: ignore
+    def evaluate(
+        self, eval_env: MIGHTYENV | None = None, log_infos: bool = False
+    ) -> Dict:  # type: ignore
         """Eval agent on an environment. (Full rollouts).
 
         :param env: The environment to evaluate on
@@ -880,7 +891,10 @@ class MightyAgent(ABC):
                 last_info = info
             mask = np.where(dones, 1, mask)
 
-        if hasattr(self.eval_env, "unwrapped") and (isinstance(self.eval_env.unwrapped, DACENV) or isinstance(self.eval_env.unwrapped, CARLENV)):
+        if hasattr(self.eval_env, "unwrapped") and (
+            isinstance(self.eval_env.unwrapped, DACENV)
+            or isinstance(self.eval_env.unwrapped, CARLENV)
+        ):
             instances = eval_env.inst_ids  # type: ignore
         else:
             instances = "None"
