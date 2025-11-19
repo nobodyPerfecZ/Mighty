@@ -12,8 +12,8 @@ defaults:
 runner: standard
 debug: false
 seed: 0
-output_dir: sweep_rs
-experiment_name: dqn_sweep
+output_dir: .
+experiment_name: ${hydra:run.dir}
 log_wandb: false
 
 algorithm_kwargs: {}
@@ -32,6 +32,6 @@ hydra:
       max_budget: 100000
     search_space: ${search_space}
   run:
-    dir: ${output_dir}/${experiment_name}_${seed}
+    dir: hpo/random_search/${env}/per_run_data/${now:%m-%d-%H-%M-%S}_seed
   sweep:
-    dir: ${output_dir}/${experiment_name}_${seed}
+    dir: hpo/random_search/${env}/
