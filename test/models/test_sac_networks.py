@@ -19,16 +19,20 @@ class TestSACModel:
         assert sac.continuous_action is True, "SAC should always be continuous"
 
         # Check network structure - updated for feature extractor + head architecture
-        assert hasattr(sac, "policy_feature_extractor"), "Should have policy feature extractor"
+        assert hasattr(sac, "policy_feature_extractor"), (
+            "Should have policy feature extractor"
+        )
         assert hasattr(sac, "policy_head"), "Should have policy head"
-        assert isinstance(sac.policy_net, nn.Sequential), "Policy network should be Sequential"
-        
+        assert isinstance(sac.policy_net, nn.Sequential), (
+            "Policy network should be Sequential"
+        )
+
         # Check Q-networks
         assert hasattr(sac, "q_feature_extractor1"), "Should have Q1 feature extractor"
         assert hasattr(sac, "q_head1"), "Should have Q1 head"
         assert isinstance(sac.q_net1, nn.Sequential), "Q-network 1 should be Sequential"
         assert isinstance(sac.q_net2, nn.Sequential), "Q-network 2 should be Sequential"
-        
+
         # Check target networks
         assert isinstance(sac.target_q_net1, nn.Sequential), (
             "Target Q-network 1 should be Sequential"
@@ -64,17 +68,13 @@ class TestSACModel:
                 "Q1 feature extractor parameters should require gradients"
             )
         for param in sac.q_head1.parameters():
-            assert param.requires_grad, (
-                "Q1 head parameters should require gradients"
-            )
+            assert param.requires_grad, "Q1 head parameters should require gradients"
         for param in sac.q_feature_extractor2.parameters():
             assert param.requires_grad, (
                 "Q2 feature extractor parameters should require gradients"
             )
         for param in sac.q_head2.parameters():
-            assert param.requires_grad, (
-                "Q2 head parameters should require gradients"
-            )
+            assert param.requires_grad, "Q2 head parameters should require gradients"
         for param in sac.q_head2.parameters():
             assert param.requires_grad, "Q2 head parameters should require gradients"
 
@@ -236,7 +236,7 @@ class TestSACModel:
 
         # Check that log probabilities are finite
         assert torch.all(torch.isfinite(log_prob)), "Log probs should be finite"
-        
+
         # Note: Log probabilities can be positive in some cases for transformed distributions
         # The key constraint is that they should be reasonable values
         # For SAC with tanh transformation, log probs can be positive due to the Jacobian correction
@@ -275,14 +275,16 @@ class TestSACModel:
 
         # Check that target feature extractors have same weights as live ones
         for p1, p_target1 in zip(
-            sac.q_feature_extractor1.parameters(), sac.target_q_feature_extractor1.parameters()
+            sac.q_feature_extractor1.parameters(),
+            sac.target_q_feature_extractor1.parameters(),
         ):
             assert torch.allclose(p1, p_target1), (
                 "Target Q1 feature extractor should have same initial weights"
             )
 
         for p2, p_target2 in zip(
-            sac.q_feature_extractor2.parameters(), sac.target_q_feature_extractor2.parameters()
+            sac.q_feature_extractor2.parameters(),
+            sac.target_q_feature_extractor2.parameters(),
         ):
             assert torch.allclose(p2, p_target2), (
                 "Target Q2 feature extractor should have same initial weights"
@@ -368,9 +370,7 @@ class TestSACModel:
         q1_feat_has_grad = any(
             p.grad is not None for p in sac.q_feature_extractor1.parameters()
         )
-        q1_head_has_grad = any(
-            p.grad is not None for p in sac.q_head1.parameters()
-        )
+        q1_head_has_grad = any(p.grad is not None for p in sac.q_head1.parameters())
         assert q1_feat_has_grad or q1_head_has_grad, (
             "Q1 feature extractor or head should have gradients"
         )
@@ -385,9 +385,7 @@ class TestSACModel:
         assert not target_q1_feat_has_grad, (
             "Target Q1 feature extractor should not have gradients"
         )
-        assert not target_q1_head_has_grad, (
-            "Target Q1 head should not have gradients"
-        )
+        assert not target_q1_head_has_grad, "Target Q1 head should not have gradients"
 
     def test_numerical_stability(self):
         """Test numerical stability of log probability calculation."""
@@ -417,35 +415,34 @@ class TestSACModel:
             "Log probabilities should be finite for boundary actions"
         )
 
+    def test_action_scaling(self):
+        """Test that action scaling works correctly."""
+        # Test with custom action bounds
+        action_low = -2.5
+        action_high = 1.5
+        sac = SACModel(
+            obs_size=3, action_size=2, action_low=action_low, action_high=action_high
+        )
 
-def test_action_scaling(self):
-    """Test that action scaling works correctly."""
-    # Test with custom action bounds
-    action_low = -2.5
-    action_high = 1.5
-    sac = SACModel(
-        obs_size=3, action_size=2, action_low=action_low, action_high=action_high
-    )
+        dummy_state = torch.rand((5, 3))
+        action, z, mean, log_std = sac(dummy_state)
 
-    dummy_state = torch.rand((5, 3))
-    action, z, mean, log_std = sac(dummy_state)
+        # Actions should be within the specified bounds
+        assert torch.all(action >= action_low), f"Actions should be >= {action_low}"
+        assert torch.all(action <= action_high), f"Actions should be <= {action_high}"
 
-    # Actions should be within the specified bounds
-    assert torch.all(action >= action_low), f"Actions should be >= {action_low}"
-    assert torch.all(action <= action_high), f"Actions should be <= {action_high}"
+        # Check the scaling math
+        raw_action = torch.tanh(z)
+        expected_scale = (action_high - action_low) / 2.0
+        expected_bias = (action_high + action_low) / 2.0
+        expected_action = raw_action * expected_scale + expected_bias
 
-    # Check the scaling math
-    raw_action = torch.tanh(z)
-    expected_scale = (action_high - action_low) / 2.0
-    expected_bias = (action_high + action_low) / 2.0
-    expected_action = raw_action * expected_scale + expected_bias
-
-    assert torch.allclose(action, expected_action, atol=1e-6), (
-        "Action scaling should match expected formula"
-    )
-    assert torch.allclose(sac.action_scale, torch.tensor(expected_scale)), (
-        "Action scale should be computed correctly"
-    )
-    assert torch.allclose(sac.action_bias, torch.tensor(expected_bias)), (
-        "Action bias should be computed correctly"
-    )
+        assert torch.allclose(action, expected_action, atol=1e-6), (
+            "Action scaling should match expected formula"
+        )
+        assert torch.allclose(sac.action_scale, torch.tensor(expected_scale)), (
+            "Action scale should be computed correctly"
+        )
+        assert torch.allclose(sac.action_bias, torch.tensor(expected_bias)), (
+            "Action bias should be computed correctly"
+        )
