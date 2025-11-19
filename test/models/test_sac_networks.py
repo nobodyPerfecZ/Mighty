@@ -235,7 +235,7 @@ class TestSACModel:
 
         # Check that log probabilities are finite
         assert torch.all(torch.isfinite(log_prob)), "Log probs should be finite"
-        
+
         # Note: Log probabilities can be positive in some cases for transformed distributions
         # The key constraint is that they should be reasonable values
         # For SAC with tanh transformation, log probs can be positive due to the Jacobian correction

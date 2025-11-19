@@ -170,7 +170,6 @@ class MightyAgent(ABC):
         normalize_reward: bool = False,
         rescale_action: bool = False,
         log_infos: bool = False,
-        handle_timeout_termination: bool = False,
     ):
         """Base agent initialization.
 
