@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from torch.distributions import Categorical, Normal
 
-from mighty.mighty_models import SACModel
 
 
 def sample_nondeterministic_logprobs(

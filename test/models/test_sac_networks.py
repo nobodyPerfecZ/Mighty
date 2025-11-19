@@ -413,34 +413,35 @@ class TestSACModel:
             "Log probabilities should be finite for boundary actions"
         )
 
+
 def test_action_scaling(self):
-        """Test that action scaling works correctly."""
-        # Test with custom action bounds
-        action_low = -2.5
-        action_high = 1.5
-        sac = SACModel(
-            obs_size=3, action_size=2, action_low=action_low, action_high=action_high
-        )
+    """Test that action scaling works correctly."""
+    # Test with custom action bounds
+    action_low = -2.5
+    action_high = 1.5
+    sac = SACModel(
+        obs_size=3, action_size=2, action_low=action_low, action_high=action_high
+    )
 
-        dummy_state = torch.rand((5, 3))
-        action, z, mean, log_std = sac(dummy_state)
+    dummy_state = torch.rand((5, 3))
+    action, z, mean, log_std = sac(dummy_state)
 
-        # Actions should be within the specified bounds
-        assert torch.all(action >= action_low), f"Actions should be >= {action_low}"
-        assert torch.all(action <= action_high), f"Actions should be <= {action_high}"
+    # Actions should be within the specified bounds
+    assert torch.all(action >= action_low), f"Actions should be >= {action_low}"
+    assert torch.all(action <= action_high), f"Actions should be <= {action_high}"
 
-        # Check the scaling math
-        raw_action = torch.tanh(z)
-        expected_scale = (action_high - action_low) / 2.0
-        expected_bias = (action_high + action_low) / 2.0
-        expected_action = raw_action * expected_scale + expected_bias
+    # Check the scaling math
+    raw_action = torch.tanh(z)
+    expected_scale = (action_high - action_low) / 2.0
+    expected_bias = (action_high + action_low) / 2.0
+    expected_action = raw_action * expected_scale + expected_bias
 
-        assert torch.allclose(action, expected_action, atol=1e-6), (
-            "Action scaling should match expected formula"
-        )
-        assert torch.allclose(sac.action_scale, torch.tensor(expected_scale)), (
-            "Action scale should be computed correctly"
-        )
-        assert torch.allclose(sac.action_bias, torch.tensor(expected_bias)), (
-            "Action bias should be computed correctly"
-        )
+    assert torch.allclose(action, expected_action, atol=1e-6), (
+        "Action scaling should match expected formula"
+    )
+    assert torch.allclose(sac.action_scale, torch.tensor(expected_scale)), (
+        "Action scale should be computed correctly"
+    )
+    assert torch.allclose(sac.action_bias, torch.tensor(expected_bias)), (
+        "Action bias should be computed correctly"
+    )
