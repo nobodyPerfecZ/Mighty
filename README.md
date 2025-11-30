@@ -167,6 +167,14 @@ Mighty is meant to be a platform to build upon and not a large collection of met
 - **Meta Components**: RND, NovelD, SPaCE, PLR
 - **Runners**: online RL runner, ES runner
 
+## Contributions
+
+- **Aditya Mohan**: Core architecture design, agent implementations, meta-learning components, maintainer
+- **Theresa Eimer**: Environment integrations, CARL compatibility, generalization protocols  
+- **Carolin Benjamins**: Buffer systems, replay mechanisms, optimization algorithms
+- **Marius Lindauer**: Project supervision, research direction, methodology guidance
+- **Andre Biedenkapp**: Infrastructure design, testing framework, deployment systems
+
 ## Cite Us
 
 If you use Mighty in your work, please cite us:
