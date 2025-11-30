@@ -1,0 +1,37 @@
+defaults:
+  - _self_
+  - /cluster: local
+  - algorithm: ppo
+  - environment: gymnasium/pendulum
+  - search_space: ppo_rs
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+  - override hydra/help: mighty_help
+  - override hydra/sweeper: HyperRS        # use Hypersweeper’s RandomSearch
+
+runner: standard
+debug: false
+seed: 0
+output_dir: .
+experiment_name: ${hydra:run.dir}
+log_wandb: false
+
+algorithm_kwargs: {}
+
+# Training
+eval_every_n_steps: 1e4  # After how many steps to evaluate.
+n_episodes_eval: 10
+checkpoint: null  # Path to load model checkpoint
+save_model_every_n_steps: 5e5
+
+hydra:
+  sweeper:
+    n_trials: 10
+    sweeper_kwargs:
+      max_parallelization: 0.8
+      max_budget: 100000
+    search_space: ${search_space}
+  run:
+    dir: hpo/random_search/${env}/per_run_data/${now:%m-%d-%H-%M-%S}_seed
+  sweep:
+    dir: hpo/random_search/${env}/

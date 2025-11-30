@@ -11,9 +11,12 @@ runner: standard
 debug: false
 seed: 0
 output_dir: runs
-wandb_project: null
-tensorboard_file: null
 experiment_name: mighty_experiment
+# This is for optional logging with Weights & Biases
+# If trackio is installed, this will be used instead
+log_wandb: false
+wandb_kwargs:
+  project: mighty
 
 algorithm_kwargs: {}
 
@@ -21,7 +24,7 @@ algorithm_kwargs: {}
 eval_every_n_steps: 5e3  # After how many steps to evaluate.
 n_episodes_eval: 10
 checkpoint: null  # Path to load model checkpoint
-save_model_every_n_steps: 5e5
+save_model_every_n_steps: 1000
 
 hydra:
   run:

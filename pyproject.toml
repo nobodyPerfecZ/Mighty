@@ -92,3 +92,8 @@ omit = [
     "mighty/mighty_utils/plotting.py",
     "mighty/mighty_utils/test_helpers.py"
     ]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+]

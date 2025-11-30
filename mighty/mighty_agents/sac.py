@@ -26,6 +26,7 @@ class MightySACAgent(MightyAgent):
         learning_starts: int = 10000,
         update_every: int = 50,
         n_gradient_steps: int = 1,
+        log_infos: bool = False,
         # --- Learning rates ---
         policy_lr: float = 3e-4,
         q_lr: float = 3e-4,
@@ -116,6 +117,7 @@ class MightySACAgent(MightyAgent):
             rescale_action=rescale_action,
             batch_size=batch_size,
             learning_rate=policy_lr,  # For compatibility with base class
+            log_infos=log_infos,
         )
 
         # Initialize loss buffer for logging
@@ -125,7 +127,7 @@ class MightySACAgent(MightyAgent):
             "Update/policy_loss": [],
             "Update/td_error1": [],
             "Update/td_error2": [],
-            "step": [],
+            "update_at_step": [],
         }
 
     def _initialize_agent(self) -> None:
@@ -190,7 +192,7 @@ class MightySACAgent(MightyAgent):
             metrics_acc[k] /= self.n_gradient_steps
 
         # Log to buffer
-        stats = {**metrics_acc, "step": self.steps}
+        stats = {**metrics_acc, "update_at_step": self.steps}
         self.loss_buffer = update_buffer(self.loss_buffer, stats)
         return metrics_acc
 

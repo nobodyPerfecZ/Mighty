@@ -1,0 +1,10 @@
+- algorithm=ppo
+- env=CARLCartPole
+- seed=42
+- num_steps=250000
+- env_wrappers=[mighty.mighty_utils.wrappers.FlattenVecObs]
+- algorithm_kwargs.rollout_buffer_kwargs.buffer_size=2048
+- +env_kwargs.load_contexts=examples/carl_generalization_example/context_sets/train_contexts_a.json
+- +env_kwargs.load_eval_contexts=examples/carl_generalization_example/context_sets/eval_contexts_a.json
+- output_dir=examples/carl_generalization_example
+- experiment_name=carl_cartpole_generalization_mode_a/seed

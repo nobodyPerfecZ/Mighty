@@ -53,20 +53,27 @@ class MightyRunner(ABC):
             return wrapped_env
 
         eval_env = wrap_eval()
+        log_infos = cfg.log_infos if "log_infos" in cfg else False
 
         # Setup agent
         agent_class = get_agent_class(cfg.algorithm)
         args_agent = dict(cfg.algorithm_kwargs)
+        log_wandb = cfg.get("log_wandb", False)
+        wandb_kwargs = cfg.get("wandb_kwargs", {})
         self.agent = agent_class(  # type: ignore
             env=env,
             eval_env=eval_env,
             output_dir=output_dir,
             seed=cfg.seed,
+            log_wandb=log_wandb,
+            wandb_kwargs=wandb_kwargs,
+            log_infos=log_infos,
             **args_agent,
         )
 
         self.eval_every_n_steps = cfg.eval_every_n_steps
         self.num_steps = cfg.num_steps
+        self.log_infos = log_infos
 
         # Load checkpoint if one is given
         if cfg.checkpoint is not None:
@@ -84,8 +91,8 @@ class MightyRunner(ABC):
             n_steps=num_steps, env=env, eval_every_n_steps=self.eval_every_n_steps
         )
 
-    def evaluate(self, eval_env=None) -> Any:  # type: ignore
-        return self.agent.evaluate(eval_env)
+    def evaluate(self, eval_env=None, log_infos=False) -> Any:  # type: ignore
+        return self.agent.evaluate(eval_env, log_infos=log_infos)
 
     def run(self) -> Tuple[Dict, Dict]:
         raise NotImplementedError

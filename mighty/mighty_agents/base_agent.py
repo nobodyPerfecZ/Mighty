@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Dict
 import numpy as np
 import pandas as pd
 import torch
-import wandb
 from omegaconf import DictConfig, OmegaConf
 from rich import print
 from rich.layout import Layout
@@ -32,6 +31,20 @@ if TYPE_CHECKING:
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
+
+try:
+    import logging
+
+    import trackio as wandb
+
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    print("Found trackio, using it for logging.")
+except ImportError:
+    import wandb
+
+    print(
+        "Using default wandb logging. If you prefer trackio, please install it with `pip install trackio`."
+    )
 
 
 def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
@@ -81,12 +94,27 @@ def log_to_wandb(metrics: Dict) -> None:
     """Wandb logging"""
     # Only log relevant, serializable keys
     log_keys = [
-        "step",
+        "env_step",
         "episode_reward",
         "Update/policy_loss",
         "Update/value_loss",
         "Update/entropy",
         "Update/approx_kl",
+        "Update/q_loss1",
+        "Update/q_loss2",
+        "Update/policy_loss",
+        "Update/alpha_loss",
+        "Update/td_error1",
+        "Update/td_error2",
+        "Update/loss",
+        "Update/td_errors",
+        "eval_episodes",
+        "mean_eval_step_reward",
+        "mean_eval_reward",
+        "instance",
+        "eval_rewards",
+        "eval_after_n_steps",
+        "update_at_step",
     ]
     serializable_metrics = {}
     for k in log_keys:
@@ -111,7 +139,7 @@ def log_to_wandb(metrics: Dict) -> None:
             except TypeError:
                 print(f"Skipping non-serializable metric: {k}")
 
-    wandb.log(serializable_metrics, step=metrics["step"])
+    wandb.log(serializable_metrics)
 
 
 class MightyAgent(ABC):
@@ -141,6 +169,7 @@ class MightyAgent(ABC):
         normalize_obs: bool = False,
         normalize_reward: bool = False,
         rescale_action: bool = False,
+        log_infos: bool = False,
     ):
         """Base agent initialization.
 
@@ -180,10 +209,10 @@ class MightyAgent(ABC):
 
         self.seed = seed
         if self.seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
+            random.seed(int(seed))
+            np.random.seed(int(seed))
+            torch.manual_seed(int(seed))
+            torch.cuda.manual_seed_all(int(seed))
             os.environ["PYTHONHASHSEED"] = str(seed)
 
         # Replay Buffer
@@ -205,6 +234,7 @@ class MightyAgent(ABC):
 
         self.output_dir = output_dir
         self.verbose = verbose
+        self.log_infos = log_infos
 
         if normalize_obs:
             env = NormalizeObservation(env)
@@ -251,7 +281,7 @@ class MightyAgent(ABC):
 
         self.result_buffer = {
             "seed": [],
-            "step": [],
+            "env_step": [],
             "reward": [],
             "action": [],
             "state": [],
@@ -260,18 +290,29 @@ class MightyAgent(ABC):
             "truncated": [],
             "mean_episode_reward": [],
         }
+        if hasattr(self.env, "unwrapped") and (
+            isinstance(self.env.unwrapped, DACENV)
+            or isinstance(self.env.unwrapped, CARLENV)
+        ):
+            self.result_buffer["instances"] = []
+            with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
+                json.dump(self.env.instance_set, f)
+
+            with open(Path(self.output_dir) / "test_set.json", "w+") as f:
+                json.dump(self.eval_env.instance_set, f)
 
         self.eval_buffer = {
-            "step": [],
+            "eval_after_n_steps": [],
             "seed": [],
             "eval_episodes": [],
             "mean_eval_step_reward": [],
             "mean_eval_reward": [],
-            "instance": [],
+            "instances": [],
         }
+        self.eval_state = None
 
         self.hp_buffer = {
-            "step": [],
+            "hps_after_n_steps": [],
             "hp/lr": [],
             "hp/pi_epsilon": [],
             "hp/batch_size": [],
@@ -280,7 +321,7 @@ class MightyAgent(ABC):
         }
         self.loss_buffer = None
         starting_hps = {
-            "step": 0,
+            "hps_after_n_steps": 0,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -359,7 +400,7 @@ class MightyAgent(ABC):
     def adapt_hps(self, metrics: Dict) -> None:
         """Set hyperparameters."""
         old_hps = {
-            "step": self.steps,
+            "hps_after_n_steps": self.steps,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -372,7 +413,7 @@ class MightyAgent(ABC):
         self._learning_starts = metrics["hp/learning_starts"]
 
         updated_hps = {
-            "step": self.steps,
+            "hps_after_n_steps": self.steps,
             "hp/lr": self.learning_rate,
             "hp/pi_epsilon": self._epsilon,
             "hp/batch_size": self._batch_size,
@@ -422,7 +463,7 @@ class MightyAgent(ABC):
             )
 
             metrics.update(agent_update_metrics)
-            metrics["step"] = self.steps
+            metrics["env_step"] = self.steps
 
             if self.log_wandb:
                 log_to_wandb(metrics=metrics)
@@ -567,7 +608,7 @@ class MightyAgent(ABC):
                 "env": self.env,
                 "vf": self.value_function,  # type: ignore
                 "policy": self.policy,
-                "step": self.steps,
+                "env_step": self.steps,
                 "hp/lr": self.learning_rate,
                 "hp/pi_epsilon": self._epsilon,
                 "hp/batch_size": self._batch_size,
@@ -575,7 +616,13 @@ class MightyAgent(ABC):
             }
 
             # Reset env and initialize reward sum
-            curr_s, _ = self.env.reset(seed=self.seed)  # type: ignore
+            curr_s, info = self.env.reset(seed=self.seed)  # type: ignore
+            if self.log_infos:
+                for k in info.keys():
+                    if not k.startswith("_") and k not in self.result_buffer.keys():
+                        self.result_buffer[k] = []
+                    if not k.startswith("_") and k not in self.eval_buffer.keys():
+                        self.eval_buffer[k] = []
             if len(curr_s.squeeze().shape) == 0:
                 episode_reward = [0]
             else:
@@ -611,12 +658,11 @@ class MightyAgent(ABC):
                 next_s, reward, terminated, truncated, infos = self.env.step(action)
 
                 # decide which samples are true “done”
-                replay_dones = terminated          # physics‐failure only
+                replay_dones = terminated  # physics‐failure only
                 dones = np.logical_or(terminated, truncated)
-                
 
                 # Overwrite next_s on truncation
-                # Based on https://github.com/DLR-RM/stable-baselines3/issues/284    
+                # Based on https://github.com/DLR-RM/stable-baselines3/issues/284
                 real_next_s = next_s.copy()
                 # infos["final_observation"] is a list/array of the last real obs
                 for i, tr in enumerate(truncated):
@@ -627,7 +673,7 @@ class MightyAgent(ABC):
                 # Log everything
                 t = {
                     "seed": self.seed,
-                    "step": self.steps,
+                    "env_step": self.steps,
                     "reward": reward,
                     "action": action,
                     "state": curr_s,
@@ -640,6 +686,24 @@ class MightyAgent(ABC):
                     .numpy()
                     .item(),
                 }
+                if isinstance(infos, list):
+                    if len(infos) > 0:
+                        infos = {
+                            k: infos[i][k]
+                            for k in list(infos[0].keys())
+                            for i in range(len(infos))
+                        }
+                    else:
+                        infos = {}
+
+                t.update(infos)
+
+                if hasattr(self.env, "unwrapped") and (
+                    isinstance(self.env.unwrapped, DACENV)
+                    or isinstance(self.env.unwrapped, CARLENV)
+                ):
+                    t["instances"] = self.env.inst_ids
+
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
                 metrics["episode_reward"] = episode_reward
                 metrics["transition"] = t
@@ -664,10 +728,10 @@ class MightyAgent(ABC):
                 self.result_buffer = update_buffer(self.result_buffer, t)
 
                 if self.log_wandb:
-                    wandb.log(t)
+                    log_to_wandb(metrics)
 
                 self.steps += len(action)
-                metrics["step"] = self.steps
+                metrics["env_step"] = self.steps
                 steps_since_eval += len(action)
                 steps_since_log += len(action)
                 for _ in range(len(action)):
@@ -688,7 +752,7 @@ class MightyAgent(ABC):
                 # Evaluate
                 if eval_every_n_steps and steps_since_eval >= eval_every_n_steps:
                     steps_since_eval = 0
-                    eval_metrics = self.evaluate()
+                    eval_metrics = self.evaluate(log_infos=self.log_infos)
                     evaluation_reward = eval_metrics["eval_rewards"]
 
                 # Log to command line via rich layout
@@ -743,11 +807,6 @@ class MightyAgent(ABC):
                         recent_step_reward.pop(0)
                     episode_reward = np.where(dones, 0, episode_reward)  # type: ignore
                     # End episode
-                    if isinstance(self.env, DACENV) or isinstance(self.env, CARLENV):
-                        instance = self.env.instance  # type: ignore
-                    else:
-                        instance = None
-                    metrics["instance"] = instance
                     episodes += 1
                     for k in self.meta_modules:
                         self.meta_modules[k].post_episode(metrics)
@@ -785,7 +844,9 @@ class MightyAgent(ABC):
             else:
                 print(f"Trying to set hyperparameter {algo_name} which does not exist.")
 
-    def evaluate(self, eval_env: MIGHTYENV | None = None) -> Dict:  # type: ignore
+    def evaluate(
+        self, eval_env: MIGHTYENV | None = None, log_infos: bool = False
+    ) -> Dict:  # type: ignore
         """Eval agent on an environment. (Full rollouts).
 
         :param env: The environment to evaluate on
@@ -798,36 +859,65 @@ class MightyAgent(ABC):
         if eval_env is None:
             eval_env = self.eval_env
 
-        state, _ = eval_env.reset(options=options, seed=self.seed)  # type: ignore
+        if self.eval_state is None:
+            self.eval_state, _ = eval_env.reset(options=options, seed=self.seed)  # type: ignore
+
         rewards = np.zeros(eval_env.num_envs)  # type: ignore
         steps = np.zeros(eval_env.num_envs)  # type: ignore
         mask = np.zeros(eval_env.num_envs)  # type: ignore
+        if log_infos:
+            infos = {}
+            info_mask = np.zeros(eval_env.num_envs)
+            last_info = None
         while not np.all(mask):
-            action = self.policy(state, evaluate=True)  # type: ignore
-            state, reward, terminated, truncated, _ = eval_env.step(action)  # type: ignore
+            action = self.policy(self.eval_state, evaluate=True)  # type: ignore
+            self.eval_state, reward, terminated, truncated, info = eval_env.step(action)  # type: ignore
             rewards += reward * (1 - mask)
             steps += 1 * (1 - mask)
             dones = np.logical_or(terminated, truncated)
+            if log_infos:
+                if last_info is None:
+                    last_info = info
+                info_mask_copy = np.where(dones, 1, info_mask)
+                info_mask_copy = np.where(info_mask_copy == 3, 0, info_mask_copy)
+                for k in info.keys():
+                    if not k.startswith("_") and "final" not in k:
+                        if k not in infos.keys():
+                            infos[k] = []
+                        final_infos = last_info[k][info_mask_copy.astype(bool)]
+                        if len(final_infos) > 0:
+                            infos[k] += final_infos.tolist()
+                info_mask = np.where(dones, 3, info_mask)
+                last_info = info
             mask = np.where(dones, 1, mask)
 
-        if isinstance(self.eval_env, DACENV) or isinstance(self.env, CARLENV):
-            instance = eval_env.instance  # type: ignore
+        if hasattr(self.eval_env, "unwrapped") and (
+            isinstance(self.eval_env.unwrapped, DACENV)
+            or isinstance(self.eval_env.unwrapped, CARLENV)
+        ):
+            instances = eval_env.inst_ids  # type: ignore
         else:
-            instance = "None"
+            instances = "None"
 
         eval_metrics = {
-            "step": self.steps,
+            "eval_after_n_steps": self.steps,
             "seed": self.seed,
             "eval_episodes": np.array(rewards) / steps,
             "mean_eval_step_reward": np.mean(rewards) / steps,
             "mean_eval_reward": np.mean(rewards),
-            "instance": instance,
+            "instances": instances,
             "eval_rewards": rewards,
         }
+
+        if log_infos:
+            eval_metrics.update(infos)
+            for k in eval_metrics.keys():
+                if not k.startswith("_") and k not in self.eval_buffer.keys():
+                    self.eval_buffer[k] = []
         self.eval_buffer = update_buffer(self.eval_buffer, eval_metrics)
 
         if self.log_wandb:
-            wandb.log(eval_metrics)
+            log_to_wandb(eval_metrics)
 
         return eval_metrics
 
