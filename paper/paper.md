@@ -81,12 +81,12 @@ We validate our implementations by comparing them with OpenRL benchmark results.
 
 | Algorithm | Environment | Steps | Time (min) | Final Return | OpenRL Return |
 |-----------|-------------|-------|------------|--------------|---------------|
-| DQN | MountainCar | 5×10⁵ | 51.1 | -200.00 ± 0.00 | -189.92 ± 11.00 |
-| DQN | CartPole | 5×10⁵ | 60.41 | 486.40 ± 30.77 | 499.92 ± 0.00 |
-| PPO | MountainCar | 5×10⁵ | 3.03 | -200.00 ± 0.00 | -200.00 ± 0.00 |
-| PPO | CartPole | 5×10⁵ | 3.67 | 479.80 ± 17.21 | 487.48 ± 6.79 |
-| SAC | Walker2D | 10⁶ | 353.13 | 4478.67 ± 689.22 | 4471.15 ± 1896.34 |
-| SAC | HalfCheetah | 10⁶ | 302.53 | 10588.34 ± 874.19 | 10958.60 ± 1335.62 |
+| DQN | MountainCar | 5e5 | 51.1 | -200.00 ± 0.00 | -189.92 ± 11.00 |
+| DQN | CartPole | 5e5 | 60.41 | 486.40 ± 30.77 | 499.92 ± 0.00 |
+| PPO | MountainCar | 5e5 | 3.03 | -200.00 ± 0.00 | -200.00 ± 0.00 |
+| PPO | CartPole | 5e5 | 3.67 | 479.80 ± 17.21 | 487.48 ± 6.79 |
+| SAC | Walker2D | 1e6 | 353.13 | 4478.67 ± 689.22 | 4471.15 ± 1896.34 |
+| SAC | HalfCheetah | 1e6 | 302.53 | 10588.34 ± 874.19 | 10958.60 ± 1335.62 |
 
 The trends broadly align: PPO and DQN on CartPole closely track OpenRL, and SAC in Walker2D and HalfCheetah remains close to the mean performance reported by OpenRL. The results demonstrate that Mighty's implementations reproduce the results of established baselines, both in sample efficiency and runtime.
 
