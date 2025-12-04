@@ -9,25 +9,25 @@
       
       
       
-        <link rel="prev" href="../Standard_RL/">
+        <link rel="prev" href="../../../methods/inner_loops/">
       
       
-        <link rel="next" href="../DAC/">
+        <link rel="next" href="../run_mighty/">
       
       
-      <link rel="icon" href="../../img/favicon.ico">
+      <link rel="icon" href="../../../img/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
-        <title>Contextual RL - Mighty</title>
+        <title>Evaluate mighty - Mighty</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,20 +46,20 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_markdown_exec_pyodide.css">
+      <link rel="stylesheet" href="../../../assets/_markdown_exec_pyodide.css">
     
-      <link rel="stylesheet" href="../../assets/_markdown_exec_ansi.css">
+      <link rel="stylesheet" href="../../../assets/_markdown_exec_ansi.css">
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
     
     
     
-   <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+   <link href="../../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
     html.glightbox-open { overflow: initial; height: 100%; }
     .gslide-title { margin-top: 0px; user-select: text; }
     .gslide-desc { color: #666; user-select: text; }
@@ -68,7 +68,7 @@
     .gdesc-inner { font-size: 0.75rem; }
     body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
     body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
-    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../../../assets/javascripts/glightbox.min.js"></script></head>
   
   
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#what-is-contextual-rl" class="md-skip">
+        <a href="#mighty.evaluate_mighty" class="md-skip">
           Skip to content
         </a>
       
@@ -107,9 +107,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Mighty" class="md-header__button md-logo" aria-label="Mighty" data-md-component="logo">
+    <a href="../../.." title="Mighty" class="md-header__button md-logo" aria-label="Mighty" data-md-component="logo">
       
-  <img src="../../img/logo_only.svg" alt="logo">
+  <img src="../../../img/logo_only.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contextual RL
+              Evaluate mighty
             
           </span>
         </div>
@@ -260,7 +260,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -279,7 +279,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../installation/" class="md-tabs__link">
+      <a href="../../../installation/" class="md-tabs__link">
         
   
   
@@ -298,7 +298,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../package_structure/" class="md-tabs__link">
+      <a href="../../../package_structure/" class="md-tabs__link">
         
   
   
@@ -317,7 +317,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../basic_usage/" class="md-tabs__link">
+      <a href="../../../basic_usage/" class="md-tabs__link">
         
   
   
@@ -334,13 +334,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../Standard_RL/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../../usecases/Standard_RL/" class="md-tabs__link">
           
   
   
@@ -360,7 +358,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../methods/algorithms/" class="md-tabs__link">
+        <a href="../../../methods/algorithms/" class="md-tabs__link">
           
   
   
@@ -376,6 +374,8 @@
   
   
   
+    
+  
   
     
     
@@ -383,11 +383,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../api/mighty/evaluate_mighty/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -432,9 +434,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Mighty" class="md-nav__button md-logo" aria-label="Mighty" data-md-component="logo">
+    <a href="../../.." title="Mighty" class="md-nav__button md-logo" aria-label="Mighty" data-md-component="logo">
       
-  <img src="../../img/logo_only.svg" alt="logo">
+  <img src="../../../img/logo_only.svg" alt="logo">
 
     </a>
     Mighty
@@ -461,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -483,7 +485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../../../installation/" class="md-nav__link">
         
   
   
@@ -505,7 +507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../package_structure/" class="md-nav__link">
+      <a href="../../../package_structure/" class="md-nav__link">
         
   
   
@@ -527,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../basic_usage/" class="md-nav__link">
+      <a href="../../../basic_usage/" class="md-nav__link">
         
   
   
@@ -546,31 +548,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -583,7 +580,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Mighty Usecases
@@ -597,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../Standard_RL/" class="md-nav__link">
+      <a href="../../../usecases/Standard_RL/" class="md-nav__link">
         
   
   
@@ -617,30 +614,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Contextual RL
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../usecases/Contextual_RL/" class="md-nav__link">
         
   
   
@@ -651,42 +628,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-is-contextual-rl" class="md-nav__link">
-    <span class="md-ellipsis">
-      What Is Contextual RL?
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#contextual-rl-with-carl" class="md-nav__link">
-    <span class="md-ellipsis">
-      Contextual RL With CARL
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -699,7 +640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../DAC/" class="md-nav__link">
+      <a href="../../../usecases/DAC/" class="md-nav__link">
         
   
   
@@ -772,7 +713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../methods/algorithms/" class="md-nav__link">
+      <a href="../../../methods/algorithms/" class="md-nav__link">
         
   
   
@@ -795,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../methods/architectures/" class="md-nav__link">
+      <a href="../../../methods/architectures/" class="md-nav__link">
         
   
   
@@ -818,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../methods/outer_loops/" class="md-nav__link">
+      <a href="../../../methods/outer_loops/" class="md-nav__link">
         
   
   
@@ -841,7 +782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../methods/inner_loops/" class="md-nav__link">
+      <a href="../../../methods/inner_loops/" class="md-nav__link">
         
   
   
@@ -868,26 +809,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -900,7 +846,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             API
@@ -911,26 +857,31 @@
                 
   
   
+    
   
   
+  
     
     
     
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
         
           
-          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="">
             
   
   
@@ -943,7 +894,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7_1">
             <span class="md-nav__icon md-icon"></span>
             Mighty
@@ -954,10 +905,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../api/mighty/evaluate_mighty/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Evaluate mighty
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -968,6 +939,33 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mighty.evaluate_mighty" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;evaluate_mighty
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -980,7 +978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/run_mighty/" class="md-nav__link">
+      <a href="../run_mighty/" class="md-nav__link">
         
   
   
@@ -1046,7 +1044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_agents/base_agent/" class="md-nav__link">
+      <a href="../mighty_agents/base_agent/" class="md-nav__link">
         
   
   
@@ -1069,7 +1067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_agents/dqn/" class="md-nav__link">
+      <a href="../mighty_agents/dqn/" class="md-nav__link">
         
   
   
@@ -1092,7 +1090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_agents/factory/" class="md-nav__link">
+      <a href="../mighty_agents/factory/" class="md-nav__link">
         
   
   
@@ -1115,7 +1113,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_agents/ppo/" class="md-nav__link">
+      <a href="../mighty_agents/ppo/" class="md-nav__link">
         
   
   
@@ -1138,7 +1136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_agents/sac/" class="md-nav__link">
+      <a href="../mighty_agents/sac/" class="md-nav__link">
         
   
   
@@ -1212,7 +1210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_exploration/decaying_epsilon_greedy/" class="md-nav__link">
+      <a href="../mighty_exploration/decaying_epsilon_greedy/" class="md-nav__link">
         
   
   
@@ -1235,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_exploration/epsilon_greedy/" class="md-nav__link">
+      <a href="../mighty_exploration/epsilon_greedy/" class="md-nav__link">
         
   
   
@@ -1258,7 +1256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_exploration/ez_greedy/" class="md-nav__link">
+      <a href="../mighty_exploration/ez_greedy/" class="md-nav__link">
         
   
   
@@ -1281,7 +1279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_exploration/mighty_exploration_policy/" class="md-nav__link">
+      <a href="../mighty_exploration/mighty_exploration_policy/" class="md-nav__link">
         
   
   
@@ -1304,7 +1302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_exploration/stochastic_policy/" class="md-nav__link">
+      <a href="../mighty_exploration/stochastic_policy/" class="md-nav__link">
         
   
   
@@ -1378,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_meta/cosine_lr_schedule/" class="md-nav__link">
+      <a href="../mighty_meta/cosine_lr_schedule/" class="md-nav__link">
         
   
   
@@ -1401,7 +1399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_meta/mighty_component/" class="md-nav__link">
+      <a href="../mighty_meta/mighty_component/" class="md-nav__link">
         
   
   
@@ -1424,7 +1422,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_meta/plr/" class="md-nav__link">
+      <a href="../mighty_meta/plr/" class="md-nav__link">
         
   
   
@@ -1447,7 +1445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_meta/rnd/" class="md-nav__link">
+      <a href="../mighty_meta/rnd/" class="md-nav__link">
         
   
   
@@ -1470,7 +1468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_meta/space/" class="md-nav__link">
+      <a href="../mighty_meta/space/" class="md-nav__link">
         
   
   
@@ -1544,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_models/dqn/" class="md-nav__link">
+      <a href="../mighty_models/dqn/" class="md-nav__link">
         
   
   
@@ -1567,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_models/networks/" class="md-nav__link">
+      <a href="../mighty_models/networks/" class="md-nav__link">
         
   
   
@@ -1590,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_models/ppo/" class="md-nav__link">
+      <a href="../mighty_models/ppo/" class="md-nav__link">
         
   
   
@@ -1613,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_models/sac/" class="md-nav__link">
+      <a href="../mighty_models/sac/" class="md-nav__link">
         
   
   
@@ -1687,7 +1685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_replay/buffer/" class="md-nav__link">
+      <a href="../mighty_replay/buffer/" class="md-nav__link">
         
   
   
@@ -1710,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_replay/mighty_prioritized_replay/" class="md-nav__link">
+      <a href="../mighty_replay/mighty_prioritized_replay/" class="md-nav__link">
         
   
   
@@ -1733,7 +1731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_replay/mighty_replay_buffer/" class="md-nav__link">
+      <a href="../mighty_replay/mighty_replay_buffer/" class="md-nav__link">
         
   
   
@@ -1756,7 +1754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_replay/mighty_rollout_buffer/" class="md-nav__link">
+      <a href="../mighty_replay/mighty_rollout_buffer/" class="md-nav__link">
         
   
   
@@ -1830,7 +1828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_runners/factory/" class="md-nav__link">
+      <a href="../mighty_runners/factory/" class="md-nav__link">
         
   
   
@@ -1853,7 +1851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_runners/mighty_es_runner/" class="md-nav__link">
+      <a href="../mighty_runners/mighty_es_runner/" class="md-nav__link">
         
   
   
@@ -1876,7 +1874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_runners/mighty_online_runner/" class="md-nav__link">
+      <a href="../mighty_runners/mighty_online_runner/" class="md-nav__link">
         
   
   
@@ -1899,7 +1897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_runners/mighty_runner/" class="md-nav__link">
+      <a href="../mighty_runners/mighty_runner/" class="md-nav__link">
         
   
   
@@ -1973,7 +1971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_update/ppo_update/" class="md-nav__link">
+      <a href="../mighty_update/ppo_update/" class="md-nav__link">
         
   
   
@@ -1996,7 +1994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_update/q_learning/" class="md-nav__link">
+      <a href="../mighty_update/q_learning/" class="md-nav__link">
         
   
   
@@ -2019,7 +2017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mighty/mighty_update/sac_update/" class="md-nav__link">
+      <a href="../mighty_update/sac_update/" class="md-nav__link">
         
   
   
@@ -2077,20 +2075,45 @@
   
 
 
-  <h1>Contextual RL</h1>
+  <h1>Evaluate mighty</h1>
 
-<h3 id="what-is-contextual-rl">What Is Contextual RL?<a class="headerlink" href="#what-is-contextual-rl" title="Permanent link">#</a></h3>
-<p>Most RL environments are either not concerned with generalization at all or test generalization performance without providing much insight into what agents are tested on,
-e.g. by using procedurally generated levels that are hard to understand as a structured training or test distribution.
-Contextual RL (or cRL)[<a href="https://arxiv.org/pdf/1502.02259.pdf">Hallak et al., CoRR 2015</a>, <a href="https://arxiv.org/pdf/2202.04500.pdf">Benjamins et al., CoRR 2022</a>] aims to make the task distributions agents are trained on a specific as possible in order to gain better insights where agents perform well and what is currently missing in RL generalization.</p>
-<h3 id="contextual-rl-with-carl">Contextual RL With CARL<a class="headerlink" href="#contextual-rl-with-carl" title="Permanent link">#</a></h3>
-<p><a href="https://github.com/automl/CARL">CARL (context adaptive RL)</a> (see <a href="https://arxiv.org/pdf/2110.02102.pdf">Benjamins et al., EcoRL 2021</a> for more information) is a benchmark library specifically designed for contextual RL.
-It provides highly configurable contextual extensions to several well-known RL environments and is what we recommend to get started in cRL.
-Mighty is designed with contextual RL in mind and therefore fully compatible with CARL.</p>
-<p>The training works similarly to a standard RL environment, but now you can specify the training and test distributions, for example 10 variations of gravity for CartPole from CARL's default distribution:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>mighty/run_mighty.py<span class="w"> </span><span class="s1">&#39;algorithm=dqn&#39;</span><span class="w"> </span><span class="s1">&#39;env=CARLCartPoleEnv&#39;</span><span class="w"> </span><span class="s1">&#39;+env_kwargs.num_contexts=10&#39;</span><span class="w"> </span><span class="s1">&#39;+env_kwargs.context_feature_args=[gravity]&#39;</span>
-</code></pre></div>
-<p>Other CARL options are supported similarly as env_kwargs, though we recommend checking out the CARL examples to get a better idea of how to define these distributions.</p>
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="mighty.evaluate_mighty" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">mighty.evaluate_mighty</span>
+
+
+<a href="#mighty.evaluate_mighty" class="headerlink" title="Permanent link">#</a></h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
@@ -2120,7 +2143,7 @@ Mighty is designed with contextual RL in mind and therefore fully compatible wit
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../Standard_RL/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Standard RL">
+          <a href="../../../methods/inner_loops/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Mighty Inner Loops">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2130,20 +2153,20 @@ Mighty is designed with contextual RL in mind and therefore fully compatible wit
                 Previous
               </span>
               <div class="md-ellipsis">
-                Standard RL
+                Mighty Inner Loops
               </div>
             </div>
           </a>
         
         
           
-          <a href="../DAC/" class="md-footer__link md-footer__link--next" aria-label="Next: DAC">
+          <a href="../run_mighty/" class="md-footer__link md-footer__link--next" aria-label="Next: Run mighty">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                DAC
+                Run mighty
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2205,14 +2228,14 @@ Mighty is designed with contextual RL in mind and therefore fully compatible wit
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.code.copy", "navigation.footer", "navigation.sections", "toc.follow", "toc.integrate", "navigation.tabs", "navigation.tabs.sticky", "header.autohide", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate", "content.code.copy", "navigation.footer", "navigation.sections", "toc.follow", "toc.integrate", "navigation.tabs", "navigation.tabs.sticky", "header.autohide", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
-        <script src="../../assets/_markdown_exec_pyodide.js"></script>
+        <script src="../../../assets/_markdown_exec_pyodide.js"></script>
       
-        <script src="../../extra/refresh_on_toggle_dark_light.js"></script>
+        <script src="../../../extra/refresh_on_toggle_dark_light.js"></script>
       
     
   <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
