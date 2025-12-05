@@ -169,11 +169,11 @@ Mighty is meant to be a platform to build upon and not a large collection of met
 
 ## Contributions
 
-- **Aditya Mohan**: Core architecture design, agent implementations, meta-learning components, maintainer
-- **Theresa Eimer**: Environment integrations, CARL compatibility, generalization protocols  
-- **Carolin Benjamins**: Buffer systems, replay mechanisms, optimization algorithms
-- **Marius Lindauer**: Project supervision, research direction, methodology guidance
-- **Andre Biedenkapp**: Infrastructure design, testing framework, deployment systems
+- **Aditya Mohan:** Implemented the core agent stack (training loop, model interfaces, evaluation tools), ran the experiments and evaluation, and maintained the codebase, including integration of new modules and cross-component consistency.
+- **Theresa Eimer:** Designed the system architecture, Built the environment interfaces and data pipelines, contributed to architectural decisions, and implemented the meta-learning components and their evaluation setups.
+- **Carolin Benjamins:** Reviewed the architecture, conducted focused code audits, and improved interface design and modular structure.
+- **Marius Lindauer:** Guided the overall research direction, supervised the project, and refined the methodological setup.
+- **Andre Biedenkapp:** Provided project supervision, contributed to research design, and advised on algorithmic methodology and experimentation.
 
 ## Cite Us
 
