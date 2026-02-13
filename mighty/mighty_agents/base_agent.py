@@ -7,6 +7,7 @@ import os
 import random
 from abc import ABC
 from pathlib import Path
+from warnings import warn
 from typing import TYPE_CHECKING, Dict
 
 import numpy as np
@@ -295,11 +296,16 @@ class MightyAgent(ABC):
             or isinstance(self.env.unwrapped, CARLENV)
         ):
             self.result_buffer["instances"] = []
+
+            def default_serialization(obj):
+                warn(f"'{type(obj)}' not serializable", UserWarning)
+                return str(obj)
+
             with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
-                json.dump(self.env.instance_set, f)
+                json.dump(self.env.instance_set, f, default=default_serialization)
 
             with open(Path(self.output_dir) / "test_set.json", "w+") as f:
-                json.dump(self.eval_env.instance_set, f)
+                json.dump(self.eval_env.instance_set, f, default=default_serialization)
 
         self.eval_buffer = {
             "eval_after_n_steps": [],
