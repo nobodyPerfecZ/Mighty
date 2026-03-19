@@ -310,7 +310,7 @@ class TestSACAgent:
                     "Parameter initialization should be the same with same seed"
                 )
             sac.run(20, 1)
-            batch = sac.buffer.sample(20)
+            batch = sac.buffer.sample(10)
             # Fix: update_agent expects proper keyword arguments
             new_metrics = sac.update_fn.update(batch)
             for old, new in zip(

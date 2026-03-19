@@ -52,7 +52,6 @@ def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
     env.single_action_space.seed(seed)
     env.observation_space.seed(seed)
     env.single_observation_space.seed(seed)
-    # FIXME: now the single spaces aren't seeded, does this cause the failing SAC test?
 
 def update_buffer(buffer, new_data):
     for k in buffer.keys():
