@@ -278,7 +278,7 @@ class TestSACAgent:
         )
         init_params = deepcopy(list(sac.model.parameters()))
         sac.run(20, 1)
-        batch = sac.buffer.sample(20)
+        batch = sac.buffer.sample(10)
         # Fix: update_agent expects proper keyword arguments
         original_metrics = sac.update_fn.update(batch)
         original_params = deepcopy(list(sac.model.parameters()))
