@@ -9,27 +9,30 @@ from torch.distributions import Categorical, Normal
 
 
 def sample_nondeterministic_logprobs(
-    z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor, sac: bool = False
+    z: torch.Tensor, mean: torch.Tensor, log_std: torch.Tensor
 ) -> torch.Tensor:
     """
-    Compute log-prob of a Gaussian sample z ~ N(mean, exp(log_std)),
-    and if sac=True apply the tanh-squash correction to get log π(a).
+    Compute log π(a) for a squashed-Gaussian policy.
+
+    Given a pre-tanh sample z ~ N(mean, exp(log_std)) and squashed action
+    a = tanh(z), returns the log-probability under the policy:
+
+        log π(a) = log N(z | mean, std) − ∑ log(1 − tanh(z)²)
+
+    Applying this correction consistently for both old and new log-probs
+    ensures it cancels in the PPO importance-sampling ratio.
     """
     std = torch.exp(log_std)  # [batch, action_dim]
     dist = Normal(mean, std)
     # base Gaussian log‐prob of z
     log_pz = dist.log_prob(z).sum(dim=-1, keepdim=True)  # [batch, 1]
 
-    if sac:
-        # subtract the ∑_i log(d tanh/dz_i) = ∑ log(1 - tanh(z)^2)
-        eps = 1e-4
-        log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
-            dim=-1, keepdim=True
-        )  # [batch, 1]
-        return log_pz - log_correction
-    else:
-        # PPO-style or other: no squash correction
-        return log_pz
+    # subtract the ∑_i log(d tanh/dz_i) = ∑ log(1 - tanh(z)^2)
+    eps = 1e-6
+    log_correction = torch.log(1.0 - torch.tanh(z).pow(2) + eps).sum(
+        dim=-1, keepdim=True
+    )  # [batch, 1]
+    return log_pz - log_correction
 
 
 class MightyExplorationPolicy:
@@ -110,8 +113,9 @@ class MightyExplorationPolicy:
         # ─── Continuous squashed‐Gaussian (4‐tuple) ──────────────────────────
         elif isinstance(out, tuple) and len(out) == 4:
             action = out[0]  # [batch, action_dim]
+            # 4-tuple signals squashed Gaussian — always apply tanh correction
             log_prob = sample_nondeterministic_logprobs(
-                z=out[1], mean=out[2], log_std=out[3], sac=self.ago == "sac"
+                z=out[1], mean=out[2], log_std=out[3]
             )
             return action.detach().cpu().numpy(), log_prob
 
