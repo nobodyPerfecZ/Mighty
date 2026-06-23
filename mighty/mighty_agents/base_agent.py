@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import random
@@ -45,6 +46,25 @@ except ImportError:
     print(
         "Using default wandb logging. If you prefer trackio, please install it with `pip install trackio`."
     )
+
+
+def _json_default(obj):
+    """Fallback encoder for ``json.dump`` of instance/context sets.
+
+    CARL contexts are plain dicts of numbers and serialize directly, but
+    DACbench instance sets contain dataclass objects (e.g.
+    ``FunctionApproximationInstance``) that hold non-serializable members.
+    Convert dataclasses to dicts and fall back to ``str`` for anything else
+    so the ``instance_set.json`` artifact can always be written (see #123).
+    """
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        try:
+            return dataclasses.asdict(obj)
+        except Exception:
+            return str(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
 
 
 def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
@@ -296,10 +316,10 @@ class MightyAgent(ABC):
         ):
             self.result_buffer["instances"] = []
             with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
-                json.dump(self.env.instance_set, f)
+                json.dump(self.env.instance_set, f, default=_json_default)
 
             with open(Path(self.output_dir) / "test_set.json", "w+") as f:
-                json.dump(self.eval_env.instance_set, f)
+                json.dump(self.eval_env.instance_set, f, default=_json_default)
 
         self.eval_buffer = {
             "eval_after_n_steps": [],

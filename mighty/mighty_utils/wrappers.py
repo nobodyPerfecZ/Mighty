@@ -236,8 +236,13 @@ class ContextualVecEnv(gym.vector.SyncVectorEnv):
                 self.envs[i].set_instance_set(ps)
 
     def close(self):
+        # Guard against double-close: gym's VectorEnv.__del__ also calls
+        # close(), and some envs (e.g. DACbench) are not idempotent on close.
+        if getattr(self, "closed", False):
+            return
         for env in self.envs:
             env.close()
+        self.closed = True
 
 
 class ProcgenVecEnv(gym.vector.SyncVectorEnv):
