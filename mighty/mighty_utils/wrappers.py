@@ -154,7 +154,9 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
             if "seed" in kwargs and not isinstance(kwargs["seed"], int):
                 kwargs["seed"] = int(kwargs["seed"][0])
             obs, info = self.env.reset(**kwargs)
-            return np.array([obs]), np.array([info])
+            # info stays a dict (gymnasium VectorEnv convention); only the
+            # numeric obs gets a batch dimension. See issue #122.
+            return np.array([obs]), info
 
     def step(self, actions):
         if self.num_envs > 1:
@@ -163,12 +165,14 @@ class CARLVectorEnvSimulator(gym.vector.VectorEnv):
             obs, reward, te, tr, info = self.env.step(actions[0])
             if te or tr:
                 obs, info = self.env.reset()
+            # info stays a dict (gymnasium VectorEnv convention); only the
+            # numeric outputs get a batch dimension. See issue #122.
             return (
                 np.array([obs]),
                 np.array([reward]),
                 np.array([te]),
                 np.array([tr]),
-                np.array([info]),
+                info,
             )
 
     @property

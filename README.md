@@ -81,7 +81,12 @@ python mighty/run_mighty.py 'algorithm=ppo' 'environment=gymnasium/pendulum'
 
 ### Train your Agent on a CARL Environment
 Mighty is designed with contextual RL in mind and therefore fully compatible with CARL.
-Before you start training, however, please follow the installation instructions in the [CARL repo](https://github.com/automl/CARL).
+Before you start training, install the CARL extra so that `carl` is available in your
+Mighty environment (see [CARL](https://github.com/automl/CARL) for more on the benchmark itself):
+```bash
+pip install -e ".[carl]"
+```
+(`make install-dev` installs this along with all other optional dependencies.)
 
 Then use the same command as before, but provide the CARL environment, in this example CARLCartPoleEnv,
 and information about the context distribution as keywords:
@@ -93,8 +98,13 @@ For more complex configurations like this, we recommend making an environment co
 
 ### Learning a Configuration Policy via DAC
 
-In order to use Mighty with DACBench, you need to install DACBench first.
-We recommend following the instructions in the [DACBench repo](https://github.com/automl/DACBench).
+In order to use Mighty with DACBench, install the DACBench extra so that `dacbench`
+is available in your Mighty environment (see [DACBench](https://github.com/automl/DACBench)
+for more on the benchmark itself):
+```bash
+pip install -e ".[dacbench]"
+```
+(`make install-dev` installs this along with all other optional dependencies.)
 
 Afterwards, configure the benchmark you want to run. Since most DACBench benchmarks have Dict action and observation spaces, some fairly complex,  you might need to wrap DACBenchmarks in order to translate the observations and actions to an easy-to-handle format. We have a version of the FunctionApproximationBenchmark configured for you so you can get started like this:
 ```bash
