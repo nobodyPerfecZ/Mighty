@@ -113,6 +113,6 @@ We acknowledge contributions from the AutoML community and thank the developers 
 
 ## AI Usage Disclosure
 
-We used large language model tools in a limited capacity for language editing (clarity, conciseness, and grammar). All technical claims, software design, experiments, and results were produced and verified by the authors, who take full responsibility for the paper and the code.
+We used large language model tools in a limited capacity for language editing (clarity, conciseness, and grammar) and, in the software repository, to assist with and co-author some commits (e.g., dependency and compatibility fixes), as reflected in the corresponding commit trailers. All technical claims, software design, experiments, and results were produced and verified by the authors, who take full responsibility for the paper and the code.
 
 ## References
