@@ -4,6 +4,7 @@ from mighty.mighty_update.q_learning import (
     DoubleQLearning,
     QLearning,
 )
+from mighty.mighty_update.sac_eta_update import SACEtaUpdate
 from mighty.mighty_update.sac_update import SACUpdate
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "DoubleQLearning",
     "ClippedDoubleQLearning",
     "SACUpdate",
+    "SACEtaUpdate",
     "PPOUpdate",
 ]
