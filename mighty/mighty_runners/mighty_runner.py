@@ -26,9 +26,8 @@ class MightyRunner(ABC):
         eval_default: int = None,
     ) -> None:
         """Parse config and run Mighty agent."""
+        # Created lazily by whatever writes into it (checkpoints, file logs)
         output_dir = Path(cfg.output_dir) / f"{cfg.experiment_name}_{cfg.seed}"
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
 
         # Make train and eval env
         if env is None or base_eval_env is None or eval_default is None:

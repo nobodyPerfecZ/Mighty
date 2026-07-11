@@ -84,6 +84,7 @@ def update_buffer(buffer, new_data):
 
 
 def log_to_file(output_dir, result_buffer, hp_buffer, eval_buffer, loss_buffer):
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     if loss_buffer is not None:
         loss_df = pd.DataFrame(loss_buffer)
         if (Path(output_dir) / "losses.csv").exists():
@@ -315,6 +316,7 @@ class MightyAgent(ABC):
         if getattr(self.env, "instance_set", None) is not None:
             self.result_buffer["instances"] = []
 
+            Path(self.output_dir).mkdir(parents=True, exist_ok=True)
             with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
                 json.dump(self.env.instance_set, f, default=_json_default)
 
@@ -451,11 +453,8 @@ class MightyAgent(ABC):
         :return:
         """
         self.upper_checkpoint_dir = Path(self.output_dir) / Path("checkpoints")
-        if not self.upper_checkpoint_dir.exists():
-            Path(self.upper_checkpoint_dir).mkdir()
         self.checkpoint_dir = self.upper_checkpoint_dir / f"{t}"
-        if not self.checkpoint_dir.exists():
-            Path(self.checkpoint_dir).mkdir()
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     def __del__(self) -> None:
         """Close wandb upon deletion."""
