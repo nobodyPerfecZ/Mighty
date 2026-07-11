@@ -126,6 +126,8 @@ def log_to_wandb(metrics: Dict) -> None:
         "Update/alpha_loss",
         "Update/td_error1",
         "Update/td_error2",
+        "Update/eta_loss",
+        "Update/eta_value",
         "Update/loss",
         "Update/td_errors",
         "eval_episodes",
@@ -836,14 +838,16 @@ class MightyAgent(ABC):
                     for k in self.meta_modules:
                         self.meta_modules[k].pre_episode(metrics)
 
-        # Final logging
-        log_to_file(
-            self.output_dir,
-            self.result_buffer,
-            self.hp_buffer,
-            self.eval_buffer,
-            self.loss_buffer,
-        )
+        # Final logging (disabled entirely when save_model_every_n_steps is unset,
+        # like the periodic saving above)
+        if save_model_every_n_steps:
+            log_to_file(
+                self.output_dir,
+                self.result_buffer,
+                self.hp_buffer,
+                self.eval_buffer,
+                self.loss_buffer,
+            )
         return metrics
 
     def apply_config(self, config: Dict) -> None:

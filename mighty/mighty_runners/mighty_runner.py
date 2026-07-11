@@ -72,6 +72,7 @@ class MightyRunner(ABC):
         )
 
         self.eval_every_n_steps = cfg.eval_every_n_steps
+        self.save_model_every_n_steps = cfg.get("save_model_every_n_steps", 5000)
         self.num_steps = cfg.num_steps
         self.log_infos = log_infos
 
@@ -88,7 +89,10 @@ class MightyRunner(ABC):
 
     def train(self, num_steps: int, env=None) -> Any:  # type: ignore
         return self.agent.run(
-            n_steps=num_steps, env=env, eval_every_n_steps=self.eval_every_n_steps
+            n_steps=num_steps,
+            env=env,
+            eval_every_n_steps=self.eval_every_n_steps,
+            save_model_every_n_steps=self.save_model_every_n_steps,
         )
 
     def evaluate(self, eval_env=None, log_infos=False) -> Any:  # type: ignore
