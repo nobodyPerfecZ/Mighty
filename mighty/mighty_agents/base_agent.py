@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
+from gymnasium.wrappers import NormalizeObservation, NormalizeReward
 
 try:
     import logging
