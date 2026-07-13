@@ -71,8 +71,7 @@ mindmap
 
 ### Where Is Mighty Going?
 
-Currently Mighty is in early development and includes only standard RL algorithms compatible with cRL benchmarks and
-evaluation mechanisms. In the future, we hope to extend mighty with Meta-Learning methods as well as AutoRL, so stay tuned.
+Mighty currently supports DQN, PPO, and SAC with a range of contextual RL benchmarks and evaluation mechanisms. Future work will deepen support for Meta-RL and AutoRL — stay tuned.
 
 ### Contact & Citation
 Mighty is developed at [LUHAI Hannover]() by members of [AutoRL.org](). Your first contact is lead maintainer [Aditya Mohan](). If you found issues or want to contribute new features, it's best to visit our [GitHub page](https://github.com/automl/Mighty) page and start a discussion.
@@ -81,7 +80,7 @@ If you use Mighty for your research, please cite us:
 
 ```bibtex
 @misc{mohaneimer24,
-  author    = {A. Mohan and T. Eimer and C. Benjamins and F. Hutter and M. Lindauer and A. Biedenkapp},
+  author    = {A. Mohan and T. Eimer and C. Benjamins and M. Lindauer and A. Biedenkapp},
   title     = {Mighty},
   year      = {2024},
   url = {https://github.com/automl/mighty}

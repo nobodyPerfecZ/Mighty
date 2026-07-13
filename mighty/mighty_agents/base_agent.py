@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import random
 from abc import ABC
 from pathlib import Path
-from warnings import warn
 from typing import TYPE_CHECKING, Dict
 
 import numpy as np
@@ -24,14 +24,14 @@ from uniplot import plot_to_string
 
 from mighty.mighty_exploration import MightyExplorationPolicy
 from mighty.mighty_replay import MightyReplay, MightyRolloutBuffer, PrioritizedReplay
-from mighty.mighty_utils.mighty_types import CARLENV, DACENV, MIGHTYENV, retrieve_class
+from mighty.mighty_utils.mighty_types import MIGHTYENV, retrieve_class
 
 if TYPE_CHECKING:
     from mighty.mighty_utils.mighty_types import TypeKwargs
 
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-from gymnasium.wrappers.normalize import NormalizeObservation, NormalizeReward
+from gymnasium.wrappers import NormalizeObservation, NormalizeReward
 
 try:
     import logging
@@ -46,6 +46,25 @@ except ImportError:
     print(
         "Using default wandb logging. If you prefer trackio, please install it with `pip install trackio`."
     )
+
+
+def _json_default(obj):
+    """Fallback encoder for ``json.dump`` of instance/context sets.
+
+    CARL contexts are plain dicts of numbers and serialize directly, but
+    DACbench instance sets contain dataclass objects (e.g.
+    ``FunctionApproximationInstance``) that hold non-serializable members.
+    Convert dataclasses to dicts and fall back to ``str`` for anything else
+    so the ``instance_set.json`` artifact can always be written (see #123).
+    """
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        try:
+            return dataclasses.asdict(obj)
+        except Exception:
+            return str(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
 
 
 def seed_env_spaces(env: gym.VectorEnv, seed: int) -> None:
@@ -291,21 +310,14 @@ class MightyAgent(ABC):
             "truncated": [],
             "mean_episode_reward": [],
         }
-        if hasattr(self.env, "unwrapped") and (
-            isinstance(self.env.unwrapped, DACENV)
-            or isinstance(self.env.unwrapped, CARLENV)
-        ):
+        if getattr(self.env, "instance_set", None) is not None:
             self.result_buffer["instances"] = []
 
-            def default_serialization(obj):
-                warn(f"'{type(obj)}' not serializable", UserWarning)
-                return str(obj)
-
             with open(Path(self.output_dir) / "instance_set.json", "w+") as f:
-                json.dump(self.env.instance_set, f, default=default_serialization)
+                json.dump(self.env.instance_set, f, default=_json_default)
 
             with open(Path(self.output_dir) / "test_set.json", "w+") as f:
-                json.dump(self.eval_env.instance_set, f, default=default_serialization)
+                json.dump(self.eval_env.instance_set, f, default=_json_default)
 
         self.eval_buffer = {
             "eval_after_n_steps": [],
@@ -704,10 +716,7 @@ class MightyAgent(ABC):
 
                 t.update(infos)
 
-                if hasattr(self.env, "unwrapped") and (
-                    isinstance(self.env.unwrapped, DACENV)
-                    or isinstance(self.env.unwrapped, CARLENV)
-                ):
+                if getattr(self.env, "inst_ids", None) is not None:
                     t["instances"] = self.env.inst_ids
 
                 metrics["log_prob"] = log_prob.detach().cpu().numpy()
@@ -897,10 +906,7 @@ class MightyAgent(ABC):
                 last_info = info
             mask = np.where(dones, 1, mask)
 
-        if hasattr(self.eval_env, "unwrapped") and (
-            isinstance(self.eval_env.unwrapped, DACENV)
-            or isinstance(self.eval_env.unwrapped, CARLENV)
-        ):
+        if getattr(self.eval_env, "inst_ids", None) is not None:
             instances = eval_env.inst_ids  # type: ignore
         else:
             instances = "None"
